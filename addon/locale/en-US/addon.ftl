@@ -80,6 +80,9 @@ connection-map-connect-pick-first = Bağla modu: ilk kaynağı seçin
 connection-map-connect-pick-second = Bağla modu: ikinci kaynağı seçin
 connection-map-connect-done = Kalıcı bağlantı oluşturuldu
 connection-map-already-related = Bu iki kaynak zaten bağlı
+connection-map-confirm-remove = "{ $a }" ile "{ $b }" arasındaki kalıcı bağlantı kaldırılsın mı?
+connection-map-remove-done = Bağlantı kaldırıldı
+connection-map-remove-hint = Sağ tık: bağlantıyı kaldır
 
 tag-dashboard-title = Etiket Analizi
 tag-dashboard-subtitle = { $library } · { $items } yayın · güncel envanter

@@ -11,9 +11,13 @@ import {
   findBridgeTagCandidate,
   offerBridgeTag,
   areItemsRelated,
+  removeConnection,
 } from "../utils/connectionActions";
 import { updateHint } from "../utils/hint";
-import { isCrossDiscipline } from "../utils/connectionGraph";
+import {
+  getNodeDisciplineKey,
+  isCrossDiscipline,
+} from "../utils/connectionGraph";
 
 export type ConnectionMapLayerState = {
   tag: boolean;
@@ -192,9 +196,10 @@ function wireChrome(
     if (label) {
       label.textContent = getString(`connection-map-layer-${layer}`);
     }
-    el?.addEventListener("change", () => {
-      refilterFromCache(win);
-    });
+    // Assign once (overwrite) — avoid stacked listeners on refresh.
+    if (el) {
+      el.onchange = () => refilterFromCache(win);
+    }
   }
 
   const filter = doc.getElementById(
@@ -431,10 +436,13 @@ function mountSvg(
     line.setAttribute("stroke-width", String(style.width));
     line.setAttribute("stroke-opacity", String(style.opacity));
     if (style.dash) line.setAttribute("stroke-dasharray", style.dash);
-    line.style.cursor = se.edge.state === "suggested" ? "pointer" : "default";
+    line.style.cursor =
+      se.edge.state === "suggested" || se.edge.layer === "manual"
+        ? "pointer"
+        : "default";
 
     const title = doc.createElementNS("http://www.w3.org/2000/svg", "title");
-    title.textContent = edgeTooltip(se.edge);
+    title.textContent = edgeTooltip(se.edge, se.source.node, se.target.node);
     line.appendChild(title);
 
     if (se.edge.state === "suggested") {
@@ -483,6 +491,29 @@ function mountSvg(
         refreshBtn?.click();
       });
     }
+
+    if (se.edge.layer === "manual" && se.edge.state === "confirmed") {
+      line.addEventListener("contextmenu", async (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const msg = getString("connection-map-confirm-remove", {
+          args: {
+            a: se.source.node.title,
+            b: se.target.node.title,
+          },
+        });
+        if (!win.confirm(msg)) return;
+        const itemA = Zotero.Items.get(se.edge.source);
+        const itemB = Zotero.Items.get(se.edge.target);
+        if (!itemA || !itemB) return;
+        await removeConnection(itemA, itemB);
+        updateHint(getString("connection-map-remove-done"));
+        const refreshBtn = doc.getElementById(
+          `${config.addonRef}-connection-map-refresh`,
+        ) as HTMLButtonElement | null;
+        refreshBtn?.click();
+      });
+    }
     edgeLayer.appendChild(line);
   }
 
@@ -514,6 +545,7 @@ function mountSvg(
       sn.node.creatorSummary,
       sn.node.year ? String(sn.node.year) : "",
       sn.node.disciplineLabels.join(", "),
+      getNodeDisciplineKey(sn.node),
     ]
       .filter(Boolean)
       .join(" · ");
@@ -696,7 +728,11 @@ function suggestBridgeTagLabel(a: GraphNode, b: GraphNode): string | null {
   return `${left} × ${right}`;
 }
 
-function edgeTooltip(edge: GraphEdge): string {
+function edgeTooltip(
+  edge: GraphEdge,
+  sourceNode: GraphNode,
+  targetNode: GraphNode,
+): string {
   const parts = [`${edge.layer} · ${edge.state}`];
   if (edge.viaTags?.length) {
     parts.push(
@@ -706,10 +742,15 @@ function edgeTooltip(edge: GraphEdge): string {
     );
   }
   if (edge.crossDiscipline) {
-    parts.push(getString("connection-map-cross-discipline-hint"));
+    parts.push(
+      `${getString("connection-map-cross-discipline-hint")} (${getNodeDisciplineKey(sourceNode)} ↔ ${getNodeDisciplineKey(targetNode)})`,
+    );
   }
   if (edge.state === "suggested") {
     parts.push(`${Math.round(edge.confidence * 100)}%`);
+  }
+  if (edge.layer === "manual") {
+    parts.push(getString("connection-map-remove-hint"));
   }
   return parts.join("\n");
 }

@@ -91,6 +91,13 @@ function makeEdgeId(
 }
 
 function isCrossDiscipline(a: GraphNode, b: GraphNode): boolean {
+  // v1.1 path: when both carry a profile primary, compare via accessor only.
+  if (a.disciplineProfile?.primary && b.disciplineProfile?.primary) {
+    return (
+      getNodeDisciplineKey(a) !== getNodeDisciplineKey(b)
+    );
+  }
+
   const aOnlyUnsorted =
     a.disciplineIDs.length === 1 &&
     a.disciplineIDs[0] === UNSORTED_DISCIPLINE_ID;
@@ -286,9 +293,12 @@ async function buildConnectionGraph(
     byId.set(edge.id, edge);
   }
   for (const edge of extraEdges) {
-    // Skip suggested edges that already exist as confirmed relations.
-    const manualId = makeEdgeId("manual", edge.source, edge.target, "");
-    if (edge.state === "suggested" && byId.has(manualId)) continue;
+    const pairManualId = makeEdgeId("manual", edge.source, edge.target, "");
+    // Suggested edges that already have a confirmed relation: skip.
+    if (edge.state === "suggested" && byId.has(pairManualId)) continue;
+    // After D auto-promote, manual relatedItem already represents the pair —
+    // drop redundant note edges for the same endpoints.
+    if (edge.layer === "note" && byId.has(pairManualId)) continue;
     byId.set(edge.id, edge);
   }
 
