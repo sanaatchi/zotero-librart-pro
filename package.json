@@ -1,10 +1,10 @@
 {
   "name": "zotero-actions-tags",
-  "version": "2.6.1",
+  "version": "2.6.2",
   "description": "Action it, tag it, sorted. Private fork with Tag Analysis Dashboard.",
   "config": {
     "addonName": "Actions and Tags for Zotero",
-    "addonID": "zoterotag@ibrahimyildiz.art",
+    "addonID": "zoterotag@euclpts.com",
     "addonRef": "zoterotag",
     "addonInstance": "ActionsTags",
     "prefsPrefix": "extensions.actionsTags",

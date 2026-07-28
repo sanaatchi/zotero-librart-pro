@@ -1,9 +1,9 @@
 {
   "addons": {
-    "zoterotag@ibrahimyildiz.art": {
+    "zoterotag@euclpts.com": {
       "updates": [
         {
-          "version": "2.6.1",
+          "version": "2.6.2",
           "update_link": "https://github.com/sanaatchi/zotero-actions-tags-releases/releases/latest/download/actions-and-tags-for-zotero.xpi",
           "applications": {
             "zotero": {
