@@ -137,6 +137,17 @@
         display: block;
         width: 100%;
         height: 100%;
+        cursor: grab;
+        touch-action: none;
+      }
+
+      #zoterotag-connection-map-canvas svg.is-panning,
+      #zoterotag-connection-map-canvas svg.is-dragging-node {
+        cursor: grabbing;
+      }
+
+      #zoterotag-connection-map-canvas svg.is-space-pan {
+        cursor: grab;
       }
 
       .node-label {

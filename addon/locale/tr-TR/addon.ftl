@@ -73,6 +73,7 @@ connection-map-accept-confirm = Anlamsal öneri ({ $pct }%): "{ $a }" ↔ "{ $b 
 connection-map-dismiss-suggestion = Öneri yoksayıldı (bu oturum)
 connection-map-semantic-progress = ZotSeek taranıyor… { $done }/{ $total }
 connection-map-cross-discipline-hint = Turuncu kenarlar disiplinler arası bağlantıları gösterir
+connection-map-controls-hint = Kaydır: sürükle / orta tuş / Space · Zoom: tekerlek · Sığdır: çift tık / Ctrl+0
 connection-map-node-tooltip-tags = Etiketler: { $tags }
 connection-map-status-updated = { $library } · güncellendi { $time } · { $confirmed } kalıcı, { $suggested } öneri
 connection-map-connect-mode = Bağla modu

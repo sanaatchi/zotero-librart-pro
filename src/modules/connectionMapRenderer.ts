@@ -58,7 +58,10 @@ type RendererState = {
   dragStart: { x: number; y: number } | null;
   panning: boolean;
   panLast: { x: number; y: number } | null;
+  spaceHeld: boolean;
+  activePointerId: number | null;
   energy: number;
+  viewSize: { w: number; h: number };
 };
 
 const stateByWin = new WeakMap<Window, RendererState>();
@@ -147,7 +150,7 @@ function wireChrome(
 
   const hint = doc.getElementById(`${config.addonRef}-connection-map-hint`);
   if (hint) {
-    hint.textContent = getString("connection-map-cross-discipline-hint");
+    hint.textContent = getString("connection-map-controls-hint");
   }
 
   const refreshBtn = doc.getElementById(
@@ -234,7 +237,7 @@ function setConnectHint(win: Window, st: RendererState) {
   );
   if (!hint) return;
   if (!st.connectMode) {
-    hint.textContent = getString("connection-map-cross-discipline-hint");
+    hint.textContent = getString("connection-map-controls-hint");
     return;
   }
   if (st.connectFirst == null) {
@@ -412,7 +415,10 @@ function buildSimulation(
     dragStart: null,
     panning: false,
     panLast: null,
+    spaceHeld: prev?.spaceHeld ?? false,
+    activePointerId: null,
     energy: 1,
+    viewSize: { w, h },
   };
   stateByWin.set(win, st);
 
@@ -590,7 +596,7 @@ function mountSvg(
     g.appendChild(tip);
     g.appendChild(circle);
 
-    // Always-on labels only for hubs; zoom reveals more (see syncLabelVisibility).
+    // Always-on labels only for hubs; zoom/hover reveals more.
     const label = doc.createElementNS("http://www.w3.org/2000/svg", "text");
     label.setAttribute("y", String(r + 10));
     label.setAttribute("text-anchor", "middle");
@@ -599,16 +605,29 @@ function mountSvg(
     label.textContent = truncate(sn.node.title, 28);
     g.appendChild(label);
 
+    g.addEventListener("pointerenter", () => {
+      label.style.display = "";
+    });
+    g.addEventListener("pointerleave", () => {
+      syncOneLabel(label, st.transform.k);
+    });
+
     g.addEventListener("pointerdown", (ev) => {
       const pe = ev as PointerEvent;
       if (pe.button !== 0) return;
       pe.stopPropagation();
       pe.preventDefault();
-      (g as any).setPointerCapture?.(pe.pointerId);
+      try {
+        svg.setPointerCapture(pe.pointerId);
+      } catch {
+        /* ignore */
+      }
+      st.activePointerId = pe.pointerId;
       st.dragging = sn;
       st.dragMoved = false;
       st.dragStart = { x: pe.clientX, y: pe.clientY };
       st.energy = 1;
+      svg.classList.add("is-dragging-node");
     });
 
     g.addEventListener("click", async (ev) => {
@@ -638,57 +657,9 @@ function mountSvg(
   svg.appendChild(root);
   canvas.appendChild(svg);
   paintConnectSelection(win);
+  applyTransform(root, st.transform);
   syncLabelVisibility(svg, st.transform.k);
-
-  svg.addEventListener("wheel", (ev) => {
-    const we = ev as WheelEvent;
-    we.preventDefault();
-    const factor = we.deltaY < 0 ? 1.08 : 0.92;
-    st.transform.k = Math.min(4, Math.max(0.25, st.transform.k * factor));
-    applyTransform(root, st.transform);
-    syncLabelVisibility(svg, st.transform.k);
-  });
-
-  svg.addEventListener("pointerdown", (ev) => {
-    const pe = ev as PointerEvent;
-    if (pe.button !== 0 || st.dragging) return;
-    st.panning = true;
-    st.panLast = { x: pe.clientX, y: pe.clientY };
-  });
-  svg.addEventListener("pointermove", (ev) => {
-    const pe = ev as PointerEvent;
-    if (st.dragging) {
-      if (st.dragStart) {
-        const dx = pe.clientX - st.dragStart.x;
-        const dy = pe.clientY - st.dragStart.y;
-        if (dx * dx + dy * dy > 16) st.dragMoved = true;
-      }
-      if (st.dragMoved) {
-        const pt = clientToSvg(svg, pe.clientX, pe.clientY, st.transform);
-        st.dragging.x = pt.x;
-        st.dragging.y = pt.y;
-        st.dragging.vx = 0;
-        st.dragging.vy = 0;
-        st.energy = 1;
-        paint(win);
-      }
-      return;
-    }
-    if (st.panning && st.panLast) {
-      st.transform.x += pe.clientX - st.panLast.x;
-      st.transform.y += pe.clientY - st.panLast.y;
-      st.panLast = { x: pe.clientX, y: pe.clientY };
-      applyTransform(root, st.transform);
-    }
-  });
-  const endPointer = () => {
-    st.dragging = null;
-    st.dragStart = null;
-    st.panning = false;
-    st.panLast = null;
-  };
-  svg.addEventListener("pointerup", endPointer);
-  svg.addEventListener("pointerleave", endPointer);
+  wireViewportControls(win, svg, root, st);
 }
 
 async function handleConnectClick(
@@ -802,14 +773,262 @@ function edgeTooltip(
   return parts.join("\n");
 }
 
-function syncLabelVisibility(svg: Element, k: number) {
+function wireViewportControls(
+  win: Window,
+  svg: SVGSVGElement,
+  root: SVGElement,
+  st: RendererState,
+) {
+  const endPointer = (pe?: PointerEvent) => {
+    if (
+      pe &&
+      st.activePointerId != null &&
+      pe.pointerId !== st.activePointerId
+    ) {
+      return;
+    }
+    if (st.activePointerId != null) {
+      try {
+        if (svg.hasPointerCapture?.(st.activePointerId)) {
+          svg.releasePointerCapture(st.activePointerId);
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    st.dragging = null;
+    st.dragStart = null;
+    st.panning = false;
+    st.panLast = null;
+    st.activePointerId = null;
+    svg.classList.remove("is-panning", "is-dragging-node");
+  };
+
+  svg.addEventListener(
+    "wheel",
+    (ev) => {
+      const we = ev as WheelEvent;
+      we.preventDefault();
+      const delta =
+        we.deltaMode === 1
+          ? we.deltaY * 16
+          : we.deltaMode === 2
+            ? we.deltaY * (st.viewSize.h || 600)
+            : we.deltaY;
+      const factor = Math.exp(-delta * 0.0018);
+      zoomAt(svg, root, st, we.clientX, we.clientY, factor);
+      syncLabelVisibility(svg, st.transform.k);
+    },
+    { passive: false },
+  );
+
+  svg.addEventListener("pointerdown", (ev) => {
+    const pe = ev as PointerEvent;
+    if (st.dragging) return;
+
+    const middle = pe.button === 1;
+    const left = pe.button === 0;
+    if (!middle && !left) return;
+    if (left && !st.spaceHeld && pe.target !== svg && pe.target !== root) {
+      // Node/edge handlers manage their own interactions.
+      const t = pe.target as Element | null;
+      if (t?.closest?.("g[data-node-id], line[data-edge-id]")) return;
+    }
+
+    pe.preventDefault();
+    try {
+      svg.setPointerCapture(pe.pointerId);
+    } catch {
+      /* ignore */
+    }
+    st.activePointerId = pe.pointerId;
+    st.panning = true;
+    st.panLast = { x: pe.clientX, y: pe.clientY };
+    svg.classList.add("is-panning");
+  });
+
+  svg.addEventListener("pointermove", (ev) => {
+    const pe = ev as PointerEvent;
+    if (
+      st.activePointerId != null &&
+      pe.pointerId !== st.activePointerId
+    ) {
+      return;
+    }
+
+    if (st.dragging) {
+      if (st.dragStart) {
+        const dx = pe.clientX - st.dragStart.x;
+        const dy = pe.clientY - st.dragStart.y;
+        if (dx * dx + dy * dy > 9) st.dragMoved = true;
+      }
+      if (st.dragMoved) {
+        const pt = clientToSvg(svg, pe.clientX, pe.clientY, st.transform);
+        st.dragging.x = pt.x;
+        st.dragging.y = pt.y;
+        st.dragging.vx = 0;
+        st.dragging.vy = 0;
+        st.energy = 1;
+        paint(win);
+      }
+      return;
+    }
+
+    if (st.panning && st.panLast) {
+      st.transform.x += pe.clientX - st.panLast.x;
+      st.transform.y += pe.clientY - st.panLast.y;
+      st.panLast = { x: pe.clientX, y: pe.clientY };
+      applyTransform(root, st.transform);
+    }
+  });
+
+  svg.addEventListener("pointerup", (ev) => endPointer(ev as PointerEvent));
+  svg.addEventListener("pointercancel", (ev) => endPointer(ev as PointerEvent));
+  svg.addEventListener("lostpointercapture", () => endPointer());
+
+  svg.addEventListener("dblclick", (ev) => {
+    const t = ev.target as Element | null;
+    if (t?.closest?.("g[data-node-id], line[data-edge-id]")) return;
+    ev.preventDefault();
+    fitView(st);
+    applyTransform(root, st.transform);
+    syncLabelVisibility(svg, st.transform.k);
+  });
+
+  // Middle-click autoscroll / paste prevention.
+  svg.addEventListener("auxclick", (ev) => {
+    if ((ev as MouseEvent).button === 1) ev.preventDefault();
+  });
+  svg.addEventListener("contextmenu", (ev) => {
+    const t = ev.target as Element | null;
+    if (!t?.closest?.("line[data-edge-id]")) ev.preventDefault();
+  });
+
+  const onKeyDown = (ev: KeyboardEvent) => {
+    const cur = stateByWin.get(win);
+    if (!cur) return;
+    const tag = (ev.target as Element | null)?.tagName?.toLowerCase();
+    if (tag === "input" || tag === "textarea") return;
+    if (ev.code === "Space" && !ev.repeat) {
+      ev.preventDefault();
+      cur.spaceHeld = true;
+      svg.classList.add("is-space-pan");
+    } else if (ev.key === "0" && (ev.ctrlKey || ev.metaKey)) {
+      ev.preventDefault();
+      fitView(cur);
+      applyTransform(root, cur.transform);
+      syncLabelVisibility(svg, cur.transform.k);
+    } else if (ev.key === "+" || ev.key === "=") {
+      const rect = svg.getBoundingClientRect();
+      zoomAt(
+        svg,
+        root,
+        cur,
+        rect.left + rect.width / 2,
+        rect.top + rect.height / 2,
+        1.12,
+      );
+      syncLabelVisibility(svg, cur.transform.k);
+    } else if (ev.key === "-" || ev.key === "_") {
+      const rect = svg.getBoundingClientRect();
+      zoomAt(
+        svg,
+        root,
+        cur,
+        rect.left + rect.width / 2,
+        rect.top + rect.height / 2,
+        1 / 1.12,
+      );
+      syncLabelVisibility(svg, cur.transform.k);
+    }
+  };
+  const onKeyUp = (ev: KeyboardEvent) => {
+    const cur = stateByWin.get(win);
+    if (!cur) return;
+    if (ev.code === "Space") {
+      cur.spaceHeld = false;
+      svg.classList.remove("is-space-pan");
+    }
+  };
+  const onBlur = () => {
+    const cur = stateByWin.get(win);
+    if (!cur) return;
+    cur.spaceHeld = false;
+    svg.classList.remove("is-space-pan");
+  };
+
+  const host = win as Window & { __cmControlsAbort?: AbortController };
+  host.__cmControlsAbort?.abort();
+  const ac = new AbortController();
+  host.__cmControlsAbort = ac;
+  win.addEventListener("keydown", onKeyDown, { signal: ac.signal });
+  win.addEventListener("keyup", onKeyUp, { signal: ac.signal });
+  win.addEventListener("blur", onBlur, { signal: ac.signal });
+}
+
+function zoomAt(
+  svg: SVGSVGElement,
+  root: SVGElement,
+  st: RendererState,
+  clientX: number,
+  clientY: number,
+  factor: number,
+) {
+  const rect = svg.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+  const viewW = svg.viewBox.baseVal.width || st.viewSize.w || rect.width;
+  const viewH = svg.viewBox.baseVal.height || st.viewSize.h || rect.height;
+  const mx = ((clientX - rect.left) / rect.width) * viewW;
+  const my = ((clientY - rect.top) / rect.height) * viewH;
+  const wx = (mx - st.transform.x) / st.transform.k;
+  const wy = (my - st.transform.y) / st.transform.k;
+  const nextK = Math.min(6, Math.max(0.12, st.transform.k * factor));
+  st.transform.k = nextK;
+  st.transform.x = mx - wx * nextK;
+  st.transform.y = my - wy * nextK;
+  applyTransform(root, st.transform);
+}
+
+function fitView(st: RendererState) {
+  const nodes = st.simNodes;
+  const { w, h } = st.viewSize;
+  if (!nodes.length || !w || !h) {
+    st.transform = { x: 0, y: 0, k: 1 };
+    return;
+  }
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const n of nodes) {
+    if (n.x < minX) minX = n.x;
+    if (n.y < minY) minY = n.y;
+    if (n.x > maxX) maxX = n.x;
+    if (n.y > maxY) maxY = n.y;
+  }
+  const bw = Math.max(40, maxX - minX);
+  const bh = Math.max(40, maxY - minY);
+  const pad = 56;
+  const k = Math.min((w - pad * 2) / bw, (h - pad * 2) / bh, 2.2);
+  const cx = (minX + maxX) / 2;
+  const cy = (minY + maxY) / 2;
+  st.transform.k = Math.max(0.15, k);
+  st.transform.x = w / 2 - cx * st.transform.k;
+  st.transform.y = h / 2 - cy * st.transform.k;
+}
+
+function syncOneLabel(el: Element, k: number) {
+  const hub = el.getAttribute("data-hub") === "1";
   const showAll = k >= 1.45;
+  (el as SVGElement).style.display = hub || showAll ? "" : "none";
+}
+
+function syncLabelVisibility(svg: Element, k: number) {
   const labels = svg.querySelectorAll(".node-label");
   for (let i = 0; i < labels.length; i++) {
     const el = labels.item(i) as Element | null;
     if (!el) continue;
-    const hub = el.getAttribute("data-hub") === "1";
-    (el as HTMLElement).style.display = hub || showAll ? "" : "none";
+    syncOneLabel(el, k);
   }
 }
 
