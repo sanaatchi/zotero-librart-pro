@@ -92,3 +92,15 @@ tag-dashboard-fuzzy-title = Benzer (dikkat — üst/alt kavram)
 tag-dashboard-fuzzy-note = sanat ↔ sanat eğitimi gibi çiftleri bilinçli ayrı tut.
 tag-dashboard-none = Bulunamadı
 tag-dashboard-recommendation = Öneri: önce yüksek güvenli büyük/küçük harf çiftlerini birleştir, sonra gürültülü tekilleri temizle. Bilinçli üst/alt kavramları birleştirme.
+
+tag-dashboard-action-merge = Birleştir
+tag-dashboard-action-delete = Sil
+tag-dashboard-confirm-merge = "{ $from }" etiket(ler)i "{ $to }" içine birleştirilecek. Bu işlem geri alınamaz. Devam edilsin mi?
+tag-dashboard-confirm-delete = "{ $names }" etiket(ler)i kütüphaneden tamamen silinecek. Bu işlem geri alınamaz. Devam edilsin mi?
+tag-dashboard-merge-done = { $count } yayında etiket "{ $target }" olarak birleştirildi.
+tag-dashboard-delete-done = { $count } yayından etiket silindi.
+tag-dashboard-manual-title = Elle temizlik
+tag-dashboard-manual-merge-from-placeholder = Kaynak etiket(ler), virgülle ayır
+tag-dashboard-manual-merge-to-placeholder = Hedef etiket adı
+tag-dashboard-manual-delete-placeholder = Silinecek etiket(ler), virgülle ayır
+tag-dashboard-manual-hint = Otomatik tespit edilmeyen eşanlam kümelerini (ör. güç/power/güç istenci) veya anlamsız/bozuk etiketleri burada elle birleştirip silebilirsin.

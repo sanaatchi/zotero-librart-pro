@@ -1,10 +1,12 @@
 import { config } from "../../package.json";
 import { getString } from "../utils/locale";
 import { isWindowAlive } from "../utils/window";
+import { updateHint } from "../utils/hint";
 import {
   TagAnalysisReport,
   analyzeLibraryTags,
 } from "../utils/tagAnalysis";
+import { mergeTags, deleteTags } from "../utils/tagActions";
 
 export { openTagDashboard, initTagDashboardWindow };
 
@@ -70,6 +72,7 @@ async function initTagDashboardWindow(win: Window) {
       });
     }
     wireRefresh(win);
+    wireActions(win, report);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     root.innerHTML = `<div class="callout callout-warn">${escapeHtml(
@@ -93,6 +96,101 @@ function wireRefresh(win: Window) {
       btn.disabled = false;
     }
   };
+}
+
+function wireActions(win: Window, report: TagAnalysisReport) {
+  const doc = win.document;
+
+  doc.querySelectorAll(".btn-merge-fold").forEach((el) => {
+    const btn = el as HTMLButtonElement;
+    btn.addEventListener("click", async () => {
+      const idx = Number(btn.dataset.foldIndex);
+      const group = report.foldDupes[idx];
+      if (!group?.length) return;
+      const target = group[0].name;
+      const sources = group.map((t) => t.name);
+      const msg = getString("tag-dashboard-confirm-merge", {
+        args: { from: sources.join(", "), to: target },
+      });
+      if (!win.confirm(msg)) return;
+      btn.disabled = true;
+      await runMerge(win, report.libraryID, sources, target);
+    });
+  });
+
+  doc.querySelectorAll(".btn-merge-bilingual").forEach((el) => {
+    const btn = el as HTMLButtonElement;
+    btn.addEventListener("click", async () => {
+      const idx = Number(btn.dataset.bilingualIndex);
+      const pair = report.bilingualPairs[idx];
+      if (!pair) return;
+      const msg = getString("tag-dashboard-confirm-merge", {
+        args: { from: pair.en.name, to: pair.tr.name },
+      });
+      if (!win.confirm(msg)) return;
+      btn.disabled = true;
+      await runMerge(win, report.libraryID, [pair.en.name], pair.tr.name);
+    });
+  });
+
+  const mergeBtn = doc.getElementById(
+    `${config.addonRef}-manual-merge-btn`,
+  ) as HTMLButtonElement | null;
+  mergeBtn?.addEventListener("click", async () => {
+    const fromInput = doc.getElementById(
+      `${config.addonRef}-manual-merge-from`,
+    ) as HTMLInputElement | null;
+    const toInput = doc.getElementById(
+      `${config.addonRef}-manual-merge-to`,
+    ) as HTMLInputElement | null;
+    const sources = (fromInput?.value || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const target = (toInput?.value || "").trim();
+    if (!sources.length || !target) return;
+    const msg = getString("tag-dashboard-confirm-merge", {
+      args: { from: sources.join(", "), to: target },
+    });
+    if (!win.confirm(msg)) return;
+    mergeBtn.disabled = true;
+    await runMerge(win, report.libraryID, sources, target);
+  });
+
+  const deleteBtn = doc.getElementById(
+    `${config.addonRef}-manual-delete-btn`,
+  ) as HTMLButtonElement | null;
+  deleteBtn?.addEventListener("click", async () => {
+    const delInput = doc.getElementById(
+      `${config.addonRef}-manual-delete`,
+    ) as HTMLInputElement | null;
+    const names = (delInput?.value || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (!names.length) return;
+    const msg = getString("tag-dashboard-confirm-delete", {
+      args: { names: names.join(", ") },
+    });
+    if (!win.confirm(msg)) return;
+    deleteBtn.disabled = true;
+    const count = await deleteTags(report.libraryID, names);
+    updateHint(getString("tag-dashboard-delete-done", { args: { count } }));
+    await initTagDashboardWindow(win);
+  });
+}
+
+async function runMerge(
+  win: Window,
+  libraryID: number,
+  sources: string[],
+  target: string,
+) {
+  const count = await mergeTags(libraryID, sources, target);
+  updateHint(
+    getString("tag-dashboard-merge-done", { args: { count, target } }),
+  );
+  await initTagDashboardWindow(win);
 }
 
 function escapeHtml(s: string): string {
@@ -244,10 +342,17 @@ function renderDashboard(r: TagAnalysisReport): string {
         r.foldDupes.length
           ? r.foldDupes
               .slice(0, 8)
-              .map((g) =>
-                escapeHtml(g.map((t) => `${t.name}(${t.count})`).join(" → ")),
-              )
-              .map((line) => `<div class="list-row">${line}</div>`)
+              .map((g, i) => {
+                const line = escapeHtml(
+                  g.map((t) => `${t.name}(${t.count})`).join(" → "),
+                );
+                return `<div class="list-row fold-row">
+                  <span class="fold-line" title="${line}">${line}</span>
+                  <button type="button" class="btn-mini btn-merge-fold" data-fold-index="${i}">${escapeHtml(
+                    getString("tag-dashboard-action-merge"),
+                  )}</button>
+                </div>`;
+              })
               .join("")
           : `<div class="muted">${escapeHtml(getString("tag-dashboard-none"))}</div>`
       }
@@ -259,12 +364,17 @@ function renderDashboard(r: TagAnalysisReport): string {
       ${
         r.bilingualPairs.length
           ? r.bilingualPairs
-              .map(
-                (p) =>
-                  `<div class="list-row">${escapeHtml(
-                    `${p.en.name}(${p.en.count}) → ${p.tr.name}(${p.tr.count})`,
-                  )}</div>`,
-              )
+              .map((p, i) => {
+                const line = escapeHtml(
+                  `${p.en.name}(${p.en.count}) → ${p.tr.name}(${p.tr.count})`,
+                );
+                return `<div class="list-row bilingual-row">
+                  <span title="${line}">${line}</span>
+                  <button type="button" class="btn-mini btn-merge-bilingual" data-bilingual-index="${i}">${escapeHtml(
+                    getString("tag-dashboard-action-merge"),
+                  )}</button>
+                </div>`;
+              })
               .join("")
           : `<div class="muted">${escapeHtml(getString("tag-dashboard-none"))}</div>`
       }
@@ -292,6 +402,32 @@ function renderDashboard(r: TagAnalysisReport): string {
     </div>
   </article>
 </div>
+
+<article class="card">
+  <header class="card-h">${escapeHtml(getString("tag-dashboard-manual-title"))}</header>
+  <div class="card-b">
+    <div class="manual-row">
+      <input type="text" id="${config.addonRef}-manual-merge-from" placeholder="${escapeHtml(
+        getString("tag-dashboard-manual-merge-from-placeholder"),
+      )}" />
+      <input type="text" id="${config.addonRef}-manual-merge-to" placeholder="${escapeHtml(
+        getString("tag-dashboard-manual-merge-to-placeholder"),
+      )}" />
+      <button type="button" id="${config.addonRef}-manual-merge-btn" class="btn-mini">${escapeHtml(
+        getString("tag-dashboard-action-merge"),
+      )}</button>
+    </div>
+    <div class="manual-row">
+      <input type="text" id="${config.addonRef}-manual-delete" placeholder="${escapeHtml(
+        getString("tag-dashboard-manual-delete-placeholder"),
+      )}" />
+      <button type="button" id="${config.addonRef}-manual-delete-btn" class="btn-mini btn-danger">${escapeHtml(
+        getString("tag-dashboard-action-delete"),
+      )}</button>
+    </div>
+    <p class="muted small">${escapeHtml(getString("tag-dashboard-manual-hint"))}</p>
+  </div>
+</article>
 
 <table class="data-table">
   <thead><tr><th>${escapeHtml(getString("tag-dashboard-col-tag"))}</th><th>${escapeHtml(getString("tag-dashboard-col-count"))}</th></tr></thead>
