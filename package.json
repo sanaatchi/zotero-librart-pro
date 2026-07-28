@@ -1,7 +1,7 @@
 {
   "name": "zotero-actions-tags",
-  "version": "1.0.7",
-  "description": "Eylem tetikle, etiketle, düzenle. Etiket Analizi paneli dahil.",
+  "version": "1.0.8",
+  "description": "Eylem tetikle, etiketle, düzenle. Etiket Analizi ve Bağlantı Haritası dahil.",
   "config": {
     "addonName": "Eylemler ve Etiketler",
     "addonID": "zoterotag@euclpts.com",
