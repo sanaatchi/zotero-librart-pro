@@ -3,7 +3,7 @@
     "zoterotag@ibrahimyildiz.art": {
       "updates": [
         {
-          "version": "2.6.0",
+          "version": "2.6.1",
           "update_link": "https://github.com/sanaatchi/zotero-actions-tags-releases/releases/latest/download/actions-and-tags-for-zotero.xpi",
           "applications": {
             "zotero": {

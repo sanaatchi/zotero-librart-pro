@@ -33,6 +33,20 @@ async function openTagDashboard() {
       addon.data.tagDashboard.window = undefined;
     }
   });
+
+  // Chrome HTML windows do not see the Zotero global — init from plugin scope.
+  await waitForWindowLoad(win);
+  await initTagDashboardWindow(win);
+}
+
+function waitForWindowLoad(win: Window): Promise<void> {
+  return new Promise((resolve) => {
+    if (win.document.readyState === "complete") {
+      resolve();
+      return;
+    }
+    win.addEventListener("load", () => resolve(), { once: true });
+  });
 }
 
 async function initTagDashboardWindow(win: Window) {

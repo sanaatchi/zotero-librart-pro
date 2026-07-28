@@ -2,19 +2,6 @@
   <head>
     <meta charset="utf-8" />
     <title>Tag Analysis</title>
-    <script type="application/javascript"><![CDATA[
-      window.addEventListener("load", () => {
-        try {
-          Zotero.ActionsTags.hooks.onTagDashboardLoad(window);
-        } catch (e) {
-          const root = document.getElementById("zoterotag-dashboard-root");
-          if (root) {
-            root.textContent = "Tag Analysis failed to load: " + e;
-          }
-          dump("ActionsTags tag-dashboard load error: " + e + "\n");
-        }
-      });
-    ]]></script>
     <style type="text/css"><![CDATA[
       :root {
         --tag-bg: #f7f7f8;
