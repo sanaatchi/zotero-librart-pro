@@ -11,8 +11,8 @@ import { execSync } from "node:child_process";
 import { readdirSync, writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const DIST_REPO = "sanaatchi/zotero-actions-tags-releases";
-const SOURCE_REPO = "sanaatchi/zotero-actions-tags";
+const DIST_REPO = "sanaatchi/eylemler-ve-etiketler-releases";
+const SOURCE_REPO = "sanaatchi/eylemler-ve-etiketler";
 
 const pkg = JSON.parse(
   readFileSync(new URL("../package.json", import.meta.url), "utf8"),

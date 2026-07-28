@@ -2,10 +2,10 @@
 
 | Repo | Görünürlük | İçerik |
 |---|---|---|
-| `sanaatchi/zotero-actions-tags` | Private | Kaynak |
-| `sanaatchi/zotero-actions-tags-releases` | **Public** | `.xpi` + `update.json` |
+| `sanaatchi/eylemler-ve-etiketler` | Private | Kaynak |
+| `sanaatchi/eylemler-ve-etiketler-releases` | **Public** | `.xpi` + `update.json` |
 
-Addon ID resmiyle aynı kalır (`zoterotag@euclpts.com`) ama `update_url` **bizim** public release kanalına bakar — böylece mevcut kurulum üzerine yazınca sonraki sürümler otomatik gelir.
+`update_url` public release kanalına bakar.
 
 ## Yayın
 

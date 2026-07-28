@@ -1,6 +1,6 @@
 {
   "name": "zotero-actions-tags",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Eylem tetikle, etiketle, düzenle. Etiket Analizi paneli dahil.",
   "config": {
     "addonName": "Eylemler ve Etiketler",
@@ -8,8 +8,8 @@
     "addonRef": "zoterotag",
     "addonInstance": "ActionsTags",
     "prefsPrefix": "extensions.actionsTags",
-    "releasePage": "https://github.com/sanaatchi/zotero-actions-tags-releases/releases",
-    "updateJSON": "https://github.com/sanaatchi/zotero-actions-tags-releases/releases/latest/download/update.json"
+    "releasePage": "https://github.com/sanaatchi/eylemler-ve-etiketler-releases/releases",
+    "updateJSON": "https://github.com/sanaatchi/eylemler-ve-etiketler-releases/releases/latest/download/update.json"
   },
   "main": "src/index.ts",
   "scripts": {
@@ -23,14 +23,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sanaatchi/zotero-actions-tags.git"
+    "url": "git+https://github.com/sanaatchi/eylemler-ve-etiketler.git"
   },
   "author": "ibrahimyildiz.art",
   "license": "AGPL-3.0-or-later",
   "bugs": {
-    "url": "https://github.com/sanaatchi/zotero-actions-tags/issues"
+    "url": "https://github.com/sanaatchi/eylemler-ve-etiketler/issues"
   },
-  "homepage": "https://github.com/sanaatchi/zotero-actions-tags-releases#readme",
+  "homepage": "https://github.com/sanaatchi/eylemler-ve-etiketler-releases#readme",
   "dependencies": {
     "js-yaml": "^4.1.0",
     "zotero-plugin-toolkit": "^5.1.0-beta.10"

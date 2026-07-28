@@ -1,7 +1,7 @@
 import { defineConfig } from "zotero-plugin-scaffold";
 import pkg from "./package.json";
 
-const DIST_REPO = "sanaatchi/zotero-actions-tags-releases";
+const DIST_REPO = "sanaatchi/eylemler-ve-etiketler-releases";
 
 export default defineConfig({
   source: ["src", "addon"],
