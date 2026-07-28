@@ -1,9 +1,9 @@
 {
   "name": "zotero-actions-tags",
-  "version": "2.6.2",
-  "description": "Action it, tag it, sorted. Private fork with Tag Analysis Dashboard.",
+  "version": "2.6.3",
+  "description": "Eylem tetikle, etiketle, düzenle. Etiket Analizi paneli dahil.",
   "config": {
-    "addonName": "Actions and Tags for Zotero",
+    "addonName": "Eylemler ve Etiketler",
     "addonID": "zoterotag@euclpts.com",
     "addonRef": "zoterotag",
     "addonInstance": "ActionsTags",
