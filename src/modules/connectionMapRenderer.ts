@@ -323,8 +323,11 @@ function buildSimulation(
     nodeIDs.add(e.source);
     nodeIDs.add(e.target);
   }
-  // Isolated nodes only when the search filter matches — keeps large
-  // libraries focused on the connection graph (Faz 1 / perf).
+
+  const MAX_ISOLATE_NODES = 200;
+  // Always show isolates when the graph would otherwise be empty/sparse —
+  // otherwise a library with few co-occurrence edges looks "broken".
+  const needIsolates = nodeIDs.size < 8 || edges.length === 0;
   if (filter) {
     for (const [id, node] of graph.nodes) {
       const hay =
@@ -333,10 +336,30 @@ function buildSimulation(
         );
       if (hay.includes(filter)) nodeIDs.add(id);
     }
+  } else if (needIsolates) {
+    let added = 0;
+    for (const id of graph.nodes.keys()) {
+      if (nodeIDs.has(id)) continue;
+      nodeIDs.add(id);
+      added++;
+      if (nodeIDs.size >= MAX_ISOLATE_NODES) break;
+      if (added >= MAX_ISOLATE_NODES) break;
+    }
   }
 
-  const w = Math.max(canvas.clientWidth || 800, 400);
-  const h = Math.max(canvas.clientHeight || 600, 300);
+  // Prefer measured size; fall back to window size (chrome dialogs often
+  // report clientHeight=0 on first paint).
+  const canvasEl = canvas as HTMLElement;
+  const w = Math.max(
+    canvasEl.clientWidth || 0,
+    Math.floor((win.innerWidth || 1280) * 0.95),
+    400,
+  );
+  const h = Math.max(
+    canvasEl.clientHeight || 0,
+    Math.floor((win.innerHeight || 920) * 0.7),
+    300,
+  );
   const cx = w / 2;
   const cy = h / 2;
 
@@ -393,7 +416,7 @@ function buildSimulation(
   };
   stateByWin.set(win, st);
 
-  mountSvg(win, canvas, st, graph);
+  mountSvg(win, canvas, st, graph, w, h);
   const connectBtn = doc.getElementById(
     `${config.addonRef}-connection-map-connect`,
   );
@@ -406,19 +429,27 @@ function mountSvg(
   canvas: Element,
   st: RendererState,
   graph: ConnectionGraph,
+  w: number,
+  h: number,
 ) {
   const doc = win.document;
   canvas.textContent = "";
 
-  const w = Math.max((canvas as HTMLElement).clientWidth || 800, 400);
-  const h = Math.max((canvas as HTMLElement).clientHeight || 600, 300);
+  if (!st.simNodes.length) {
+    const empty = doc.createElement("div");
+    empty.style.cssText =
+      "display:flex;align-items:center;justify-content:center;height:100%;color:var(--map-muted);padding:24px;text-align:center;";
+    empty.textContent = getString("connection-map-empty");
+    canvas.appendChild(empty);
+    return;
+  }
 
   const svg = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("width", "100%");
   svg.setAttribute("height", "100%");
   svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
   svg.style.touchAction = "none";
-
+  svg.style.minHeight = `${h}px`;
   const root = doc.createElementNS("http://www.w3.org/2000/svg", "g");
   root.setAttribute("class", "map-root");
   applyTransform(root, st.transform);
@@ -517,14 +548,26 @@ function mountSvg(
     edgeLayer.appendChild(line);
   }
 
+  // Precompute degree so hub labels stay readable in dense graphs.
+  const degreeById = new Map<number, number>();
+  for (const sn of st.simNodes) degreeById.set(sn.id, 0);
+  for (const se of st.simEdges) {
+    degreeById.set(se.source.id, (degreeById.get(se.source.id) || 0) + 1);
+    degreeById.set(se.target.id, (degreeById.get(se.target.id) || 0) + 1);
+  }
+  const hubIds = new Set(
+    [...degreeById.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0] - b[0])
+      .slice(0, 36)
+      .map(([id]) => id),
+  );
+
   for (const sn of st.simNodes) {
     const g = doc.createElementNS("http://www.w3.org/2000/svg", "g");
     g.setAttribute("data-node-id", String(sn.id));
     g.style.cursor = "pointer";
 
-    const degree = st.simEdges.filter(
-      (e) => e.source.id === sn.id || e.target.id === sn.id,
-    ).length;
+    const degree = degreeById.get(sn.id) || 0;
     const r = Math.min(14, 5 + Math.sqrt(degree + sn.node.tagCount) * 1.2);
 
     const circle = doc.createElementNS("http://www.w3.org/2000/svg", "circle");
@@ -532,12 +575,6 @@ function mountSvg(
     circle.setAttribute("fill", "var(--map-node)");
     circle.setAttribute("stroke", "var(--map-node-stroke)");
     circle.setAttribute("stroke-width", "1.25");
-
-    const label = doc.createElementNS("http://www.w3.org/2000/svg", "text");
-    label.setAttribute("y", String(r + 10));
-    label.setAttribute("text-anchor", "middle");
-    label.setAttribute("class", "node-label");
-    label.textContent = truncate(sn.node.title, 28);
 
     const tip = doc.createElementNS("http://www.w3.org/2000/svg", "title");
     tip.textContent = [
@@ -552,6 +589,14 @@ function mountSvg(
 
     g.appendChild(tip);
     g.appendChild(circle);
+
+    // Always-on labels only for hubs; zoom reveals more (see syncLabelVisibility).
+    const label = doc.createElementNS("http://www.w3.org/2000/svg", "text");
+    label.setAttribute("y", String(r + 10));
+    label.setAttribute("text-anchor", "middle");
+    label.setAttribute("class", "node-label");
+    label.setAttribute("data-hub", hubIds.has(sn.id) ? "1" : "0");
+    label.textContent = truncate(sn.node.title, 28);
     g.appendChild(label);
 
     g.addEventListener("pointerdown", (ev) => {
@@ -593,6 +638,7 @@ function mountSvg(
   svg.appendChild(root);
   canvas.appendChild(svg);
   paintConnectSelection(win);
+  syncLabelVisibility(svg, st.transform.k);
 
   svg.addEventListener("wheel", (ev) => {
     const we = ev as WheelEvent;
@@ -600,6 +646,7 @@ function mountSvg(
     const factor = we.deltaY < 0 ? 1.08 : 0.92;
     st.transform.k = Math.min(4, Math.max(0.25, st.transform.k * factor));
     applyTransform(root, st.transform);
+    syncLabelVisibility(svg, st.transform.k);
   });
 
   svg.addEventListener("pointerdown", (ev) => {
@@ -753,6 +800,17 @@ function edgeTooltip(
     parts.push(getString("connection-map-remove-hint"));
   }
   return parts.join("\n");
+}
+
+function syncLabelVisibility(svg: Element, k: number) {
+  const showAll = k >= 1.45;
+  const labels = svg.querySelectorAll(".node-label");
+  for (let i = 0; i < labels.length; i++) {
+    const el = labels.item(i) as Element | null;
+    if (!el) continue;
+    const hub = el.getAttribute("data-hub") === "1";
+    (el as HTMLElement).style.display = hub || showAll ? "" : "none";
+  }
 }
 
 function truncate(s: string, n: number): string {

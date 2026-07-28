@@ -18,6 +18,7 @@ import {
 } from "../utils/connectionNotify";
 import {
   renderConnectionMap,
+  updateConnectionMapGraph,
   ConnectionMapLayerState,
 } from "./connectionMapRenderer";
 
@@ -54,14 +55,14 @@ async function openConnectionMap() {
     unregisterConnectionMapNoteObserver();
     if (addon.data.connectionMap?.window === win) {
       addon.data.connectionMap.window = undefined;
-      // Session dismissals live for the open window only.
       addon.data.connectionMap.dismissedSemanticIds = undefined;
       addon.data.connectionMap.semanticCache = undefined;
     }
   });
 
-  // Chrome HTML windows do not see the Zotero global — init from plugin scope.
   await waitForWindowLoad(win);
+  // Let the dialog finish layout so canvas has non-zero size.
+  await Zotero.Promise.delay(50);
   await initConnectionMapWindow(win);
 }
 
@@ -85,32 +86,38 @@ async function initConnectionMapWindow(win: Window) {
   if (status) status.textContent = getString("connection-map-loading");
 
   try {
-    // Phase 1 priority: tag (+ manual readback) must render even if C/D fail.
-    const graph = await loadFullGraph(win, (msg) => {
-      if (status) status.textContent = msg;
+    // 1) Fast path: tag + manual — paint immediately so the window is not blank.
+    const base = await buildConnectionGraph(undefined, {
+      includeTagLayer: true,
+      includeManualLayer: true,
     });
 
     addon.data.connectionMap = {
       ...addon.data.connectionMap,
       window: win,
-      lastGraph: graph,
+      lastGraph: base,
     };
 
     const layerState = readLayerState(doc);
-    renderConnectionMap(win, graph, layerState, {
+    renderConnectionMap(win, base, layerState, {
       onRefresh: () => initConnectionMapWindow(win),
       zotSeekReady: isZotSeekReady(),
     });
-
-    updateStatus(status, graph);
+    updateStatus(status, base);
+    ztoolkit.log(
+      `Connection Map base: ${base.nodes.size} nodes, ${base.edges.length} edges`,
+    );
 
     try {
-      registerConnectionMapNoteObserver(win, graph.libraryID, () => {
+      registerConnectionMapNoteObserver(win, base.libraryID, () => {
         void initConnectionMapWindow(win);
       });
     } catch (e) {
       ztoolkit.log("Connection Map note observer register failed", e);
     }
+
+    // 2) Background: note + semantic — merge and re-render when ready.
+    void enrichGraphInBackground(win, base, status);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     const canvas = doc.getElementById(
@@ -126,30 +133,41 @@ async function initConnectionMapWindow(win: Window) {
   }
 }
 
-/**
- * Build A+manual first, then soft-merge note/semantic extras.
- * C/D errors must not block the tag graph (Faz 1 acceptance = A).
- */
-async function loadFullGraph(
+async function enrichGraphInBackground(
   win: Window,
-  onStatus: (msg: string) => void,
-): Promise<ConnectionGraph> {
-  onStatus(getString("connection-map-loading"));
+  base: ConnectionGraph,
+  status: Element | null,
+) {
+  if (!isWindowAlive(win)) return;
+  try {
+    const extra = await loadOptionalLayers(win, base, (msg) => {
+      if (status && isWindowAlive(win)) status.textContent = msg;
+    });
+    if (!isWindowAlive(win)) return;
+    if (!extra.length) {
+      updateStatus(status, base);
+      return;
+    }
 
-  const base = await buildConnectionGraph(undefined, {
-    includeTagLayer: true,
-    includeManualLayer: true,
-  });
+    const full = await buildConnectionGraph(base.libraryID, {
+      includeTagLayer: true,
+      includeManualLayer: true,
+      extraEdges: extra,
+    });
+    if (!isWindowAlive(win) || addon.data.connectionMap?.window !== win) {
+      return;
+    }
 
-  const extra = await loadOptionalLayers(win, base, onStatus);
-
-  if (!extra.length) return base;
-
-  return buildConnectionGraph(base.libraryID, {
-    includeTagLayer: true,
-    includeManualLayer: true,
-    extraEdges: extra,
-  });
+    addon.data.connectionMap.lastGraph = full;
+    updateConnectionMapGraph(win, full, readLayerState(win.document));
+    updateStatus(status, full);
+    ztoolkit.log(
+      `Connection Map enriched: ${full.nodes.size} nodes, ${full.edges.length} edges`,
+    );
+  } catch (e) {
+    ztoolkit.log("Connection Map background enrich failed", e);
+    if (isWindowAlive(win)) updateStatus(status, base);
+  }
 }
 
 async function loadOptionalLayers(
@@ -203,11 +221,11 @@ async function loadOptionalLayers(
         cache: addon.data.connectionMap.semanticCache,
         dismissedIds: addon.data.connectionMap.dismissedSemanticIds,
         relatedPairs,
-        maxQueries: 60,
+        maxQueries: 40,
         topK: 4,
         minSimilarity: 0.48,
         onProgress: (done, total) => {
-          if (total > 0 && done % 10 === 0) {
+          if (total > 0 && done % 5 === 0) {
             onStatus(
               getString("connection-map-semantic-progress", {
                 args: { done, total },

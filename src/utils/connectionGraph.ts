@@ -90,22 +90,22 @@ function makeEdgeId(
   return [layer, a, b, via].join("::");
 }
 
+function isOnlyUnsorted(node: GraphNode): boolean {
+  return (
+    node.disciplineIDs.length === 1 &&
+    node.disciplineIDs[0] === UNSORTED_DISCIPLINE_ID
+  );
+}
+
 function isCrossDiscipline(a: GraphNode, b: GraphNode): boolean {
   // v1.1 path: when both carry a profile primary, compare via accessor only.
   if (a.disciplineProfile?.primary && b.disciplineProfile?.primary) {
-    return (
-      getNodeDisciplineKey(a) !== getNodeDisciplineKey(b)
-    );
+    return getNodeDisciplineKey(a) !== getNodeDisciplineKey(b);
   }
 
-  const aOnlyUnsorted =
-    a.disciplineIDs.length === 1 &&
-    a.disciplineIDs[0] === UNSORTED_DISCIPLINE_ID;
-  const bOnlyUnsorted =
-    b.disciplineIDs.length === 1 &&
-    b.disciplineIDs[0] === UNSORTED_DISCIPLINE_ID;
-  // Judgment call: unsorted-vs-unsorted is same-bucket, no highlight.
-  if (aOnlyUnsorted && bOnlyUnsorted) return false;
+  // Unsorted is not a discipline — never highlight as a "bridge".
+  // (Otherwise Unsorted↔Collection floods the map orange.)
+  if (isOnlyUnsorted(a) || isOnlyUnsorted(b)) return false;
 
   const bSet = new Set(b.disciplineIDs);
   for (const id of a.disciplineIDs) {

@@ -58,6 +58,7 @@ menu-connection-map = Bağlantı Haritası
 connection-map-title = Bağlantı Haritası
 connection-map-subtitle = { $library } · { $items } yayın · { $edges } bağlantı
 connection-map-loading = Bağlantılar hesaplanıyor…
+connection-map-empty = Henüz görüntülenecek düğüm yok. Ortak etiketli yayınlar veya elle bağlantılar burada görünür.
 connection-map-error = Harita oluşturulamadı: { $message }
 connection-map-refresh = Yenile
 connection-map-layer-tag = Ortak etiket

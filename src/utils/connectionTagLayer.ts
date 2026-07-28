@@ -14,18 +14,20 @@ export type FoldedTagIndex = Map<
 
 /**
  * Tag co-occurrence layer, adapted from zotero-style's getGraphByItemArrLink:
- * group items by shared folded tag, use the 90th-percentile of multi-item
- * tag sizes as a density threshold.
+ * group items by shared folded tag, use a density threshold so popular tags
+ * do not emit full cliques (hairballs).
  *
  * - Below threshold: emit direct pairwise edges (viaTags populated).
- * - At/above threshold: skip the full clique to avoid hairballs. We do not
- *   create synthetic tag hub nodes — GraphNode is always a Zotero item.
+ * - At/above threshold: skip — no synthetic tag hub nodes in v1.
  *
- * MIN_DENSE_SKIP: if the 90th percentile is very low (e.g. most tags shared
- * by only 2 items), treating that as "dense" would skip every edge and empty
- * the graph. Never skip cliques smaller than this floor.
+ * Hard caps keep large libraries readable: pairwise only for small tags,
+ * then keep the strongest pairs (most shared tags) up to MAX_TAG_EDGES.
  */
-const MIN_DENSE_SKIP = 8;
+const MIN_DENSE_SKIP = 4;
+/** Never build a full clique for tags shared by this many items or more. */
+const MAX_PAIRWISE_TAG_SIZE = 5;
+/** Soft cap after merge — prefer multi-tag bridges over weak single-tag links. */
+const MAX_TAG_EDGES = 1800;
 
 function computeTagLayerEdges(
   nodes: Map<number, GraphNode>,
@@ -38,14 +40,18 @@ function computeTagLayerEdges(
 
   let limit = Infinity;
   if (multiSizes.length) {
-    const pct = 0.9;
+    // 75th percentile: 90th left too many mid-size cliques in large libs.
+    const pct = 0.75;
     const idx = Math.min(
       multiSizes.length - 1,
       Math.max(0, Math.floor(multiSizes.length * pct)),
     );
     limit = multiSizes[idx];
   }
-  const denseThreshold = Math.max(limit, MIN_DENSE_SKIP);
+  const denseThreshold = Math.min(
+    Math.max(limit, MIN_DENSE_SKIP),
+    MAX_PAIRWISE_TAG_SIZE,
+  );
 
   // Merge multiple shared tags onto one edge per item pair.
   const pairMap = new Map<
@@ -56,10 +62,8 @@ function computeTagLayerEdges(
   for (const entry of foldedTagIndex.values()) {
     const ids = [...entry.itemIDs].filter((id) => nodes.has(id));
     if (ids.length < 2) continue;
-    // Dense tags: skip pairwise clique (hairball prevention).
-    if (ids.length >= denseThreshold) {
-      continue;
-    }
+    // Dense / popular tags: skip pairwise clique (hairball prevention).
+    if (ids.length >= denseThreshold) continue;
 
     for (let i = 0; i < ids.length; i++) {
       for (let j = i + 1; j < ids.length; j++) {
@@ -78,8 +82,14 @@ function computeTagLayerEdges(
     }
   }
 
+  const ranked = [...pairMap.values()].sort((p, q) => {
+    if (q.tags.length !== p.tags.length) return q.tags.length - p.tags.length;
+    return p.a - q.a || p.b - q.b;
+  });
+  const kept = ranked.slice(0, MAX_TAG_EDGES);
+
   const edges: GraphEdge[] = [];
-  for (const pair of pairMap.values()) {
+  for (const pair of kept) {
     const sourceNode = nodes.get(pair.a);
     const targetNode = nodes.get(pair.b);
     if (!sourceNode || !targetNode) continue;

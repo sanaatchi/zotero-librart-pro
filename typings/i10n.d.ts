@@ -39,6 +39,7 @@ export type FluentMessageId =
   | 'connection-map-connect-pick-second'
   | 'connection-map-cross-discipline-hint'
   | 'connection-map-dismiss-suggestion'
+  | 'connection-map-empty'
   | 'connection-map-error'
   | 'connection-map-filter-placeholder'
   | 'connection-map-layer-manual'
