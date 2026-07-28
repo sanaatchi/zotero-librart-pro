@@ -156,6 +156,18 @@ function similarity(a: string, b: string): number {
   return (2 * inter) / (a.length - 1 + (b.length - 1));
 }
 
+/**
+ * Zotero.DB.queryAsync returns undefined when SQL has leading whitespace
+ * (it peeks at the first chars for SELECT/INSERT) or when there are no rows.
+ */
+async function queryRows<T extends Record<string, unknown>>(
+  sql: string,
+  params?: Zotero.DB.QueryParams,
+): Promise<T[]> {
+  const rows = await Zotero.DB.queryAsync(sql.trim(), params);
+  return (rows as T[] | undefined) ?? [];
+}
+
 export async function analyzeLibraryTags(
   libraryID?: number,
 ): Promise<TagAnalysisReport> {
@@ -166,7 +178,7 @@ export async function analyzeLibraryTags(
       ? String((library as { name?: string }).name || libraryID)
       : String(libraryID);
 
-  const tagRows = (await Zotero.DB.queryAsync(
+  const tagRows = await queryRows<{ name: string; cnt: number | string }>(
     `
     SELECT t.name AS name, COUNT(it.itemID) AS cnt
     FROM tags t
@@ -181,14 +193,14 @@ export async function analyzeLibraryTags(
     ORDER BY cnt DESC, t.name COLLATE NOCASE
     `,
     [libraryID],
-  )) as Array<{ name: string; cnt: number | string }>;
+  );
 
   const tags: TagStat[] = tagRows.map((r) => ({
     name: r.name,
     count: Number(r.cnt) || 0,
   }));
 
-  const unusedRows = (await Zotero.DB.queryAsync(
+  const unusedRows = await queryRows<{ n: number | string }>(
     `
     SELECT COUNT(*) AS n FROM (
       SELECT t.tagID
@@ -201,10 +213,10 @@ export async function analyzeLibraryTags(
     ) unused_tags
     `,
     [libraryID],
-  )) as Array<{ n: number | string }>;
+  );
   const unusedTags = Number(unusedRows[0]?.n) || 0;
 
-  const itemRows = (await Zotero.DB.queryAsync(
+  const itemRows = await queryRows<{ n: number | string }>(
     `
     SELECT COUNT(*) AS n FROM items i
     JOIN itemTypes ty ON ty.itemTypeID = i.itemTypeID
@@ -214,10 +226,10 @@ export async function analyzeLibraryTags(
       AND ty.typeName NOT IN ('attachment', 'note', 'annotation')
     `,
     [libraryID],
-  )) as Array<{ n: number | string }>;
+  );
   const libraryItems = Number(itemRows[0]?.n) || 0;
 
-  const taggedRows = (await Zotero.DB.queryAsync(
+  const taggedRows = await queryRows<{ n: number | string }>(
     `
     SELECT COUNT(DISTINCT it.itemID) AS n
     FROM itemTags it
@@ -229,10 +241,13 @@ export async function analyzeLibraryTags(
       AND ty.typeName NOT IN ('attachment', 'note', 'annotation')
     `,
     [libraryID],
-  )) as Array<{ n: number | string }>;
+  );
   const taggedItems = Number(taggedRows[0]?.n) || 0;
 
-  const distRows = (await Zotero.DB.queryAsync(
+  const distRows = await queryRows<{
+    n: number | string;
+    items: number | string;
+  }>(
     `
     SELECT tag_count AS n, COUNT(*) AS items
     FROM (
@@ -250,8 +265,7 @@ export async function analyzeLibraryTags(
     ORDER BY tag_count
     `,
     [libraryID],
-  )) as Array<{ n: number | string; items: number | string }>;
-
+  );
   const distMap = new Map<number, number>();
   for (const row of distRows) {
     distMap.set(Number(row.n) || 0, Number(row.items) || 0);
