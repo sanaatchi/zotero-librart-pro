@@ -162,7 +162,7 @@ function similarity(a: string, b: string): number {
  */
 async function queryRows<T extends Record<string, unknown>>(
   sql: string,
-  params?: Zotero.DB.QueryParams,
+  params?: (string | number)[],
 ): Promise<T[]> {
   const rows = await Zotero.DB.queryAsync(sql.trim(), params);
   return (rows as T[] | undefined) ?? [];
