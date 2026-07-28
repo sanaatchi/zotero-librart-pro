@@ -133,8 +133,10 @@ function renderDashboard(r: TagAnalysisReport): string {
   ];
   const catTotal = catEntries.reduce((a, c) => a + c.value, 0) || 1;
 
-  const maxTop = Math.max(...r.topTags.map((t) => t.count), 1);
-  const maxDist = Math.max(...r.tagCountDistribution.map((d) => d.value), 1);
+  const topTags = r.topTags.slice(0, 10);
+  const maxTop = Math.max(...topTags.map((t) => t.count), 1);
+  const dist = compressDistribution(r.tagCountDistribution);
+  const maxDist = Math.max(...dist.map((d) => d.value), 1);
 
   return `
 <header class="hero">
@@ -162,7 +164,7 @@ function renderDashboard(r: TagAnalysisReport): string {
   ${stat(String(s.avgTagsPerTaggedItem), getString("tag-dashboard-stat-avg"))}
   ${stat(fmt(s.singletonTags), getString("tag-dashboard-stat-singleton"), "warn")}
   ${stat(fmt(s.heavyTags), getString("tag-dashboard-stat-heavy"))}
-  ${stat(fmt(s.unusedTags), getString("tag-dashboard-stat-unused"))}
+  ${stat(fmt(s.unusedTags), getString("tag-dashboard-stat-unused"), "ok")}
   ${stat(fmt(s.untaggedItems), getString("tag-dashboard-stat-untagged"), s.untaggedItems ? "warn" : "ok")}
 </section>
 
@@ -177,12 +179,9 @@ function renderDashboard(r: TagAnalysisReport): string {
   )}
 </div>
 
-<div class="divider"></div>
-
-<h2>${escapeHtml(getString("tag-dashboard-section-types"))}</h2>
 <div class="grid-2">
   <article class="card">
-    <header class="card-h">${escapeHtml(getString("tag-dashboard-distribution"))}</header>
+    <header class="card-h">${escapeHtml(getString("tag-dashboard-section-types"))}</header>
     <div class="card-b pie-wrap">
       ${donutSvg(catEntries, catTotal)}
       <ul class="legend">
@@ -197,64 +196,44 @@ function renderDashboard(r: TagAnalysisReport): string {
     </div>
   </article>
   <article class="card">
-    <header class="card-h">${escapeHtml(getString("tag-dashboard-types-help"))}</header>
-    <div class="card-b type-help">
-      <p><strong>${escapeHtml(getString("tag-dashboard-cat-person"))}</strong> — ${escapeHtml(getString("tag-dashboard-help-person"))}</p>
-      <p><strong>${escapeHtml(getString("tag-dashboard-cat-concept"))}</strong> — ${escapeHtml(getString("tag-dashboard-help-concept"))}</p>
-      <p><strong>${escapeHtml(getString("tag-dashboard-cat-place"))}</strong> — ${escapeHtml(getString("tag-dashboard-help-place"))}</p>
-      <p><strong>${escapeHtml(getString("tag-dashboard-cat-system"))}</strong> — ${escapeHtml(getString("tag-dashboard-help-system"))}</p>
+    <header class="card-h">${escapeHtml(getString("tag-dashboard-section-per-item"))}</header>
+    <div class="card-b">
+      <div class="vbars">
+        ${dist
+          .map((d) => {
+            const h = Math.max(4, Math.round((d.value / maxDist) * 120));
+            return `<div class="vbar">
+              <div class="vbar-col" style="height:${h}px" title="${fmt(d.value)}"></div>
+              <span class="vbar-val">${fmt(d.value)}</span>
+              <span class="vbar-lab">${escapeHtml(d.label)}</span>
+            </div>`;
+          })
+          .join("")}
+      </div>
     </div>
   </article>
 </div>
 
-<div class="divider"></div>
-
-<h2>${escapeHtml(getString("tag-dashboard-section-per-item"))}</h2>
-<p class="muted small">${escapeHtml(getString("tag-dashboard-per-item-hint"))}</p>
-<div class="vbars">
-  ${r.tagCountDistribution
-    .map((d) => {
-      const h = Math.max(4, Math.round((d.value / maxDist) * 160));
-      return `<div class="vbar">
-        <div class="vbar-col" style="height:${h}px" title="${fmt(d.value)}"></div>
-        <span class="vbar-val">${fmt(d.value)}</span>
-        <span class="vbar-lab">${escapeHtml(d.label)}</span>
-      </div>`;
-    })
-    .join("")}
-</div>
-
-<div class="divider"></div>
-
-<h2>${escapeHtml(getString("tag-dashboard-section-top"))}</h2>
-<div class="hbars">
-  ${r.topTags
-    .map((t) => {
-      const w = Math.max(2, Math.round((t.count / maxTop) * 100));
-      return `<div class="hbar">
-        <span class="hbar-lab" title="${escapeHtml(t.name)}">${escapeHtml(t.name)}</span>
-        <div class="hbar-track"><div class="hbar-fill" style="width:${w}%"></div></div>
-        <span class="hbar-val">${fmt(t.count)}</span>
-      </div>`;
-    })
-    .join("")}
-</div>
-<table class="data-table">
-  <thead><tr><th>${escapeHtml(getString("tag-dashboard-col-tag"))}</th><th>${escapeHtml(getString("tag-dashboard-col-count"))}</th></tr></thead>
-  <tbody>
-    ${r.topTags
-      .map(
-        (t) =>
-          `<tr><td>${escapeHtml(t.name)}</td><td>${fmt(t.count)}</td></tr>`,
-      )
-      .join("")}
-  </tbody>
-</table>
-
-<div class="divider"></div>
+<article class="card">
+  <header class="card-h">${escapeHtml(getString("tag-dashboard-section-top"))}</header>
+  <div class="card-b">
+    <div class="hbars">
+      ${topTags
+        .map((t) => {
+          const w = Math.max(2, Math.round((t.count / maxTop) * 100));
+          return `<div class="hbar">
+            <span class="hbar-lab" title="${escapeHtml(t.name)}">${escapeHtml(t.name)}</span>
+            <div class="hbar-track"><div class="hbar-fill" style="width:${w}%"></div></div>
+            <span class="hbar-val">${fmt(t.count)}</span>
+          </div>`;
+        })
+        .join("")}
+    </div>
+  </div>
+</article>
 
 <h2>${escapeHtml(getString("tag-dashboard-section-merge"))}</h2>
-<div class="grid-2">
+<div class="grid-3">
   <article class="card">
     <header class="card-h">
       <span>${escapeHtml(getString("tag-dashboard-fold-title"))}</span>
@@ -264,10 +243,9 @@ function renderDashboard(r: TagAnalysisReport): string {
       ${
         r.foldDupes.length
           ? r.foldDupes
+              .slice(0, 8)
               .map((g) =>
-                escapeHtml(
-                  g.map((t) => `${t.name}(${t.count})`).join(" → "),
-                ),
+                escapeHtml(g.map((t) => `${t.name}(${t.count})`).join(" → ")),
               )
               .map((line) => `<div class="list-row">${line}</div>`)
               .join("")
@@ -275,51 +253,84 @@ function renderDashboard(r: TagAnalysisReport): string {
       }
     </div>
   </article>
-  <div class="stack">
-    <article class="card">
-      <header class="card-h">${escapeHtml(getString("tag-dashboard-bilingual-title"))}</header>
-      <div class="card-b list">
-        ${
-          r.bilingualPairs.length
-            ? r.bilingualPairs
-                .map(
-                  (p) =>
-                    `<div class="list-row">${escapeHtml(
-                      `${p.en.name}(${p.en.count}) → ${p.tr.name}(${p.tr.count})`,
-                    )}</div>`,
-                )
-                .join("")
-            : `<div class="muted">${escapeHtml(getString("tag-dashboard-none"))}</div>`
-        }
-      </div>
-    </article>
-    <article class="card">
-      <header class="card-h">${escapeHtml(getString("tag-dashboard-fuzzy-title"))}</header>
-      <div class="card-b list">
-        ${
-          r.fuzzyNear.length
-            ? r.fuzzyNear
-                .map(
-                  (f) => `<div class="list-row fuzzy">
-                    <span class="pill">${f.score}</span>
-                    <span>${escapeHtml(
-                      `${f.a.name}(${f.a.count}) ↔ ${f.b.name}(${f.b.count})`,
-                    )}</span>
-                  </div>`,
-                )
-                .join("")
-            : `<div class="muted">${escapeHtml(getString("tag-dashboard-none"))}</div>`
-        }
-        <p class="muted small fuzzy-note">${escapeHtml(getString("tag-dashboard-fuzzy-note"))}</p>
-      </div>
-    </article>
-  </div>
+  <article class="card">
+    <header class="card-h">${escapeHtml(getString("tag-dashboard-bilingual-title"))}</header>
+    <div class="card-b list">
+      ${
+        r.bilingualPairs.length
+          ? r.bilingualPairs
+              .map(
+                (p) =>
+                  `<div class="list-row">${escapeHtml(
+                    `${p.en.name}(${p.en.count}) → ${p.tr.name}(${p.tr.count})`,
+                  )}</div>`,
+              )
+              .join("")
+          : `<div class="muted">${escapeHtml(getString("tag-dashboard-none"))}</div>`
+      }
+    </div>
+  </article>
+  <article class="card">
+    <header class="card-h">${escapeHtml(getString("tag-dashboard-fuzzy-title"))}</header>
+    <div class="card-b list">
+      ${
+        r.fuzzyNear.length
+          ? r.fuzzyNear
+              .slice(0, 8)
+              .map(
+                (f) => `<div class="list-row fuzzy">
+                  <span class="pill">${f.score}</span>
+                  <span>${escapeHtml(
+                    `${f.a.name}(${f.a.count}) ↔ ${f.b.name}(${f.b.count})`,
+                  )}</span>
+                </div>`,
+              )
+              .join("")
+          : `<div class="muted">${escapeHtml(getString("tag-dashboard-none"))}</div>`
+      }
+      <p class="muted small fuzzy-note">${escapeHtml(getString("tag-dashboard-fuzzy-note"))}</p>
+    </div>
+  </article>
 </div>
+
+<table class="data-table">
+  <thead><tr><th>${escapeHtml(getString("tag-dashboard-col-tag"))}</th><th>${escapeHtml(getString("tag-dashboard-col-count"))}</th></tr></thead>
+  <tbody>
+    ${topTags
+      .slice(0, 5)
+      .map(
+        (t) =>
+          `<tr><td>${escapeHtml(t.name)}</td><td>${fmt(t.count)}</td></tr>`,
+      )
+      .join("")}
+  </tbody>
+</table>
 
 <div class="callout callout-ok">
   ${escapeHtml(getString("tag-dashboard-recommendation"))}
 </div>
 `;
+}
+
+function compressDistribution(
+  dist: { label: string; value: number }[],
+): { label: string; value: number }[] {
+  const map = new Map(dist.map((d) => [d.label, d.value]));
+  const sumRange = (from: number, to: number) => {
+    let n = 0;
+    for (let i = from; i <= to; i++) n += map.get(String(i)) || 0;
+    return n;
+  };
+  return [
+    { label: "1", value: map.get("1") || 0 },
+    { label: "2", value: map.get("2") || 0 },
+    { label: "3", value: map.get("3") || 0 },
+    { label: "4", value: map.get("4") || 0 },
+    { label: "5", value: map.get("5") || 0 },
+    { label: "6–8", value: sumRange(6, 8) },
+    { label: "9–12", value: sumRange(9, 12) },
+    { label: "13+", value: map.get("13+") || 0 },
+  ];
 }
 
 function stat(value: string, label: string, tone?: "ok" | "warn"): string {
@@ -342,7 +353,7 @@ function donutSvg(
       const len = (e.value / total) * c;
       const dash = `${len} ${c - len}`;
       const el = `<circle class="donut-seg" cx="21" cy="21" r="${r}"
-        fill="transparent" stroke="${e.color}" stroke-width="6"
+        fill="transparent" stroke="${e.color}" stroke-width="5.5"
         stroke-dasharray="${dash}" stroke-dashoffset="${-offset}"
         transform="rotate(-90 21 21)"></circle>`;
       offset += len;
@@ -350,8 +361,8 @@ function donutSvg(
     })
     .join("");
   return `<svg class="donut" viewBox="0 0 42 42" aria-hidden="true">
-    <circle cx="21" cy="21" r="${r}" fill="transparent" stroke="var(--tag-track)" stroke-width="6"></circle>
+    <circle cx="21" cy="21" r="${r}" fill="transparent" stroke="var(--tag-track)" stroke-width="5.5"></circle>
     ${arcs}
-    <circle cx="21" cy="21" r="10" fill="var(--tag-card)"></circle>
+    <circle cx="21" cy="21" r="11" fill="var(--tag-card)"></circle>
   </svg>`;
 }
