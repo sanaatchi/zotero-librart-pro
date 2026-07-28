@@ -14,6 +14,7 @@ declare namespace _ZoteroTypes {
       "showPopup": boolean;
       "rulesSortColumnIndex": number;
       "rulesSortColumnAscending": boolean;
+      "connectionMapEnableHighlightLayer": boolean;
     };
   }
 }

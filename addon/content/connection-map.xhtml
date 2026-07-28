@@ -1,0 +1,222 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Bağlantı Haritası</title>
+    <style type="text/css"><![CDATA[
+      :root {
+        --map-bg: #f7f7f8;
+        --map-fg: #1c1c1e;
+        --map-muted: #6b6b70;
+        --map-card: #ffffff;
+        --map-border: #e4e4e7;
+        --map-accent: #2563eb;
+        --map-bridge: #ea580c;
+        --map-node: #3b82f6;
+        --map-node-stroke: #1e3a8a;
+        --map-edge-tag: #64748b;
+        --map-edge-manual: #2563eb;
+        --map-edge-semantic: #8b5cf6;
+        --map-edge-note: #16a34a;
+        --map-warn: #d97706;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --map-bg: #1c1c1e;
+          --map-fg: #f2f2f3;
+          --map-muted: #a0a0a6;
+          --map-card: #2a2a2e;
+          --map-border: #3a3a40;
+          --map-node: #60a5fa;
+          --map-node-stroke: #93c5fd;
+        }
+      }
+
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        background: var(--map-bg);
+        color: var(--map-fg);
+        font: 13px/1.4 system-ui, Segoe UI, sans-serif;
+      }
+
+      #zoterotag-connection-map-shell {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+      }
+
+      #zoterotag-connection-map-toolbar {
+        flex: 0 0 auto;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px 14px;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--map-border);
+        background: var(--map-card);
+      }
+
+      .hero-text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 180px;
+        margin-right: auto;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 650;
+        letter-spacing: -0.02em;
+      }
+
+      .muted { color: var(--map-muted); margin: 0; font-size: 12px; }
+
+      .layers {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 12px;
+      }
+
+      .layer {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        user-select: none;
+      }
+
+      .layer input { margin: 0; }
+
+      #zoterotag-connection-map-filter {
+        width: 160px;
+        border: 1px solid var(--map-border);
+        background: var(--map-bg);
+        color: var(--map-fg);
+        border-radius: 6px;
+        padding: 5px 8px;
+        font: inherit;
+      }
+
+      .btn {
+        appearance: none;
+        border: 1px solid var(--map-border);
+        background: var(--map-bg);
+        color: var(--map-fg);
+        border-radius: 6px;
+        padding: 5px 10px;
+        cursor: pointer;
+        font: inherit;
+        white-space: nowrap;
+      }
+      .btn:hover { border-color: var(--map-accent); }
+      .btn:disabled { opacity: 0.6; cursor: default; }
+      .btn.active {
+        border-color: var(--map-accent);
+        background: color-mix(in srgb, var(--map-accent) 16%, transparent);
+        color: var(--map-accent);
+      }
+
+      #zoterotag-zotseek-missing {
+        color: var(--map-warn);
+        font-size: 12px;
+      }
+
+      #zoterotag-connection-map-canvas {
+        flex: 1 1 auto;
+        min-height: 0;
+        position: relative;
+        overflow: hidden;
+      }
+
+      #zoterotag-connection-map-canvas svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .node-label {
+        fill: var(--map-fg);
+        font-size: 10px;
+        pointer-events: none;
+      }
+
+      #zoterotag-connection-map-status {
+        flex: 0 0 auto;
+        padding: 8px 14px;
+        border-top: 1px solid var(--map-border);
+        color: var(--map-muted);
+        font-size: 12px;
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      #zoterotag-connection-map-hint {
+        color: var(--map-bridge);
+      }
+    ]]></style>
+  </head>
+  <body>
+    <div id="zoterotag-connection-map-shell">
+      <div id="zoterotag-connection-map-toolbar">
+        <div class="hero-text">
+          <h1 id="zoterotag-connection-map-title">Bağlantı Haritası</h1>
+          <p class="muted" id="zoterotag-connection-map-subtitle"></p>
+        </div>
+
+        <div class="layers">
+          <label class="layer" for="zoterotag-layer-tag">
+            <input type="checkbox" id="zoterotag-layer-tag" checked="checked" />
+            <span>Ortak etiket</span>
+          </label>
+          <label class="layer" for="zoterotag-layer-manual">
+            <input type="checkbox" id="zoterotag-layer-manual" checked="checked" />
+            <span>Elle bağlantı</span>
+          </label>
+          <span id="zoterotag-layer-semantic-wrap">
+            <label class="layer" for="zoterotag-layer-semantic">
+              <input type="checkbox" id="zoterotag-layer-semantic" checked="checked" />
+              <span>Anlamsal öneri</span>
+            </label>
+          </span>
+          <label class="layer" for="zoterotag-layer-note">
+            <input type="checkbox" id="zoterotag-layer-note" checked="checked" />
+            <span>Not/alıntı</span>
+          </label>
+        </div>
+
+        <input
+          id="zoterotag-connection-map-filter"
+          type="search"
+          placeholder="Filtrele…"
+        />
+
+        <button
+          type="button"
+          class="btn"
+          id="zoterotag-connection-map-connect"
+        >Bağla modu</button>
+
+        <button
+          type="button"
+          class="btn"
+          id="zoterotag-connection-map-refresh"
+        >Yenile</button>
+
+        <span id="zoterotag-zotseek-missing" style="display:none"></span>
+      </div>
+
+      <div id="zoterotag-connection-map-canvas">Bağlantılar hesaplanıyor…</div>
+
+      <div id="zoterotag-connection-map-status">
+        <span id="zoterotag-connection-map-status-text"></span>
+        <span id="zoterotag-connection-map-hint"></span>
+      </div>
+    </div>
+  </body>
+</html>

@@ -8,6 +8,8 @@ import { ActionMap } from "./utils/actions";
 import hooks from "./hooks";
 import api from "./api";
 import { config } from "../package.json";
+import type { ConnectionGraph } from "./utils/connectionGraph";
+import type { SemanticCacheEntry } from "./utils/connectionSemanticLayer";
 
 class Addon {
   public data: {
@@ -43,6 +45,13 @@ class Addon {
     tagDashboard: {
       window?: Window;
     };
+    connectionMap: {
+      window?: Window;
+      semanticCache?: Map<number, SemanticCacheEntry[]>;
+      /** Session-dismissed semantic edge ids. */
+      dismissedSemanticIds?: Set<string>;
+      lastGraph?: ConnectionGraph;
+    };
   };
   // Lifecycle hooks
   public hooks: typeof hooks;
@@ -70,6 +79,7 @@ class Addon {
         current: 0,
       },
       tagDashboard: {},
+      connectionMap: {},
     };
     this.hooks = hooks;
     this.api = api;

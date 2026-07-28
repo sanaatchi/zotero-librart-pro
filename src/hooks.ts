@@ -10,6 +10,7 @@ import {
   initReaderAnnotationMenu,
   initReaderMenu,
   initTagDashboardMenu,
+  initConnectionMapMenu,
 } from "./modules/menu";
 import { editAction } from "./modules/edit";
 import { exportToFile, importFromFile } from "./modules/backup";
@@ -17,6 +18,10 @@ import {
   initTagDashboardWindow,
   openTagDashboard,
 } from "./modules/tagDashboard";
+import {
+  initConnectionMapWindow,
+  openConnectionMap,
+} from "./modules/connectionMap";
 
 async function onStartup() {
   await Promise.all([
@@ -63,6 +68,7 @@ async function onStartup() {
 async function onMainWindowLoad(win: Window): Promise<void> {
   initItemMenu(win);
   initTagDashboardMenu();
+  initConnectionMapMenu();
   await addon.api.actionManager.dispatchActionByEvent(
     ActionEventTypes.mainWindowLoad,
     {
@@ -130,4 +136,6 @@ export default {
   onActionImport: importFromFile,
   onOpenTagDashboard: openTagDashboard,
   onTagDashboardLoad: initTagDashboardWindow,
+  onOpenConnectionMap: openConnectionMap,
+  onConnectionMapLoad: initConnectionMapWindow,
 };

@@ -211,22 +211,22 @@ function renderDashboard(r: TagAnalysisReport): string {
     {
       label: getString("tag-dashboard-cat-person"),
       value: s.categories.person,
-      color: "var(--tag-blue)",
+      color: "#3b82f6",
     },
     {
       label: getString("tag-dashboard-cat-concept"),
       value: s.categories.concept,
-      color: "var(--tag-purple)",
+      color: "#8b5cf6",
     },
     {
       label: getString("tag-dashboard-cat-place"),
       value: s.categories.place,
-      color: "var(--tag-green)",
+      color: "#22c55e",
     },
     {
       label: getString("tag-dashboard-cat-system"),
       value: s.categories.system,
-      color: "var(--tag-orange)",
+      color: "#f59e0b",
     },
   ];
   const catTotal = catEntries.reduce((a, c) => a + c.value, 0) || 1;
@@ -240,15 +240,18 @@ function renderDashboard(r: TagAnalysisReport): string {
 <header class="hero">
   <div>
     <h1>${escapeHtml(getString("tag-dashboard-title"))}</h1>
-    <p class="muted">${escapeHtml(
+    <p class="muted small">${escapeHtml(
       getString("tag-dashboard-subtitle", {
         args: { library: r.libraryName, items: fmt(s.libraryItems) },
       }),
     )}</p>
   </div>
-  <button id="${config.addonRef}-dashboard-refresh" class="btn-refresh" type="button">
-    ${escapeHtml(getString("tag-dashboard-refresh"))}
-  </button>
+  <div class="hero-actions">
+    <span class="pill">${escapeHtml(getString("tag-dashboard-compact"))}</span>
+    <button id="${config.addonRef}-dashboard-refresh" class="btn-refresh" type="button">
+      ${escapeHtml(getString("tag-dashboard-refresh"))}
+    </button>
+  </div>
 </header>
 
 <section class="stats">
@@ -284,11 +287,16 @@ function renderDashboard(r: TagAnalysisReport): string {
       ${donutSvg(catEntries, catTotal)}
       <ul class="legend">
         ${catEntries
-          .map(
-            (c) => `
-          <li><span class="swatch" style="background:${c.color}"></span>
-          ${escapeHtml(c.label)} <strong>${fmt(c.value)}</strong></li>`,
-          )
+          .map((c) => {
+            const pct = ((c.value / catTotal) * 100).toFixed(
+              c.value / catTotal >= 0.1 ? 0 : 1,
+            );
+            return `<li>
+              <span class="swatch" style="background:${c.color}"></span>
+              <span>${escapeHtml(c.label)}: <strong>${fmt(c.value)}</strong>
+              <span class="muted">(${pct}%)</span></span>
+            </li>`;
+          })
           .join("")}
       </ul>
     </div>
@@ -343,12 +351,15 @@ function renderDashboard(r: TagAnalysisReport): string {
           ? r.foldDupes
               .slice(0, 8)
               .map((g, i) => {
-                const line = escapeHtml(
-                  g.map((t) => `${t.name}(${t.count})`).join(" → "),
-                );
-                return `<div class="list-row fold-row">
-                  <span class="fold-line" title="${line}">${line}</span>
-                  <button type="button" class="btn-mini btn-merge-fold" data-fold-index="${i}">${escapeHtml(
+                const sorted = [...g].sort((a, b) => b.count - a.count);
+                const keep = sorted[0];
+                const drops = sorted.slice(1);
+                const line = `${keep.name}(${keep.count}) → ${drops
+                  .map((t) => `${t.name}(${t.count})`)
+                  .join(", ")}`;
+                return `<div class="list-row action-row">
+                  <span class="action-text" title="${escapeHtml(line)}">${escapeHtml(line)}</span>
+                  <button type="button" class="btn-mini btn-primary btn-merge-fold" data-fold-index="${i}">${escapeHtml(
                     getString("tag-dashboard-action-merge"),
                   )}</button>
                 </div>`;
@@ -359,18 +370,19 @@ function renderDashboard(r: TagAnalysisReport): string {
     </div>
   </article>
   <article class="card">
-    <header class="card-h">${escapeHtml(getString("tag-dashboard-bilingual-title"))}</header>
+    <header class="card-h">
+      <span>${escapeHtml(getString("tag-dashboard-bilingual-title"))}</span>
+      <span class="pill">${fmt(r.bilingualPairs.length)}</span>
+    </header>
     <div class="card-b list">
       ${
         r.bilingualPairs.length
           ? r.bilingualPairs
               .map((p, i) => {
-                const line = escapeHtml(
-                  `${p.en.name}(${p.en.count}) → ${p.tr.name}(${p.tr.count})`,
-                );
-                return `<div class="list-row bilingual-row">
-                  <span title="${line}">${line}</span>
-                  <button type="button" class="btn-mini btn-merge-bilingual" data-bilingual-index="${i}">${escapeHtml(
+                const line = `${p.en.name}(${p.en.count}) → ${p.tr.name}(${p.tr.count})`;
+                return `<div class="list-row action-row">
+                  <span class="action-text" title="${escapeHtml(line)}">${escapeHtml(line)}</span>
+                  <button type="button" class="btn-mini btn-primary btn-merge-bilingual" data-bilingual-index="${i}">${escapeHtml(
                     getString("tag-dashboard-action-merge"),
                   )}</button>
                 </div>`;
@@ -390,9 +402,7 @@ function renderDashboard(r: TagAnalysisReport): string {
               .map(
                 (f) => `<div class="list-row fuzzy">
                   <span class="pill">${f.score}</span>
-                  <span>${escapeHtml(
-                    `${f.a.name}(${f.a.count}) ↔ ${f.b.name}(${f.b.count})`,
-                  )}</span>
+                  <span>${escapeHtml(`${f.a.name} ↔ ${f.b.name}`)}</span>
                 </div>`,
               )
               .join("")
@@ -405,32 +415,41 @@ function renderDashboard(r: TagAnalysisReport): string {
 
 <article class="card">
   <header class="card-h">${escapeHtml(getString("tag-dashboard-manual-title"))}</header>
-  <div class="card-b">
-    <div class="manual-row">
-      <input type="text" id="${config.addonRef}-manual-merge-from" placeholder="${escapeHtml(
-        getString("tag-dashboard-manual-merge-from-placeholder"),
-      )}" />
-      <input type="text" id="${config.addonRef}-manual-merge-to" placeholder="${escapeHtml(
-        getString("tag-dashboard-manual-merge-to-placeholder"),
-      )}" />
-      <button type="button" id="${config.addonRef}-manual-merge-btn" class="btn-mini">${escapeHtml(
-        getString("tag-dashboard-action-merge"),
-      )}</button>
+  <div class="card-b manual-grid">
+    <div class="manual-block">
+      <div class="manual-label">${escapeHtml(getString("tag-dashboard-action-merge"))}</div>
+      <div class="manual-row">
+        <input type="text" id="${config.addonRef}-manual-merge-from" placeholder="${escapeHtml(
+          getString("tag-dashboard-manual-merge-from-placeholder"),
+        )}" />
+        <input type="text" id="${config.addonRef}-manual-merge-to" placeholder="${escapeHtml(
+          getString("tag-dashboard-manual-merge-to-placeholder"),
+        )}" />
+        <button type="button" id="${config.addonRef}-manual-merge-btn" class="btn-mini btn-primary">${escapeHtml(
+          getString("tag-dashboard-action-merge"),
+        )}</button>
+      </div>
     </div>
-    <div class="manual-row">
-      <input type="text" id="${config.addonRef}-manual-delete" placeholder="${escapeHtml(
-        getString("tag-dashboard-manual-delete-placeholder"),
-      )}" />
-      <button type="button" id="${config.addonRef}-manual-delete-btn" class="btn-mini btn-danger">${escapeHtml(
-        getString("tag-dashboard-action-delete"),
-      )}</button>
+    <div class="manual-block">
+      <div class="manual-label">${escapeHtml(getString("tag-dashboard-action-delete"))}</div>
+      <div class="manual-row">
+        <input type="text" id="${config.addonRef}-manual-delete" placeholder="${escapeHtml(
+          getString("tag-dashboard-manual-delete-placeholder"),
+        )}" />
+        <button type="button" id="${config.addonRef}-manual-delete-btn" class="btn-mini btn-danger">${escapeHtml(
+          getString("tag-dashboard-action-delete"),
+        )}</button>
+      </div>
     </div>
-    <p class="muted small">${escapeHtml(getString("tag-dashboard-manual-hint"))}</p>
+    <p class="muted small manual-hint">${escapeHtml(getString("tag-dashboard-manual-hint"))}</p>
   </div>
 </article>
 
 <table class="data-table">
-  <thead><tr><th>${escapeHtml(getString("tag-dashboard-col-tag"))}</th><th>${escapeHtml(getString("tag-dashboard-col-count"))}</th></tr></thead>
+  <thead><tr>
+    <th>${escapeHtml(getString("tag-dashboard-col-tag"))}</th>
+    <th>${escapeHtml(getString("tag-dashboard-col-count"))}</th>
+  </tr></thead>
   <tbody>
     ${topTags
       .slice(0, 5)
@@ -441,10 +460,6 @@ function renderDashboard(r: TagAnalysisReport): string {
       .join("")}
   </tbody>
 </table>
-
-<div class="callout callout-ok">
-  ${escapeHtml(getString("tag-dashboard-recommendation"))}
-</div>
 `;
 }
 
@@ -480,25 +495,58 @@ function donutSvg(
   entries: { label: string; value: number; color: string }[],
   total: number,
 ): string {
-  const r = 15.9155;
-  const c = 2 * Math.PI * r;
-  let offset = 0;
-  const arcs = entries
-    .filter((e) => e.value > 0)
+  const cx = 50;
+  const cy = 50;
+  const outer = 40;
+  const inner = 24;
+  const parts = entries.filter((e) => e.value > 0);
+  let angle = -Math.PI / 2;
+
+  const polar = (r: number, a: number) => [
+    cx + r * Math.cos(a),
+    cy + r * Math.sin(a),
+  ];
+
+  const arcs = parts
     .map((e) => {
-      const len = (e.value / total) * c;
-      const dash = `${len} ${c - len}`;
-      const el = `<circle class="donut-seg" cx="21" cy="21" r="${r}"
-        fill="transparent" stroke="${e.color}" stroke-width="5.5"
-        stroke-dasharray="${dash}" stroke-dashoffset="${-offset}"
-        transform="rotate(-90 21 21)"></circle>`;
-      offset += len;
-      return el;
+      const sweep = (e.value / total) * Math.PI * 2;
+      const a0 = angle;
+      const a1 = angle + sweep;
+      angle = a1;
+      const large = sweep > Math.PI ? 1 : 0;
+      const [x0, y0] = polar(outer, a0);
+      const [x1, y1] = polar(outer, a1);
+      const [x2, y2] = polar(inner, a1);
+      const [x3, y3] = polar(inner, a0);
+      const d = [
+        `M ${x0} ${y0}`,
+        `A ${outer} ${outer} 0 ${large} 1 ${x1} ${y1}`,
+        `L ${x2} ${y2}`,
+        `A ${inner} ${inner} 0 ${large} 0 ${x3} ${y3}`,
+        "Z",
+      ].join(" ");
+
+      const mid = a0 + sweep / 2;
+      const labelR = (outer + inner) / 2;
+      const [lx, ly] = polar(labelR, mid);
+      const pct = Math.round((e.value / total) * 1000) / 10;
+      const pctLabel =
+        pct >= 8
+          ? `<text x="${lx.toFixed(2)}" y="${(ly + 1.2).toFixed(2)}"
+              text-anchor="middle" dominant-baseline="middle"
+              fill="#ffffff" font-size="7" font-weight="700">${
+                Number.isInteger(pct) ? pct : pct.toFixed(1)
+              }%</text>`
+          : "";
+
+      return `<path class="donut-slice" d="${d}" fill="${e.color}"/>${pctLabel}`;
     })
     .join("");
-  return `<svg class="donut" viewBox="0 0 42 42" aria-hidden="true">
-    <circle cx="21" cy="21" r="${r}" fill="transparent" stroke="var(--tag-track)" stroke-width="5.5"></circle>
+
+  return `<svg class="donut" viewBox="0 0 100 100" aria-hidden="true">
     ${arcs}
-    <circle cx="21" cy="21" r="11" fill="var(--tag-card)"></circle>
+    <circle class="donut-hole" cx="${cx}" cy="${cy}" r="${inner - 0.4}"/>
+    <text class="donut-total" x="${cx}" y="${cy + 1.5}" text-anchor="middle" dominant-baseline="middle"
+      font-size="12" font-weight="700">${total}</text>
   </svg>`;
 }

@@ -3,7 +3,7 @@
     "zoterotag@euclpts.com": {
       "updates": [
         {
-          "version": "1.0.4",
+          "version": "1.0.7",
           "update_link": "https://github.com/sanaatchi/eylemler-ve-etiketler-releases/releases/latest/download/eylemler-ve-etiketler.xpi",
           "applications": {
             "zotero": {

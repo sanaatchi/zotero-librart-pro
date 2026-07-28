@@ -12,6 +12,7 @@ export {
   initReaderAnnotationMenu,
   buildItemMenu,
   initTagDashboardMenu,
+  initConnectionMapMenu,
 };
 
 function initTagDashboardMenu() {
@@ -26,6 +27,22 @@ function initTagDashboardMenu() {
     icon: `chrome://${config.addonRef}/content/icons/favicon.png`,
     commandListener: () => {
       addon.hooks.onOpenTagDashboard();
+    },
+  });
+}
+
+function initConnectionMapMenu() {
+  const menuId = `${config.addonRef}-connection-map-menu`;
+  if (ztoolkit.getGlobal("document")?.getElementById(menuId)) {
+    return;
+  }
+  ztoolkit.Menu.register("menuTools", {
+    tag: "menuitem",
+    id: menuId,
+    label: getString("menu-connection-map"),
+    icon: `chrome://${config.addonRef}/content/icons/favicon.png`,
+    commandListener: () => {
+      addon.hooks.onOpenConnectionMap();
     },
   });
 }

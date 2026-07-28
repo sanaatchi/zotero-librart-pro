@@ -102,6 +102,8 @@ const BILINGUAL: [string, string][] = [
   ["sculpture", "heykel"],
 ];
 
+export { similarity };
+
 export function foldTag(s: string): string {
   let out = (s || "").normalize("NFKC").toLocaleLowerCase("tr").trim();
   const map: Record<string, string> = {
