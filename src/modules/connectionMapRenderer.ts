@@ -957,13 +957,20 @@ function wireViewportControls(
     svg.classList.remove("is-space-pan");
   };
 
-  const host = win as Window & { __cmControlsAbort?: AbortController };
-  host.__cmControlsAbort?.abort();
-  const ac = new AbortController();
-  host.__cmControlsAbort = ac;
-  win.addEventListener("keydown", onKeyDown, { signal: ac.signal });
-  win.addEventListener("keyup", onKeyUp, { signal: ac.signal });
-  win.addEventListener("blur", onBlur, { signal: ac.signal });
+  // Zotero chrome windows may lack AbortController — manual teardown instead.
+  type ControlsHost = Window & {
+    __cmControlsCleanup?: () => void;
+  };
+  const host = win as ControlsHost;
+  host.__cmControlsCleanup?.();
+  win.addEventListener("keydown", onKeyDown);
+  win.addEventListener("keyup", onKeyUp);
+  win.addEventListener("blur", onBlur);
+  host.__cmControlsCleanup = () => {
+    win.removeEventListener("keydown", onKeyDown);
+    win.removeEventListener("keyup", onKeyUp);
+    win.removeEventListener("blur", onBlur);
+  };
 }
 
 function zoomAt(
