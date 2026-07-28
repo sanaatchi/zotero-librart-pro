@@ -1,6 +1,7 @@
 import { defineConfig } from "zotero-plugin-scaffold";
 import pkg from "./package.json";
-import { copyFileSync } from "fs";
+
+const DIST_REPO = "sanaatchi/zotero-actions-tags-releases";
 
 export default defineConfig({
   source: ["src", "addon"],
@@ -8,11 +9,9 @@ export default defineConfig({
   name: pkg.config.addonName,
   id: pkg.config.addonID,
   namespace: pkg.config.addonRef,
-  updateURL: `https://github.com/{{owner}}/{{repo}}/releases/download/release/${
-    pkg.version.includes("-") ? "update-beta.json" : "update.json"
-  }`,
-  xpiDownloadLink:
-    "https://github.com/{{owner}}/{{repo}}/releases/download/v{{version}}/{{xpiName}}.xpi",
+  // Public releases repo — Zotero updater has no GitHub auth.
+  updateURL: pkg.config.updateJSON,
+  xpiDownloadLink: `https://github.com/${DIST_REPO}/releases/download/v{{version}}/{{xpiName}}.xpi`,
 
   server: {
     asProxy: false,
@@ -39,23 +38,8 @@ export default defineConfig({
         outfile: `build/addon/content/scripts/${pkg.config.addonRef}.js`,
       },
     ],
-    // If you want to checkout update.json into the repository, uncomment the following lines:
-    // makeUpdateJson: {
-    //   hash: false,
-    // },
-    // hooks: {
-    //   "build:makeUpdateJSON": (ctx) => {
-    //     copyFileSync("build/update.json", "update.json");
-    //     copyFileSync("build/update-beta.json", "update-beta.json");
-    //   },
-    // },
+    makeUpdateJson: {
+      hash: false,
+    },
   },
-  // release: {
-  //   bumpp: {
-  //     execute: "npm run build",
-  //   },
-  // },
-
-  // If you need to see a more detailed build log, uncomment the following line:
-  // logLevel: "trace",
 });

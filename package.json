@@ -1,33 +1,36 @@
 {
   "name": "zotero-actions-tags",
-  "version": "2.5.2",
-  "description": "Action it, tag it, sorted.",
+  "version": "2.6.0",
+  "description": "Action it, tag it, sorted. Private fork with Tag Analysis Dashboard.",
   "config": {
     "addonName": "Actions and Tags for Zotero",
-    "addonID": "zoterotag@euclpts.com",
+    "addonID": "zoterotag@ibrahimyildiz.art",
     "addonRef": "zoterotag",
     "addonInstance": "ActionsTags",
-    "prefsPrefix": "extensions.actionsTags"
+    "prefsPrefix": "extensions.actionsTags",
+    "releasePage": "https://github.com/sanaatchi/zotero-actions-tags-releases/releases",
+    "updateJSON": "https://github.com/sanaatchi/zotero-actions-tags-releases/releases/latest/download/update.json"
   },
   "main": "src/index.ts",
   "scripts": {
     "start": "zotero-plugin serve",
     "build": "tsc --noEmit && zotero-plugin build",
     "release": "zotero-plugin release",
+    "gh-release": "node scripts/publish.mjs",
     "lint": "prettier --write . && eslint . --fix",
     "test": "echo \"Error: no test specified\" && exit 1",
     "update-deps": "npm update --save"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/windingwind/zotero-actions-tags.git"
+    "url": "git+https://github.com/sanaatchi/zotero-actions-tags.git"
   },
-  "author": "windingwind",
+  "author": "ibrahimyildiz.art",
   "license": "AGPL-3.0-or-later",
   "bugs": {
-    "url": "https://github.com/windingwind/zotero-actions-tags/issues"
+    "url": "https://github.com/sanaatchi/zotero-actions-tags/issues"
   },
-  "homepage": "https://github.com/windingwind/zotero-actions-tags#readme",
+  "homepage": "https://github.com/sanaatchi/zotero-actions-tags-releases#readme",
   "dependencies": {
     "js-yaml": "^4.1.0",
     "zotero-plugin-toolkit": "^5.1.0-beta.10"

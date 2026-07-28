@@ -52,8 +52,6 @@ async function onStartup() {
 
   initReaderAnnotationMenu();
 
-  initTagDashboardMenu();
-
   // Trigger startup event without waiting so that the init is not blocked.
   addon.api.actionManager
     .dispatchActionByEvent(ActionEventTypes.programStartup, {})
@@ -64,6 +62,7 @@ async function onStartup() {
 
 async function onMainWindowLoad(win: Window): Promise<void> {
   initItemMenu(win);
+  initTagDashboardMenu();
   await addon.api.actionManager.dispatchActionByEvent(
     ActionEventTypes.mainWindowLoad,
     {

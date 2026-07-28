@@ -198,7 +198,7 @@ export async function analyzeLibraryTags(
       LEFT JOIN deletedItems d ON d.itemID = i.itemID
       GROUP BY t.tagID
       HAVING COUNT(CASE WHEN d.itemID IS NULL THEN i.itemID END) = 0
-    )
+    ) unused_tags
     `,
     [libraryID],
   )) as Array<{ n: number | string }>;
@@ -245,7 +245,7 @@ export async function analyzeLibraryTags(
         AND d.itemID IS NULL
         AND ty.typeName NOT IN ('attachment', 'note', 'annotation')
       GROUP BY i.itemID
-    )
+    ) per_item
     GROUP BY tag_count
     ORDER BY tag_count
     `,

@@ -19,12 +19,14 @@ async function openTagDashboard() {
   const mainWin = Zotero.getMainWindow();
   if (!mainWin) return;
 
-  const win = mainWin.openDialog(
-    `chrome://${config.addonRef}/content/tag-dashboard.xhtml`,
-    DASHBOARD_ID,
-    "chrome,centerscreen,resizable,dialog=no,width=1120,height=860",
-  );
+  const url = `chrome://${config.addonRef}/content/tag-dashboard.xhtml`;
+  const features =
+    "chrome,centerscreen,resizable,dialog=no,width=1120,height=860";
+  const win =
+    (mainWin.openDialog(url, DASHBOARD_ID, features) as Window | null) ||
+    (mainWin.open(url, DASHBOARD_ID, features) as Window | null);
   if (!win) return;
+
   addon.data.tagDashboard = { window: win };
   win.addEventListener("unload", () => {
     if (addon.data.tagDashboard?.window === win) {

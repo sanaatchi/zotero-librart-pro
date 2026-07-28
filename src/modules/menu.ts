@@ -15,9 +15,13 @@ export {
 };
 
 function initTagDashboardMenu() {
+  const menuId = `${config.addonRef}-tag-dashboard-menu`;
+  if (ztoolkit.getGlobal("document")?.getElementById(menuId)) {
+    return;
+  }
   ztoolkit.Menu.register("menuTools", {
     tag: "menuitem",
-    id: `${config.addonRef}-tag-dashboard-menu`,
+    id: menuId,
     label: getString("menu-tag-dashboard"),
     icon: `chrome://${config.addonRef}/content/icons/favicon.png`,
     commandListener: () => {
