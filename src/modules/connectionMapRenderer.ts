@@ -25,6 +25,7 @@ import {
 } from "../utils/connectionExport";
 import {
   isZotSeekReady,
+  isZotSeekAvailable,
   searchByText,
 } from "../utils/connectionSemanticLayer";
 
@@ -282,35 +283,39 @@ function wireDraftSearch(win: Window, graph: ConnectionGraph) {
     results.textContent = "";
     results.classList.remove("open");
     if (!q) return;
-    if (!isZotSeekReady()) {
-      results.textContent = getString("connection-map-draft-empty");
+
+    if (!isZotSeekAvailable()) {
+      results.textContent = getString("connection-map-zotseek-missing");
       results.classList.add("open");
       return;
     }
+
     btn.disabled = true;
+    results.textContent = getString("connection-map-draft-searching");
+    results.classList.add("open");
     try {
       const hits = await searchByText(q, {
-        topK: 5,
-        minSimilarity: 0.35,
+        topK: 8,
+        minSimilarity: 0.25,
         libraryId: graph.libraryID,
         nodeIDSet: new Set(graph.nodes.keys()),
+        allowOutsideGraph: false,
       });
+      results.textContent = "";
       if (!hits.length) {
         results.textContent = getString("connection-map-draft-empty");
-        results.classList.add("open");
         return;
       }
-      results.classList.add("open");
       for (const hit of hits) {
         const node = graph.nodes.get(hit.itemId);
         const row = doc.createElement("div");
         row.className = "draft-hit";
         const label = doc.createElement("span");
-        const title =
-          node?.title ||
-          hit.title ||
-          Zotero.Items.get(hit.itemId)?.getDisplayTitle() ||
-          String(hit.itemId);
+        let title = node?.title || hit.title || "";
+        if (!title) {
+          const item = Zotero.Items.get(hit.itemId);
+          title = item ? item.getDisplayTitle() : String(hit.itemId);
+        }
         label.textContent = `${title} · ${Math.round(hit.similarity * 100)}%`;
         row.appendChild(label);
 
@@ -332,7 +337,9 @@ function wireDraftSearch(win: Window, graph: ConnectionGraph) {
         bindBtn.className = "btn";
         bindBtn.textContent = getString("connection-map-draft-bind");
         bindBtn.onclick = async () => {
-          const selected = Zotero.getActiveZoteroPane()?.getSelectedItems?.(false);
+          const selected = Zotero.getActiveZoteroPane()?.getSelectedItems?.(
+            false,
+          );
           const seed = selected?.find((it) => it.isRegularItem?.());
           if (!seed) {
             updateHint(getString("connection-map-connect-pick-first"));
@@ -354,6 +361,9 @@ function wireDraftSearch(win: Window, graph: ConnectionGraph) {
         row.appendChild(bindBtn);
         results.appendChild(row);
       }
+    } catch (e) {
+      ztoolkit.log("Draft search failed", e);
+      results.textContent = getString("connection-map-draft-error");
     } finally {
       btn.disabled = false;
     }

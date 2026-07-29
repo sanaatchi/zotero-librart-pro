@@ -5,7 +5,12 @@ import {
   makeEdgeId,
 } from "./connectionGraph";
 
-export { isZotSeekReady, computeSemanticSuggestions, searchByText };
+export {
+  isZotSeekReady,
+  isZotSeekAvailable,
+  computeSemanticSuggestions,
+  searchByText,
+};
 
 export type SemanticSuggestionResult = {
   available: boolean;
@@ -72,17 +77,25 @@ function getZotSeekApi(): ZotSeekApi | null {
   }
 }
 
-function isZotSeekReady(): boolean {
+/** Plugin API present (search may cold-start the embedding pipeline). */
+function isZotSeekAvailable(): boolean {
   try {
     const api = getZotSeekApi();
     if (!api) return false;
-    if (typeof api.isReady === "function") return !!api.isReady();
     return (
-      typeof api.findSimilar === "function" || typeof api.search === "function"
+      typeof api.search === "function" || typeof api.findSimilar === "function"
     );
   } catch {
     return false;
   }
+}
+
+/**
+ * True when ZotSeek can be used. Do NOT hard-require api.isReady() —
+ * search()/findSimilar() auto-init the embedding pipeline on first call.
+ */
+function isZotSeekReady(): boolean {
+  return isZotSeekAvailable();
 }
 
 /**
@@ -96,21 +109,32 @@ async function searchByText(
     excludeItemIds?: number[];
     libraryId?: number;
     nodeIDSet?: Set<number>;
+    /** Soften node filter: keep hits even if outside current graph. */
+    allowOutsideGraph?: boolean;
   } = {},
 ): Promise<Array<{ itemId: number; similarity: number; title?: string }>> {
-  if (!query.trim()) return [];
+  const cleaned = query.trim().replace(/\s+/g, " ");
+  if (!cleaned) return [];
+  // Long pasted paragraphs: embed the head — better recall, less noise.
+  const q =
+    cleaned.length > 900 ? cleaned.slice(0, 900) : cleaned;
+
   const api = getZotSeekApi();
-  if (!api?.search) return [];
+  if (!api?.search) {
+    ztoolkit.log("ZotSeek search() missing on api");
+    return [];
+  }
   try {
-    const raw = await api.search(query.trim(), {
+    const raw = await api.search(q, {
       topK: options.topK ?? 5,
-      minSimilarity: options.minSimilarity ?? 0.4,
+      minSimilarity: options.minSimilarity ?? 0.28,
       excludeItemIds: options.excludeItemIds,
       libraryId: options.libraryId,
     });
     const fallbackLibraryID =
       options.libraryId ?? Zotero.Libraries.userLibraryID;
     const nodeIDSet = options.nodeIDSet;
+    const allowOutside = options.allowOutsideGraph ?? false;
     const hits: Array<{
       itemId: number;
       similarity: number;
@@ -137,7 +161,7 @@ async function searchByText(
         }
       }
       if (!itemId || seen.has(itemId)) continue;
-      if (nodeIDSet && !nodeIDSet.has(itemId)) continue;
+      if (nodeIDSet && !nodeIDSet.has(itemId) && !allowOutside) continue;
       seen.add(itemId);
       hits.push({
         itemId,
@@ -145,10 +169,16 @@ async function searchByText(
         title: r.title,
       });
     }
+
+    // Retry softer: in-graph filter dropped everything but API had hits.
+    if (!hits.length && nodeIDSet && !allowOutside && (raw || []).length) {
+      return searchByText(query, { ...options, allowOutsideGraph: true });
+    }
+
     return hits;
   } catch (e) {
     ztoolkit.log("ZotSeek search failed", e);
-    return [];
+    throw e;
   }
 }
 
