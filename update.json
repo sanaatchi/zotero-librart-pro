@@ -3,12 +3,13 @@
     "zoterotag@euclpts.com": {
       "updates": [
         {
-          "version": "1.0.17",
-          "update_link": "https://github.com/sanaatchi/eylemler-ve-etiketler-releases/releases/download/v1.0.17/eylemler-ve-etiketler.xpi",
+          "version": "1.0.18",
+          "update_link": "https://github.com/sanaatchi/eylemler-ve-etiketler-releases/releases/download/v1.0.18/eylemler-ve-etiketler.xpi",
+          "update_hash": "sha512:d50d7a319b7725b83e4996ce2b4d960201ada8478dd8ead0f23a63c813b840122abe89c4bb772fb413123999de84b6908555a4c1f1ec3e0893afb7b9b077ca26",
           "applications": {
             "zotero": {
-              "strict_min_version": "7.999",
-              "strict_max_version": "10.999.999"
+              "strict_min_version": "7.0",
+              "strict_max_version": "10.9.9"
             }
           }
         }
