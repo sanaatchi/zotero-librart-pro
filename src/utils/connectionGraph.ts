@@ -1,5 +1,7 @@
 import { foldTag } from "./tagAnalysis";
 import { computeTagLayerEdges } from "./connectionTagLayer";
+import { attachDisciplineProfile } from "./connectionDiscipline";
+import { annotateBridgeScores } from "./connectionBridgeScore";
 
 export type LayerKind = "tag" | "manual" | "semantic" | "note";
 export type ConnectionState = "confirmed" | "suggested";
@@ -20,9 +22,11 @@ export type GraphNode = {
   year?: number;
   disciplineIDs: number[];
   disciplineLabels: string[];
-  /** Reserved for v1.1 richer classification — left undefined in v1. */
+  /** Soft discipline classification (v1.1). */
   disciplineProfile?: DisciplineProfile;
   tagCount: number;
+  /** Distinct cross-discipline neighbors (v1.1 bridge score). */
+  bridgeScore?: number;
 };
 
 export type GraphEdge = {
@@ -98,13 +102,17 @@ function isOnlyUnsorted(node: GraphNode): boolean {
 }
 
 function isCrossDiscipline(a: GraphNode, b: GraphNode): boolean {
-  // v1.1 path: when both carry a profile primary, compare via accessor only.
+  // Prefer soft discipline profiles when both sides have a primary.
   if (a.disciplineProfile?.primary && b.disciplineProfile?.primary) {
-    return getNodeDisciplineKey(a) !== getNodeDisciplineKey(b);
+    const ka = a.disciplineProfile.primary;
+    const kb = b.disciplineProfile.primary;
+    if (ka === UNSORTED_DISCIPLINE_LABEL || kb === UNSORTED_DISCIPLINE_LABEL) {
+      return false;
+    }
+    return ka !== kb;
   }
 
   // Unsorted is not a discipline — never highlight as a "bridge".
-  // (Otherwise Unsorted↔Collection floods the map orange.)
   if (isOnlyUnsorted(a) || isOnlyUnsorted(b)) return false;
 
   const bSet = new Set(b.disciplineIDs);
@@ -171,7 +179,7 @@ function resolveDisciplines(item: Zotero.Item): {
 
 function buildGraphNode(item: Zotero.Item): GraphNode {
   const { ids, labels } = resolveDisciplines(item);
-  return {
+  const node: GraphNode = {
     itemID: item.id,
     key: item.key,
     libraryID: item.libraryID,
@@ -183,6 +191,8 @@ function buildGraphNode(item: Zotero.Item): GraphNode {
     disciplineLabels: labels,
     tagCount: item.getTags().length,
   };
+  attachDisciplineProfile(node, item);
+  return node;
 }
 
 function buildManualEdges(
@@ -297,16 +307,25 @@ async function buildConnectionGraph(
     // Suggested edges that already have a confirmed relation: skip.
     if (edge.state === "suggested" && byId.has(pairManualId)) continue;
     // After D auto-promote, manual relatedItem already represents the pair —
-    // drop redundant note edges for the same endpoints.
-    if (edge.layer === "note" && byId.has(pairManualId)) continue;
+    // drop redundant confirmed note edges for the same endpoints.
+    if (
+      edge.layer === "note" &&
+      edge.state === "confirmed" &&
+      byId.has(pairManualId)
+    ) {
+      continue;
+    }
     byId.set(edge.id, edge);
   }
+
+  const merged = [...byId.values()];
+  annotateBridgeScores(nodes, merged);
 
   return {
     libraryID,
     libraryName,
     nodes,
-    edges: [...byId.values()],
+    edges: merged,
     generatedAt: new Date().toISOString(),
   };
 }

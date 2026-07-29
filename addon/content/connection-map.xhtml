@@ -115,7 +115,8 @@
       }
       .btn:hover { border-color: var(--map-accent); }
       .btn:disabled { opacity: 0.6; cursor: default; }
-      .btn.active {
+      .btn.active,
+      .btn.primary {
         border-color: var(--map-accent);
         background: color-mix(in srgb, var(--map-accent) 16%, transparent);
         color: var(--map-accent);
@@ -184,6 +185,82 @@
       #zoterotag-connection-map-hint {
         color: var(--map-bridge);
       }
+
+      #zoterotag-connection-map-secondary {
+        flex: 0 0 auto;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        padding: 8px 14px;
+        border-bottom: 1px solid var(--map-border);
+        background: color-mix(in srgb, var(--map-bg) 92%, var(--map-bridge));
+      }
+
+      #zoterotag-connection-map-draft {
+        flex: 1 1 280px;
+        min-width: 180px;
+        background: var(--map-panel);
+        border: 1px solid var(--map-border);
+        color: var(--map-fg);
+        border-radius: 6px;
+        padding: 6px 10px;
+        font: inherit;
+      }
+
+      #zoterotag-connection-map-draft-results {
+        flex: 1 1 100%;
+        display: none;
+        flex-direction: column;
+        gap: 4px;
+        max-height: 140px;
+        overflow: auto;
+        font-size: 12px;
+      }
+
+      #zoterotag-connection-map-draft-results.open {
+        display: flex;
+      }
+
+      .draft-hit {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        justify-content: space-between;
+        padding: 4px 6px;
+        border-radius: 4px;
+        background: var(--map-panel);
+      }
+
+      .draft-hit span {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      #zoterotag-connection-map-blind {
+        flex: 0 0 auto;
+        padding: 6px 14px;
+        font-size: 12px;
+        color: var(--map-warn);
+        display: none;
+        border-bottom: 1px solid var(--map-border);
+      }
+
+      #zoterotag-connection-map-blind.open {
+        display: block;
+      }
+
+      #zoterotag-connection-map-timeline {
+        background: var(--map-panel);
+        border: 1px solid var(--map-border);
+        color: var(--map-fg);
+        border-radius: 6px;
+        padding: 6px 8px;
+        font: inherit;
+      }
     ]]></style>
   </head>
   <body>
@@ -221,6 +298,12 @@
           placeholder="Filtrele…"
         />
 
+        <select id="zoterotag-connection-map-timeline">
+          <option value="0">Tüm zaman</option>
+          <option value="30">Son 30 gün</option>
+          <option value="90">Son 90 gün</option>
+        </select>
+
         <button
           type="button"
           class="btn"
@@ -230,11 +313,38 @@
         <button
           type="button"
           class="btn"
+          id="zoterotag-connection-map-export-svg"
+        >SVG</button>
+        <button
+          type="button"
+          class="btn"
+          id="zoterotag-connection-map-export-png"
+        >PNG</button>
+
+        <button
+          type="button"
+          class="btn"
           id="zoterotag-connection-map-refresh"
         >Yenile</button>
 
         <span id="zoterotag-zotseek-missing" style="display:none"></span>
       </div>
+
+      <div id="zoterotag-connection-map-secondary">
+        <input
+          id="zoterotag-connection-map-draft"
+          type="text"
+          placeholder="Taslak paragraf yapıştır…"
+        />
+        <button
+          type="button"
+          class="btn primary"
+          id="zoterotag-connection-map-draft-search"
+        >Kaynak öner</button>
+        <div id="zoterotag-connection-map-draft-results"></div>
+      </div>
+
+      <div id="zoterotag-connection-map-blind"></div>
 
       <div id="zoterotag-connection-map-canvas">Bağlantılar hesaplanıyor…</div>
 

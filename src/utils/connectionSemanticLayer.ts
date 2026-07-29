@@ -5,7 +5,7 @@ import {
   makeEdgeId,
 } from "./connectionGraph";
 
-export { isZotSeekReady, computeSemanticSuggestions };
+export { isZotSeekReady, computeSemanticSuggestions, searchByText };
 
 export type SemanticSuggestionResult = {
   available: boolean;
@@ -18,10 +18,33 @@ export type SemanticCacheEntry = {
   title?: string;
 };
 
+export type TextHit = {
+  itemId: number;
+  similarity: number;
+  title?: string;
+};
+
 type ZotSeekApi = {
   isReady?: () => boolean;
   findSimilar?: (
     itemId: number,
+    options?: {
+      topK?: number;
+      minSimilarity?: number;
+      excludeItemIds?: number[];
+      libraryId?: number;
+    },
+  ) => Promise<
+    Array<{
+      itemId?: number;
+      itemKey?: string;
+      libraryId?: number;
+      similarity: number;
+      title?: string;
+    }>
+  >;
+  search?: (
+    query: string,
     options?: {
       topK?: number;
       minSimilarity?: number;
@@ -54,9 +77,78 @@ function isZotSeekReady(): boolean {
     const api = getZotSeekApi();
     if (!api) return false;
     if (typeof api.isReady === "function") return !!api.isReady();
-    return typeof api.findSimilar === "function";
+    return (
+      typeof api.findSimilar === "function" || typeof api.search === "function"
+    );
   } catch {
     return false;
+  }
+}
+
+/**
+ * Free-text semantic search via ZotSeek (highlight / draft proposal).
+ */
+async function searchByText(
+  query: string,
+  options: {
+    topK?: number;
+    minSimilarity?: number;
+    excludeItemIds?: number[];
+    libraryId?: number;
+    nodeIDSet?: Set<number>;
+  } = {},
+): Promise<Array<{ itemId: number; similarity: number; title?: string }>> {
+  if (!query.trim()) return [];
+  const api = getZotSeekApi();
+  if (!api?.search) return [];
+  try {
+    const raw = await api.search(query.trim(), {
+      topK: options.topK ?? 5,
+      minSimilarity: options.minSimilarity ?? 0.4,
+      excludeItemIds: options.excludeItemIds,
+      libraryId: options.libraryId,
+    });
+    const fallbackLibraryID =
+      options.libraryId ?? Zotero.Libraries.userLibraryID;
+    const nodeIDSet = options.nodeIDSet;
+    const hits: Array<{
+      itemId: number;
+      similarity: number;
+      title?: string;
+    }> = [];
+    const seen = new Set<number>();
+
+    for (const r of raw || []) {
+      let itemId: number | null = r.itemId ?? null;
+      if (!itemId && r.itemKey) {
+        const got = Zotero.Items.getByLibraryAndKey(
+          r.libraryId ?? fallbackLibraryID,
+          r.itemKey,
+        );
+        if (got) {
+          if (got.isRegularItem()) {
+            itemId = got.id;
+          } else if (got.parentItemID) {
+            const parent = Zotero.Items.get(got.parentItemID);
+            if (parent && parent.isRegularItem()) {
+              itemId = parent.id;
+            }
+          }
+        }
+      }
+      if (!itemId || seen.has(itemId)) continue;
+      if (nodeIDSet && !nodeIDSet.has(itemId)) continue;
+      seen.add(itemId);
+      hits.push({
+        itemId,
+        similarity: r.similarity,
+        title: r.title,
+      });
+    }
+    return hits;
+  } catch (e) {
+    ztoolkit.log("ZotSeek search failed", e);
+    return [];
   }
 }
 

@@ -16,6 +16,7 @@ import {
   registerConnectionMapNoteObserver,
   unregisterConnectionMapNoteObserver,
 } from "../utils/connectionNotify";
+import { findBlindSpots } from "../utils/connectionBlindSpot";
 import {
   renderConnectionMap,
   updateConnectionMapGraph,
@@ -104,6 +105,7 @@ async function initConnectionMapWindow(win: Window) {
       zotSeekReady: isZotSeekReady(),
     });
     updateStatus(status, base);
+    updateBlindSpotBanner(win, base);
     ztoolkit.log(
       `Connection Map base: ${base.nodes.size} nodes, ${base.edges.length} edges`,
     );
@@ -161,6 +163,7 @@ async function enrichGraphInBackground(
     addon.data.connectionMap.lastGraph = full;
     updateConnectionMapGraph(win, full, readLayerState(win.document));
     updateStatus(status, full);
+    updateBlindSpotBanner(win, full);
     ztoolkit.log(
       `Connection Map enriched: ${full.nodes.size} nodes, ${full.edges.length} edges`,
     );
@@ -273,4 +276,36 @@ function updateStatus(
       suggested,
     },
   });
+}
+
+function updateBlindSpotBanner(win: Window, graph: ConnectionGraph) {
+  const el = win.document.getElementById(
+    `${config.addonRef}-connection-map-blind`,
+  );
+  if (!el) return;
+  const spots = findBlindSpots(graph);
+  if (!spots.length) {
+    el.textContent = "";
+    el.classList.remove("open");
+    return;
+  }
+  const top = spots[0];
+  el.textContent = getString("connection-map-blind-spot", {
+    args: {
+      a: top.a,
+      b: top.b,
+      bridges: top.bridges,
+      expected: top.expectedMin,
+    },
+  });
+  el.classList.add("open");
+  el.onclick = () => {
+    const filter = win.document.getElementById(
+      `${config.addonRef}-connection-map-filter`,
+    ) as HTMLInputElement | null;
+    if (filter) {
+      filter.value = `${top.a} ${top.b}`;
+      filter.dispatchEvent(new win.Event("input"));
+    }
+  };
 }

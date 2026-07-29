@@ -6,5 +6,7 @@ pref("__prefsPrefix__.menuSortBy", "menu");
 pref("__prefsPrefix__.showPopup", true);
 pref("__prefsPrefix__.rulesSortColumnIndex", 0);
 pref("__prefsPrefix__.rulesSortColumnAscending", false);
-/* Connection Map — D(iii) highlight→semantic stub (default off). */
-pref("__prefsPrefix__.connectionMapEnableHighlightLayer", false);
+/* Connection Map — D(iii) highlight→semantic (default on, rate-limited). */
+pref("__prefsPrefix__.connectionMapEnableHighlightLayer", true);
+/* Timeline JSON (capped). */
+pref("__prefsPrefix__.connectionMapTimelineJson", "[]");

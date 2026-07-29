@@ -18,6 +18,15 @@ import {
   getNodeDisciplineKey,
   isCrossDiscipline,
 } from "../utils/connectionGraph";
+import { filterEdgesByTimelineDays } from "../utils/connectionTimeline";
+import {
+  exportConnectionMapPng,
+  exportConnectionMapSvg,
+} from "../utils/connectionExport";
+import {
+  isZotSeekReady,
+  searchByText,
+} from "../utils/connectionSemanticLayer";
 
 export type ConnectionMapLayerState = {
   tag: boolean;
@@ -212,6 +221,143 @@ function wireChrome(
     filter.placeholder = getString("connection-map-filter-placeholder");
     filter.oninput = () => refilterFromCache(win);
   }
+
+  const timeline = doc.getElementById(
+    `${config.addonRef}-connection-map-timeline`,
+  ) as HTMLSelectElement | null;
+  if (timeline) {
+    const opt0 = timeline.options[0];
+    const opt1 = timeline.options[1];
+    const opt2 = timeline.options[2];
+    if (opt0) opt0.text = getString("connection-map-timeline-all");
+    if (opt1) opt1.text = getString("connection-map-timeline-30");
+    if (opt2) opt2.text = getString("connection-map-timeline-90");
+    timeline.onchange = () => refilterFromCache(win);
+  }
+
+  const exportSvgBtn = doc.getElementById(
+    `${config.addonRef}-connection-map-export-svg`,
+  ) as HTMLButtonElement | null;
+  if (exportSvgBtn) {
+    exportSvgBtn.textContent = getString("connection-map-export-svg");
+    exportSvgBtn.onclick = () => {
+      if (exportConnectionMapSvg(win)) {
+        updateHint(getString("connection-map-export-done"));
+      }
+    };
+  }
+  const exportPngBtn = doc.getElementById(
+    `${config.addonRef}-connection-map-export-png`,
+  ) as HTMLButtonElement | null;
+  if (exportPngBtn) {
+    exportPngBtn.textContent = getString("connection-map-export-png");
+    exportPngBtn.onclick = () => {
+      if (exportConnectionMapPng(win)) {
+        updateHint(getString("connection-map-export-done"));
+      }
+    };
+  }
+
+  wireDraftSearch(win, graph);
+}
+
+function wireDraftSearch(win: Window, graph: ConnectionGraph) {
+  const doc = win.document;
+  const input = doc.getElementById(
+    `${config.addonRef}-connection-map-draft`,
+  ) as HTMLInputElement | null;
+  const btn = doc.getElementById(
+    `${config.addonRef}-connection-map-draft-search`,
+  ) as HTMLButtonElement | null;
+  const results = doc.getElementById(
+    `${config.addonRef}-connection-map-draft-results`,
+  );
+  if (!input || !btn || !results) return;
+
+  input.placeholder = getString("connection-map-draft-placeholder");
+  btn.textContent = getString("connection-map-draft-search");
+
+  btn.onclick = async () => {
+    const q = (input.value || "").trim();
+    results.textContent = "";
+    results.classList.remove("open");
+    if (!q) return;
+    if (!isZotSeekReady()) {
+      results.textContent = getString("connection-map-draft-empty");
+      results.classList.add("open");
+      return;
+    }
+    btn.disabled = true;
+    try {
+      const hits = await searchByText(q, {
+        topK: 5,
+        minSimilarity: 0.35,
+        libraryId: graph.libraryID,
+        nodeIDSet: new Set(graph.nodes.keys()),
+      });
+      if (!hits.length) {
+        results.textContent = getString("connection-map-draft-empty");
+        results.classList.add("open");
+        return;
+      }
+      results.classList.add("open");
+      for (const hit of hits) {
+        const node = graph.nodes.get(hit.itemId);
+        const row = doc.createElement("div");
+        row.className = "draft-hit";
+        const label = doc.createElement("span");
+        const title =
+          node?.title ||
+          hit.title ||
+          Zotero.Items.get(hit.itemId)?.getDisplayTitle() ||
+          String(hit.itemId);
+        label.textContent = `${title} · ${Math.round(hit.similarity * 100)}%`;
+        row.appendChild(label);
+
+        const selectBtn = doc.createElement("button");
+        selectBtn.type = "button";
+        selectBtn.className = "btn";
+        selectBtn.textContent = getString("connection-map-draft-select");
+        selectBtn.onclick = () => {
+          try {
+            Zotero.getActiveZoteroPane()?.selectItem(hit.itemId);
+          } catch (e) {
+            ztoolkit.log("draft select failed", e);
+          }
+        };
+        row.appendChild(selectBtn);
+
+        const bindBtn = doc.createElement("button");
+        bindBtn.type = "button";
+        bindBtn.className = "btn";
+        bindBtn.textContent = getString("connection-map-draft-bind");
+        bindBtn.onclick = async () => {
+          const selected = Zotero.getActiveZoteroPane()?.getSelectedItems?.(false);
+          const seed = selected?.find((it) => it.isRegularItem?.());
+          if (!seed) {
+            updateHint(getString("connection-map-connect-pick-first"));
+            return;
+          }
+          const target = Zotero.Items.get(hit.itemId);
+          if (!target) return;
+          const wrote = await confirmManualConnection(seed, target);
+          if (wrote) {
+            updateHint(getString("connection-map-connect-done"));
+            const refreshBtn = doc.getElementById(
+              `${config.addonRef}-connection-map-refresh`,
+            ) as HTMLButtonElement | null;
+            refreshBtn?.click();
+          } else {
+            updateHint(getString("connection-map-already-related"));
+          }
+        };
+        row.appendChild(bindBtn);
+        results.appendChild(row);
+      }
+    } finally {
+      btn.disabled = false;
+    }
+  };
 }
 
 /** Layer/filter change: re-render from cached graph (no recompute). */
@@ -293,14 +439,16 @@ function updateZotSeekUI(win: Window, ready: boolean) {
 function visibleEdges(
   graph: ConnectionGraph,
   layerState: ConnectionMapLayerState,
+  timelineDays = 0,
 ): GraphEdge[] {
-  return graph.edges.filter((e) => {
+  const layered = graph.edges.filter((e) => {
     if (e.layer === "tag" && !layerState.tag) return false;
     if (e.layer === "manual" && !layerState.manual) return false;
     if (e.layer === "semantic" && !layerState.semantic) return false;
     if (e.layer === "note" && !layerState.note) return false;
     return true;
   });
+  return filterEdgesByTimelineDays(layered, timelineDays);
 }
 
 function buildSimulation(
@@ -319,8 +467,12 @@ function buildSimulation(
     `${config.addonRef}-connection-map-filter`,
   ) as HTMLInputElement | null;
   const filter = (filterEl?.value || "").trim().toLocaleLowerCase("tr");
+  const timelineEl = doc.getElementById(
+    `${config.addonRef}-connection-map-timeline`,
+  ) as HTMLSelectElement | null;
+  const timelineDays = Number(timelineEl?.value || "0") || 0;
 
-  const edges = visibleEdges(graph, layerState);
+  const edges = visibleEdges(graph, layerState, timelineDays);
   const nodeIDs = new Set<number>();
   for (const e of edges) {
     nodeIDs.add(e.source);
@@ -334,7 +486,7 @@ function buildSimulation(
   if (filter) {
     for (const [id, node] of graph.nodes) {
       const hay =
-        `${node.title} ${node.creatorSummary} ${node.disciplineLabels.join(" ")}`.toLocaleLowerCase(
+        `${node.title} ${node.creatorSummary} ${node.disciplineLabels.join(" ")} ${node.disciplineProfile?.primary || ""}`.toLocaleLowerCase(
           "tr",
         );
       if (hay.includes(filter)) nodeIDs.add(id);
@@ -574,7 +726,11 @@ function mountSvg(
     g.style.cursor = "pointer";
 
     const degree = degreeById.get(sn.id) || 0;
-    const r = Math.min(14, 5 + Math.sqrt(degree + sn.node.tagCount) * 1.2);
+    const bridge = sn.node.bridgeScore || 0;
+    const r = Math.min(
+      18,
+      5 + Math.sqrt(degree + sn.node.tagCount) * 1.1 + bridge * 1.35,
+    );
 
     const circle = doc.createElementNS("http://www.w3.org/2000/svg", "circle");
     circle.setAttribute("r", String(r));
@@ -587,8 +743,14 @@ function mountSvg(
       sn.node.title,
       sn.node.creatorSummary,
       sn.node.year ? String(sn.node.year) : "",
-      sn.node.disciplineLabels.join(", "),
+      sn.node.disciplineProfile?.primary ||
+        sn.node.disciplineLabels.join(", "),
       getNodeDisciplineKey(sn.node),
+      sn.node.bridgeScore
+        ? getString("connection-map-node-bridge-score", {
+            args: { score: sn.node.bridgeScore },
+          })
+        : "",
     ]
       .filter(Boolean)
       .join(" · ");

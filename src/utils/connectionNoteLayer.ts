@@ -6,11 +6,13 @@ import {
   makeEdgeId,
 } from "./connectionGraph";
 import { recordConfirmedConnection } from "./connectionActions";
+import { isZotSeekReady, searchByText } from "./connectionSemanticLayer";
 
 export {
   extractCitationSpansFromNote,
   extractBetterNotesWikilinks,
   extractSelectItemLinksFromNote,
+  extractHighlightTextsFromNote,
   computeNoteLayerEdges,
   computeNoteLayerEdgesFromNotes,
   computeHighlightSemanticEdges,
@@ -21,6 +23,12 @@ type NoteCitationHit = {
   targetItemID: number;
   noteID: number;
   source: "citation-span" | "better-notes-wikilink" | "highlight-semantic";
+};
+
+type HighlightSnippet = {
+  noteID: number;
+  sourceItemID: number;
+  text: string;
 };
 
 /**
@@ -289,15 +297,151 @@ function computeNoteLayerEdgesFromNotes(
 }
 
 /**
- * D(iii) stub — gated behind connectionMapEnableHighlightLayer (default off).
+ * Strip tags from highlight span inner HTML.
+ */
+function stripHtml(html: string): string {
+  return html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Better Notes / Zotero annotation highlights in note HTML:
+ *   <span class="highlight|underline" data-annotation="...">text</span>
+ */
+function extractHighlightTextsFromNote(
+  noteItem: Zotero.Item,
+): HighlightSnippet[] {
+  if (!noteItem.isNote()) return [];
+  const sourceItemID = citingItemID(noteItem);
+  if (!sourceItemID) return [];
+  const html = noteItem.getNote() || "";
+  const out: HighlightSnippet[] = [];
+  const re = /<span\b([^>]*)>([\s\S]*?)<\/span>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(html))) {
+    const attrs = match[1] || "";
+    const isHighlight =
+      /\bclass\s*=\s*"[^"]*\b(highlight|underline)\b/i.test(attrs) &&
+      /\bdata-annotation\s*=\s*"/i.test(attrs);
+    if (!isHighlight) continue;
+    const text = stripHtml(match[2] || "");
+    if (text.length < 24) continue;
+    out.push({ noteID: noteItem.id, sourceItemID, text });
+  }
+  return out;
+}
+
+/**
+ * D(iii): highlighted passages → ZotSeek text search → suggested note edges.
+ * Soft-fail when ZotSeek missing. Rate-limited. Never auto-promotes.
  */
 async function computeHighlightSemanticEdges(
-  _nodes: Map<number, GraphNode>,
+  nodes: Map<number, GraphNode>,
 ): Promise<GraphEdge[]> {
   const enabled = getPref("connectionMapEnableHighlightLayer");
   if (!enabled) return [];
-  // Stub for v1 first cut — highlight→ZotSeek search lands in a later slice.
-  return [];
+  if (!isZotSeekReady()) return [];
+
+  const MAX_HIGHLIGHTS_PER_NOTE = 3;
+  const MAX_QUERIES = 24;
+  const MAX_EDGES = 60;
+  const TOP_K = 4;
+  const MIN_SIM = 0.42;
+
+  let libraryID = Zotero.Libraries.userLibraryID;
+  for (const n of nodes.values()) {
+    libraryID = n.libraryID;
+    break;
+  }
+
+  let notes: Zotero.Item[] = [];
+  try {
+    const all = await Zotero.Items.getAll(libraryID);
+    notes = all.filter((i) => i.isNote() && !i.deleted);
+  } catch (e) {
+    ztoolkit.log("Highlight scan failed to list notes", e);
+    return [];
+  }
+
+  const snippets: HighlightSnippet[] = [];
+  for (const note of notes) {
+    const fromNote = extractHighlightTextsFromNote(note);
+    snippets.push(...fromNote.slice(0, MAX_HIGHLIGHTS_PER_NOTE));
+    if (snippets.length >= MAX_QUERIES) break;
+  }
+  const limited = snippets.slice(0, MAX_QUERIES);
+  if (!limited.length) return [];
+
+  const nodeIDSet = new Set(nodes.keys());
+  const dismissed = addon.data.connectionMap?.dismissedSemanticIds;
+  const pairBest = new Map<
+    string,
+    { a: number; b: number; score: number; noteID: number }
+  >();
+
+  for (let i = 0; i < limited.length; i++) {
+    const snip = limited[i];
+    if (!nodes.has(snip.sourceItemID)) continue;
+    try {
+      const hits = await searchByText(snip.text, {
+        topK: TOP_K,
+        minSimilarity: MIN_SIM,
+        excludeItemIds: [snip.sourceItemID],
+        libraryId: libraryID,
+        nodeIDSet,
+      });
+      for (const hit of hits) {
+        if (hit.itemId === snip.sourceItemID) continue;
+        if (!nodes.has(hit.itemId)) continue;
+        const a = Math.min(snip.sourceItemID, hit.itemId);
+        const b = Math.max(snip.sourceItemID, hit.itemId);
+        const edgeId = makeEdgeId("note", a, b, `hl-${snip.noteID}`);
+        if (dismissed?.has(edgeId)) continue;
+        const na = nodes.get(a)!;
+        const nb = nodes.get(b)!;
+        const cross = isCrossDiscipline(na, nb);
+        const score = hit.similarity * (cross ? 1.08 : 1);
+        const pk = `${a}::${b}`;
+        const prev = pairBest.get(pk);
+        if (!prev || score > prev.score) {
+          pairBest.set(pk, { a, b, score, noteID: snip.noteID });
+        }
+      }
+    } catch (e) {
+      ztoolkit.log("Highlight→ZotSeek query failed", e);
+    }
+    if (i % 3 === 2) await Zotero.Promise.delay(0);
+  }
+
+  const ranked = [...pairBest.values()]
+    .sort((p, q) => q.score - p.score)
+    .slice(0, MAX_EDGES);
+
+  const edges: GraphEdge[] = [];
+  for (const pair of ranked) {
+    const sourceNode = nodes.get(pair.a);
+    const targetNode = nodes.get(pair.b);
+    if (!sourceNode || !targetNode) continue;
+    edges.push({
+      id: makeEdgeId("note", pair.a, pair.b, `hl-${pair.noteID}`),
+      source: pair.a,
+      target: pair.b,
+      layer: "note",
+      state: "suggested",
+      confidence: Math.max(0.2, Math.min(0.85, pair.score)),
+      viaNoteID: pair.noteID,
+      viaNoteSource: "highlight-semantic",
+      crossDiscipline: isCrossDiscipline(sourceNode, targetNode),
+    });
+  }
+  return edges;
 }
 
 /**
@@ -319,7 +463,7 @@ async function promoteHighConfidenceNoteEdges(
     const itemA = Zotero.Items.get(edge.source);
     const itemB = Zotero.Items.get(edge.target);
     if (!itemA || !itemB) continue;
-    const wrote = await recordConfirmedConnection(itemA, itemB);
+    const wrote = await recordConfirmedConnection(itemA, itemB, "note");
     if (wrote) promoted++;
   }
   return promoted;

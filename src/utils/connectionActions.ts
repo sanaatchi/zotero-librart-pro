@@ -2,9 +2,11 @@ import { foldTag, similarity } from "./tagAnalysis";
 import {
   GraphEdge,
   GraphNode,
+  LayerKind,
   isCrossDiscipline,
   makeEdgeId,
 } from "./connectionGraph";
+import { appendTimelineEntry } from "./connectionTimeline";
 
 export {
   recordConfirmedConnection,
@@ -26,12 +28,13 @@ function areItemsRelated(itemA: Zotero.Item, itemB: Zotero.Item): boolean {
 
 /**
  * Single funnel for all confirmed relation writes (layers B, C, D promotion).
- * v1.1 connection-history log can be appended here in one place.
+ * Appends a timeline entry for v1.1 history filters.
  * Idempotent: already-related pairs are a no-op.
  */
 async function recordConfirmedConnection(
   itemA: Zotero.Item,
   itemB: Zotero.Item,
+  layer: LayerKind | "unknown" = "unknown",
 ): Promise<boolean> {
   if (itemA.id === itemB.id) return false;
   if (areItemsRelated(itemA, itemB)) return false;
@@ -40,6 +43,11 @@ async function recordConfirmedConnection(
   itemB.addRelatedItem(itemA);
   await itemA.saveTx({ skipSelect: true, skipNotifier: true });
   await itemB.saveTx({ skipSelect: true, skipNotifier: true });
+  try {
+    appendTimelineEntry(itemA, itemB, layer);
+  } catch (e) {
+    ztoolkit.log("Timeline append failed", e);
+  }
   return true;
 }
 
@@ -47,7 +55,7 @@ async function confirmManualConnection(
   itemA: Zotero.Item,
   itemB: Zotero.Item,
 ): Promise<boolean> {
-  return recordConfirmedConnection(itemA, itemB);
+  return recordConfirmedConnection(itemA, itemB, "manual");
 }
 
 async function acceptSuggestedConnection(edge: GraphEdge): Promise<boolean> {
@@ -56,7 +64,9 @@ async function acceptSuggestedConnection(edge: GraphEdge): Promise<boolean> {
   if (!itemA || !itemB) {
     throw new Error("Suggested connection items not found");
   }
-  return recordConfirmedConnection(itemA, itemB);
+  const layer =
+    edge.layer === "note" || edge.layer === "semantic" ? edge.layer : "manual";
+  return recordConfirmedConnection(itemA, itemB, layer);
 }
 
 async function removeConnection(
