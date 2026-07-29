@@ -56,10 +56,8 @@ describe("FeatureRegistry", () => {
         ran.push("off");
       },
     });
-    await registry.initPhase(
-      "startup",
-      { adapter: mockAdapter },
-      (key) => (key === "inciteful.enabled" ? false : undefined),
+    await registry.initPhase("startup", { adapter: mockAdapter }, (key) =>
+      key === "inciteful.enabled" ? false : undefined,
     );
     expect(ran).toEqual(["on"]);
   });
@@ -79,7 +77,11 @@ describe("FeatureRegistry", () => {
       init: () => {},
       shutdown: () => shutdown.push("second"),
     });
-    await registry.initPhase("startup", { adapter: mockAdapter }, () => undefined);
+    await registry.initPhase(
+      "startup",
+      { adapter: mockAdapter },
+      () => undefined,
+    );
     registry.shutdownAll();
     expect(shutdown).toEqual(["second", "first"]);
   });

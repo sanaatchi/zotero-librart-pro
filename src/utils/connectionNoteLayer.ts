@@ -132,9 +132,7 @@ function resolveCitationItem(ci: any, libraryID: number): number | null {
  * Better Notes wikilinks appear as href="zotero://note/..." in note HTML.
  * Parse directly — do not call into Better Notes internals.
  */
-function extractBetterNotesWikilinks(
-  noteItem: Zotero.Item,
-): NoteCitationHit[] {
+function extractBetterNotesWikilinks(noteItem: Zotero.Item): NoteCitationHit[] {
   if (!noteItem.isNote()) return [];
   const html = noteItem.getNote() || "";
   const hits: NoteCitationHit[] = [];
@@ -149,10 +147,7 @@ function extractBetterNotesWikilinks(
     if (targetParentID === sourceParentID) continue;
     const targetParent = Zotero.Items.get(targetParentID);
     const sourceParent = Zotero.Items.get(sourceParentID);
-    if (
-      targetParent?.isRegularItem() &&
-      sourceParent?.isRegularItem()
-    ) {
+    if (targetParent?.isRegularItem() && sourceParent?.isRegularItem()) {
       hits.push({
         targetItemID: targetParent.id,
         noteID: noteItem.id,
@@ -207,9 +202,7 @@ function resolveNoteLink(href: string): Zotero.Item | null {
   //   zotero://note/{libraryId}/KEY/ (Better Notes actual group writer)
   // Optional ?line= / ?section= / #selection
   try {
-    const m = href.match(
-      /^zotero:\/\/note\/(?:u|g\/\d+|\d+)\/([A-Z0-9]+)/i,
-    );
+    const m = href.match(/^zotero:\/\/note\/(?:u|g\/\d+|\d+)\/([A-Z0-9]+)/i);
     if (!m) return null;
     const key = m[1];
     const userLib = Zotero.Libraries.userLibraryID;

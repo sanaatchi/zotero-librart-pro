@@ -2,10 +2,7 @@
 // AnkiConnect HTTP client — protocol compatible with yanki-connect (MIT).
 // Transport is injectable so Vitest can run without Zotero.HTTP.
 
-export type AnkiHttpTransport = (
-  url: string,
-  body: string,
-) => Promise<string>;
+export type AnkiHttpTransport = (url: string, body: string) => Promise<string>;
 
 export type AnkiConnectClientOptions = {
   host?: string;
@@ -39,7 +36,8 @@ const DEFAULT_VERSION = 6;
 
 function defaultAnkiEndpoint(host?: string, port?: number): string {
   const h = (host || DEFAULT_HOST).replace(/\/$/, "");
-  const p = typeof port === "number" && Number.isFinite(port) ? port : DEFAULT_PORT;
+  const p =
+    typeof port === "number" && Number.isFinite(port) ? port : DEFAULT_PORT;
   return `${h}:${p}`;
 }
 

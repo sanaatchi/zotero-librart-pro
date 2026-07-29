@@ -89,17 +89,17 @@ async function main() {
     "onnx",
     "model_quantized.onnx",
   );
-  const modelDir = path.join(
-    OUT,
-    "models",
-    "Xenova",
-    "nomic-embed-text-v1.5",
-  );
+  const modelDir = path.join(OUT, "models", "Xenova", "nomic-embed-text-v1.5");
 
   if (fs.existsSync(wasmSrc)) {
-    copyFile(wasmSrc, path.join(OUT, "wasm", "ort-wasm-simd-threaded.jsep.wasm"));
+    copyFile(
+      wasmSrc,
+      path.join(OUT, "wasm", "ort-wasm-simd-threaded.jsep.wasm"),
+    );
   } else {
-    console.warn("WASM missing in referanslar — install @huggingface/transformers and re-run, or copy manually");
+    console.warn(
+      "WASM missing in referanslar — install @huggingface/transformers and re-run, or copy manually",
+    );
   }
   if (fs.existsSync(wasmMjsSrc)) {
     copyFile(
@@ -110,7 +110,13 @@ async function main() {
 
   const jsonNames = ["config.json", "tokenizer.json", "tokenizer_config.json"];
   for (const name of jsonNames) {
-    const src = path.join(REF, "models", "Xenova", "nomic-embed-text-v1.5", name);
+    const src = path.join(
+      REF,
+      "models",
+      "Xenova",
+      "nomic-embed-text-v1.5",
+      name,
+    );
     if (fs.existsSync(src)) {
       copyFile(src, path.join(modelDir, name));
     }
@@ -126,7 +132,9 @@ async function main() {
         `referanslar ONNX looks like LFS pointer (${fs.statSync(onnxRef).size} B) — downloading from Hugging Face…`,
       );
     } else {
-      console.warn("ONNX missing in referanslar — downloading from Hugging Face…");
+      console.warn(
+        "ONNX missing in referanslar — downloading from Hugging Face…",
+      );
     }
     const hf =
       "https://huggingface.co/Xenova/nomic-embed-text-v1.5/resolve/main/onnx/model_quantized.onnx";

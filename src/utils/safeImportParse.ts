@@ -28,7 +28,12 @@ function pickYear(date: string | undefined): number | undefined {
 
 function formatAuthors(
   creators:
-    | Array<{ creatorType?: string; firstName?: string; lastName?: string; name?: string }>
+    | Array<{
+        creatorType?: string;
+        firstName?: string;
+        lastName?: string;
+        name?: string;
+      }>
     | undefined,
 ): string {
   if (!Array.isArray(creators)) return "";
@@ -44,7 +49,9 @@ function formatAuthors(
     .join("; ");
 }
 
-function extractIdentifierLabel(item: Record<string, unknown>): string | undefined {
+function extractIdentifierLabel(
+  item: Record<string, unknown>,
+): string | undefined {
   const doi = typeof item.DOI === "string" ? item.DOI.trim() : "";
   if (doi) return `DOI:${doi}`;
   const isbn = typeof item.ISBN === "string" ? item.ISBN.trim() : "";
@@ -65,12 +72,14 @@ function cslItemToCandidate(
   const container =
     (typeof item.publicationTitle === "string" && item.publicationTitle) ||
     (typeof item.bookTitle === "string" && item.bookTitle) ||
-    (typeof item.journalAbbreviation === "string" && item.journalAbbreviation) ||
+    (typeof item.journalAbbreviation === "string" &&
+      item.journalAbbreviation) ||
     undefined;
   void container;
   return {
     rowId,
-    itemType: typeof item.itemType === "string" ? item.itemType : "journalArticle",
+    itemType:
+      typeof item.itemType === "string" ? item.itemType : "journalArticle",
     title,
     authors: formatAuthors(
       item.creators as

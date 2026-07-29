@@ -3,269 +3,271 @@
   <head>
     <meta charset="utf-8" />
     <title>Bağlantı Haritası</title>
-    <style type="text/css"><![CDATA[
-      :root {
-        --map-bg: #f7f7f8;
-        --map-fg: #1c1c1e;
-        --map-muted: #6b6b70;
-        --map-card: #ffffff;
-        --map-panel: #f0f0f2;
-        --map-border: #e4e4e7;
-        --map-accent: #2563eb;
-        --map-bridge: #ea580c;
-        --map-node: #3b82f6;
-        --map-node-stroke: #1e3a8a;
-        --map-edge-tag: #64748b;
-        --map-edge-manual: #2563eb;
-        --map-edge-semantic: #8b5cf6;
-        --map-edge-note: #16a34a;
-        --map-edge-citation: #0891b2;
-        --map-warn: #d97706;
-      }
+    <style type="text/css">
+      <![CDATA[
+            :root {
+              --map-bg: #f7f7f8;
+              --map-fg: #1c1c1e;
+              --map-muted: #6b6b70;
+              --map-card: #ffffff;
+              --map-panel: #f0f0f2;
+              --map-border: #e4e4e7;
+              --map-accent: #2563eb;
+              --map-bridge: #ea580c;
+              --map-node: #3b82f6;
+              --map-node-stroke: #1e3a8a;
+              --map-edge-tag: #64748b;
+              --map-edge-manual: #2563eb;
+              --map-edge-semantic: #8b5cf6;
+              --map-edge-note: #16a34a;
+              --map-edge-citation: #0891b2;
+              --map-warn: #d97706;
+            }
 
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --map-bg: #1c1c1e;
-          --map-fg: #f2f2f3;
-          --map-muted: #a0a0a6;
-          --map-card: #2a2a2e;
-          --map-panel: #35353a;
-          --map-border: #3a3a40;
-          --map-node: #60a5fa;
-          --map-node-stroke: #93c5fd;
-        }
-      }
+            @media (prefers-color-scheme: dark) {
+              :root {
+                --map-bg: #1c1c1e;
+                --map-fg: #f2f2f3;
+                --map-muted: #a0a0a6;
+                --map-card: #2a2a2e;
+                --map-panel: #35353a;
+                --map-border: #3a3a40;
+                --map-node: #60a5fa;
+                --map-node-stroke: #93c5fd;
+              }
+            }
 
-      html, body {
-        margin: 0;
-        padding: 0;
-        height: 100%;
-        background: var(--map-bg);
-        color: var(--map-fg);
-        font: 13px/1.4 system-ui, Segoe UI, sans-serif;
-      }
+            html, body {
+              margin: 0;
+              padding: 0;
+              height: 100%;
+              background: var(--map-bg);
+              color: var(--map-fg);
+              font: 13px/1.4 system-ui, Segoe UI, sans-serif;
+            }
 
-      #librartpro-connection-map-shell {
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        box-sizing: border-box;
-      }
+            #librartpro-connection-map-shell {
+              height: 100%;
+              display: flex;
+              flex-direction: column;
+              box-sizing: border-box;
+            }
 
-      #librartpro-connection-map-toolbar {
-        flex: 0 0 auto;
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 10px 14px;
-        padding: 10px 14px;
-        border-bottom: 1px solid var(--map-border);
-        background: var(--map-card);
-      }
+            #librartpro-connection-map-toolbar {
+              flex: 0 0 auto;
+              display: flex;
+              flex-wrap: wrap;
+              align-items: center;
+              gap: 10px 14px;
+              padding: 10px 14px;
+              border-bottom: 1px solid var(--map-border);
+              background: var(--map-card);
+            }
 
-      .hero-text {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        min-width: 180px;
-        margin-right: auto;
-      }
+            .hero-text {
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+              min-width: 180px;
+              margin-right: auto;
+            }
 
-      h1 {
-        margin: 0;
-        font-size: 16px;
-        font-weight: 650;
-        letter-spacing: -0.02em;
-      }
+            h1 {
+              margin: 0;
+              font-size: 16px;
+              font-weight: 650;
+              letter-spacing: -0.02em;
+            }
 
-      .muted { color: var(--map-muted); margin: 0; font-size: 12px; }
+            .muted { color: var(--map-muted); margin: 0; font-size: 12px; }
 
-      .layers {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 8px 12px;
-      }
+            .layers {
+              display: flex;
+              flex-wrap: wrap;
+              align-items: center;
+              gap: 8px 12px;
+            }
 
-      .layer {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        user-select: none;
-      }
+            .layer {
+              display: inline-flex;
+              align-items: center;
+              gap: 5px;
+              user-select: none;
+            }
 
-      .layer input { margin: 0; }
+            .layer input { margin: 0; }
 
-      #librartpro-connection-map-filter {
-        width: 160px;
-        border: 1px solid var(--map-border);
-        background: var(--map-bg);
-        color: var(--map-fg);
-        border-radius: 6px;
-        padding: 5px 8px;
-        font: inherit;
-      }
+            #librartpro-connection-map-filter {
+              width: 160px;
+              border: 1px solid var(--map-border);
+              background: var(--map-bg);
+              color: var(--map-fg);
+              border-radius: 6px;
+              padding: 5px 8px;
+              font: inherit;
+            }
 
-      .btn {
-        appearance: none;
-        border: 1px solid var(--map-border);
-        background: var(--map-bg);
-        color: var(--map-fg);
-        border-radius: 6px;
-        padding: 5px 10px;
-        cursor: pointer;
-        font: inherit;
-        white-space: nowrap;
-      }
-      .btn:hover { border-color: var(--map-accent); }
-      .btn:disabled { opacity: 0.6; cursor: default; }
-      .btn.active,
-      .btn.primary {
-        border-color: var(--map-accent);
-        background: color-mix(in srgb, var(--map-accent) 16%, transparent);
-        color: var(--map-accent);
-      }
+            .btn {
+              appearance: none;
+              border: 1px solid var(--map-border);
+              background: var(--map-bg);
+              color: var(--map-fg);
+              border-radius: 6px;
+              padding: 5px 10px;
+              cursor: pointer;
+              font: inherit;
+              white-space: nowrap;
+            }
+            .btn:hover { border-color: var(--map-accent); }
+            .btn:disabled { opacity: 0.6; cursor: default; }
+            .btn.active,
+            .btn.primary {
+              border-color: var(--map-accent);
+              background: color-mix(in srgb, var(--map-accent) 16%, transparent);
+              color: var(--map-accent);
+            }
 
-      #librartpro-zotseek-missing {
-        color: var(--map-warn);
-        font-size: 12px;
-      }
+            #librartpro-zotseek-missing {
+              color: var(--map-warn);
+              font-size: 12px;
+            }
 
-      #librartpro-connection-map-canvas {
-        flex: 1 1 auto;
-        min-height: 0;
-        position: relative;
-        overflow: hidden;
-      }
+            #librartpro-connection-map-canvas {
+              flex: 1 1 auto;
+              min-height: 0;
+              position: relative;
+              overflow: hidden;
+            }
 
-      #librartpro-connection-map-canvas svg {
-        display: block;
-        width: 100%;
-        height: 100%;
-        cursor: grab;
-        touch-action: none;
-      }
+            #librartpro-connection-map-canvas svg {
+              display: block;
+              width: 100%;
+              height: 100%;
+              cursor: grab;
+              touch-action: none;
+            }
 
-      #librartpro-connection-map-canvas svg.is-panning,
-      #librartpro-connection-map-canvas svg.is-dragging-node {
-        cursor: grabbing;
-      }
+            #librartpro-connection-map-canvas svg.is-panning,
+            #librartpro-connection-map-canvas svg.is-dragging-node {
+              cursor: grabbing;
+            }
 
-      #librartpro-connection-map-canvas svg.is-space-pan {
-        cursor: grab;
-      }
+            #librartpro-connection-map-canvas svg.is-space-pan {
+              cursor: grab;
+            }
 
-      #librartpro-connection-map-canvas svg .edges path,
-      #librartpro-connection-map-canvas svg .nodes circle {
-        vector-effect: non-scaling-stroke;
-      }
+            #librartpro-connection-map-canvas svg .edges path,
+            #librartpro-connection-map-canvas svg .nodes circle {
+              vector-effect: non-scaling-stroke;
+            }
 
-      .node-label-wrap {
-        pointer-events: none;
-      }
+            .node-label-wrap {
+              pointer-events: none;
+            }
 
-      .node-label {
-        fill: var(--map-fg);
-        font-size: 11px;
-        font-weight: 500;
-        pointer-events: none;
-        paint-order: stroke fill;
-        stroke: var(--map-bg);
-        stroke-width: 3px;
-        stroke-linejoin: round;
-      }
+            .node-label {
+              fill: var(--map-fg);
+              font-size: 11px;
+              font-weight: 500;
+              pointer-events: none;
+              paint-order: stroke fill;
+              stroke: var(--map-bg);
+              stroke-width: 3px;
+              stroke-linejoin: round;
+            }
 
-      #librartpro-connection-map-status {
-        flex: 0 0 auto;
-        padding: 8px 14px;
-        border-top: 1px solid var(--map-border);
-        color: var(--map-muted);
-        font-size: 12px;
-        display: flex;
-        justify-content: space-between;
-        gap: 12px;
-      }
+            #librartpro-connection-map-status {
+              flex: 0 0 auto;
+              padding: 8px 14px;
+              border-top: 1px solid var(--map-border);
+              color: var(--map-muted);
+              font-size: 12px;
+              display: flex;
+              justify-content: space-between;
+              gap: 12px;
+            }
 
-      #librartpro-connection-map-hint {
-        color: var(--map-bridge);
-      }
+            #librartpro-connection-map-hint {
+              color: var(--map-bridge);
+            }
 
-      #librartpro-connection-map-secondary {
-        flex: 0 0 auto;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        align-items: center;
-        padding: 8px 14px;
-        border-bottom: 1px solid var(--map-border);
-        background: color-mix(in srgb, var(--map-bg) 92%, var(--map-bridge));
-      }
+            #librartpro-connection-map-secondary {
+              flex: 0 0 auto;
+              display: flex;
+              flex-wrap: wrap;
+              gap: 8px;
+              align-items: center;
+              padding: 8px 14px;
+              border-bottom: 1px solid var(--map-border);
+              background: color-mix(in srgb, var(--map-bg) 92%, var(--map-bridge));
+            }
 
-      #librartpro-connection-map-draft {
-        flex: 1 1 280px;
-        min-width: 180px;
-        background: var(--map-panel);
-        border: 1px solid var(--map-border);
-        color: var(--map-fg);
-        border-radius: 6px;
-        padding: 6px 10px;
-        font: inherit;
-      }
+            #librartpro-connection-map-draft {
+              flex: 1 1 280px;
+              min-width: 180px;
+              background: var(--map-panel);
+              border: 1px solid var(--map-border);
+              color: var(--map-fg);
+              border-radius: 6px;
+              padding: 6px 10px;
+              font: inherit;
+            }
 
-      #librartpro-connection-map-draft-results {
-        flex: 1 1 100%;
-        display: none;
-        flex-direction: column;
-        gap: 4px;
-        max-height: 140px;
-        overflow: auto;
-        font-size: 12px;
-      }
+            #librartpro-connection-map-draft-results {
+              flex: 1 1 100%;
+              display: none;
+              flex-direction: column;
+              gap: 4px;
+              max-height: 140px;
+              overflow: auto;
+              font-size: 12px;
+            }
 
-      #librartpro-connection-map-draft-results.open {
-        display: flex;
-      }
+            #librartpro-connection-map-draft-results.open {
+              display: flex;
+            }
 
-      .draft-hit {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-        justify-content: space-between;
-        padding: 4px 6px;
-        border-radius: 4px;
-        background: var(--map-panel);
-      }
+            .draft-hit {
+              display: flex;
+              gap: 8px;
+              align-items: center;
+              justify-content: space-between;
+              padding: 4px 6px;
+              border-radius: 4px;
+              background: var(--map-panel);
+            }
 
-      .draft-hit span {
-        flex: 1;
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
+            .draft-hit span {
+              flex: 1;
+              min-width: 0;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+            }
 
-      #librartpro-connection-map-blind {
-        flex: 0 0 auto;
-        padding: 6px 14px;
-        font-size: 12px;
-        color: var(--map-warn);
-        display: none;
-        border-bottom: 1px solid var(--map-border);
-      }
+            #librartpro-connection-map-blind {
+              flex: 0 0 auto;
+              padding: 6px 14px;
+              font-size: 12px;
+              color: var(--map-warn);
+              display: none;
+              border-bottom: 1px solid var(--map-border);
+            }
 
-      #librartpro-connection-map-blind.open {
-        display: block;
-      }
+            #librartpro-connection-map-blind.open {
+              display: block;
+            }
 
-      #librartpro-connection-map-timeline {
-        background: var(--map-panel);
-        border: 1px solid var(--map-border);
-        color: var(--map-fg);
-        border-radius: 6px;
-        padding: 6px 8px;
-        font: inherit;
-      }
-    ]]></style>
+            #librartpro-connection-map-timeline {
+              background: var(--map-panel);
+              border: 1px solid var(--map-border);
+              color: var(--map-fg);
+              border-radius: 6px;
+              padding: 6px 8px;
+              font: inherit;
+            }
+          ]]>
+    </style>
   </head>
   <body>
     <div id="librartpro-connection-map-shell">
@@ -277,33 +279,61 @@
 
         <div class="layers">
           <label class="layer" for="librartpro-layer-tag">
-            <input type="checkbox" id="librartpro-layer-tag" checked="checked" />
+            <input
+              type="checkbox"
+              id="librartpro-layer-tag"
+              checked="checked"
+            />
             <span>Ortak etiket</span>
           </label>
           <label class="layer" for="librartpro-layer-manual">
-            <input type="checkbox" id="librartpro-layer-manual" checked="checked" />
+            <input
+              type="checkbox"
+              id="librartpro-layer-manual"
+              checked="checked"
+            />
             <span>Elle bağlantı</span>
           </label>
           <span id="librartpro-layer-semantic-wrap">
             <label class="layer" for="librartpro-layer-semantic">
-              <input type="checkbox" id="librartpro-layer-semantic" checked="checked" />
+              <input
+                type="checkbox"
+                id="librartpro-layer-semantic"
+                checked="checked"
+              />
               <span>Anlamsal öneri</span>
             </label>
           </span>
           <label class="layer" for="librartpro-layer-note">
-            <input type="checkbox" id="librartpro-layer-note" checked="checked" />
+            <input
+              type="checkbox"
+              id="librartpro-layer-note"
+              checked="checked"
+            />
             <span>Not/alıntı</span>
           </label>
           <label class="layer" for="librartpro-layer-citation">
-            <input type="checkbox" id="librartpro-layer-citation" checked="checked" />
+            <input
+              type="checkbox"
+              id="librartpro-layer-citation"
+              checked="checked"
+            />
             <span>Crossref</span>
           </label>
           <label class="layer" for="librartpro-layer-openalex">
-            <input type="checkbox" id="librartpro-layer-openalex" checked="checked" />
+            <input
+              type="checkbox"
+              id="librartpro-layer-openalex"
+              checked="checked"
+            />
             <span>OpenAlex</span>
           </label>
           <label class="layer" for="librartpro-layer-opencitations">
-            <input type="checkbox" id="librartpro-layer-opencitations" checked="checked" />
+            <input
+              type="checkbox"
+              id="librartpro-layer-opencitations"
+              checked="checked"
+            />
             <span>OpenCitations</span>
           </label>
         </div>
@@ -331,33 +361,41 @@
           type="button"
           class="btn"
           id="librartpro-connection-map-connect"
-        >Bağla modu</button>
+        >
+          Bağla modu
+        </button>
 
         <button
           type="button"
           class="btn primary"
           id="librartpro-connection-map-connect-selected"
-          style="display:none"
+          style="display: none"
         ></button>
 
         <button
           type="button"
           class="btn"
           id="librartpro-connection-map-export-svg"
-        >SVG</button>
+        >
+          SVG
+        </button>
         <button
           type="button"
           class="btn"
           id="librartpro-connection-map-export-png"
-        >PNG</button>
+        >
+          PNG
+        </button>
 
         <button
           type="button"
           class="btn"
           id="librartpro-connection-map-refresh"
-        >Yenile</button>
+        >
+          Yenile
+        </button>
 
-        <span id="librartpro-zotseek-missing" style="display:none"></span>
+        <span id="librartpro-zotseek-missing" style="display: none"></span>
       </div>
 
       <div id="librartpro-connection-map-secondary">
@@ -370,7 +408,9 @@
           type="button"
           class="btn primary"
           id="librartpro-connection-map-draft-search"
-        >Kaynak öner</button>
+        >
+          Kaynak öner
+        </button>
         <div id="librartpro-connection-map-draft-results"></div>
       </div>
 

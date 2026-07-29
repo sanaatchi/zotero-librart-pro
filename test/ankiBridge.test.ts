@@ -44,9 +44,9 @@ describe("ankiNotePayload", () => {
       model: "Basic",
       updatedAt: 2,
     });
-    expect(second.split("\n").filter((l) => l.startsWith(ANKI_EXTRA_PREFIX))).toHaveLength(
-      1,
-    );
+    expect(
+      second.split("\n").filter((l) => l.startsWith(ANKI_EXTRA_PREFIX)),
+    ).toHaveLength(1);
     expect(parseAnkiLink(second)?.noteId).toBe(2);
   });
 
@@ -99,12 +99,14 @@ describe("AnkiConnectClient", () => {
     });
 
     expect(await client.versionProbe()).toBe(6);
-    expect(await client.addNote({
-      deckName: "LibRart",
-      modelName: "Basic",
-      fields: { Front: "Q", Back: "A" },
-      tags: ["librart"],
-    })).toBe(12345);
+    expect(
+      await client.addNote({
+        deckName: "LibRart",
+        modelName: "Basic",
+        fields: { Front: "Q", Back: "A" },
+        tags: ["librart"],
+      }),
+    ).toBe(12345);
 
     await expect(client.findNotes("tag:x")).rejects.toThrow("deck missing");
     expect(calls[0].url).toBe("http://127.0.0.1:8765");

@@ -65,9 +65,9 @@ See also EFGH5678 in text.
 
 describe("markdbMatch", () => {
   it("extracts Citation Key from Extra", () => {
-    expect(extractCitationKeyFromExtra("Citation Key: abc2020\nDOI: 10.1")).toBe(
-      "abc2020",
-    );
+    expect(
+      extractCitationKeyFromExtra("Citation Key: abc2020\nDOI: 10.1"),
+    ).toBe("abc2020");
     expect(extractCitationKeyFromExtra("citekey: xyz")).toBe("xyz");
   });
 
@@ -91,10 +91,9 @@ describe("markdbMatch", () => {
     expect(resolvePrimaryItemId(notes[0], maps)).toBe(1);
     const edges = buildMarkdbEdgeCandidates(notes, maps);
     expect(edges).toHaveLength(2);
-    expect(edges.map((e) => `${e.sourceItemId}-${e.targetItemId}`).sort()).toEqual([
-      "1-2",
-      "1-3",
-    ]);
+    expect(
+      edges.map((e) => `${e.sourceItemId}-${e.targetItemId}`).sort(),
+    ).toEqual(["1-2", "1-3"]);
   });
 
   it("returns empty when primary unresolved", () => {

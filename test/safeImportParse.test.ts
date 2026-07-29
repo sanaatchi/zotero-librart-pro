@@ -15,7 +15,9 @@ describe("safeImportParse", () => {
         title: "Test Article",
         date: "2020",
         DOI: "10.1234/example",
-        creators: [{ creatorType: "author", firstName: "Ada", lastName: "Lovelace" }],
+        creators: [
+          { creatorType: "author", firstName: "Ada", lastName: "Lovelace" },
+        ],
       },
       "r1",
     );
@@ -30,7 +32,9 @@ describe("safeImportParse", () => {
       cslItemToCandidate({ title: "Same", DOI: "10.1/x" }, "a"),
       cslItemToCandidate({ title: "Same copy", DOI: "10.1/x" }, "b"),
     ]);
-    expect(rows[1].warnings.some((w) => w.kind === "duplicate-batch")).toBe(true);
+    expect(rows[1].warnings.some((w) => w.kind === "duplicate-batch")).toBe(
+      true,
+    );
     const selected = defaultImportSelection(rows);
     expect(selected.has("a")).toBe(true);
     expect(selected.has("b")).toBe(false);

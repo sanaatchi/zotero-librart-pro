@@ -48,7 +48,8 @@ async function httpGetJSON(url: string): Promise<unknown> {
 }
 
 async function lookupItem(item: Zotero.Item): Promise<CitegeistLookupResult> {
-  const title = (item.getField("title") as string) || item.getDisplayTitle?.() || "—";
+  const title =
+    (item.getField("title") as string) || item.getDisplayTitle?.() || "—";
   const doi = normalizeOpenAlexDoi((item.getField("DOI") as string) || "");
   if (!doi) {
     return { ok: false, title, doi: null, reason: "no-doi" };
@@ -61,7 +62,10 @@ async function lookupItem(item: Zotero.Item): Promise<CitegeistLookupResult> {
     if (!metrics) {
       return { ok: false, title, doi, reason: "not-found" };
     }
-    return { ok: true, metrics: { ...metrics, title: metrics.title || title, doi } };
+    return {
+      ok: true,
+      metrics: { ...metrics, title: metrics.title || title, doi },
+    };
   } catch {
     return { ok: false, title, doi, reason: "error" };
   }
@@ -85,7 +89,9 @@ async function summarizeSelectedItemsCitegeist(): Promise<void> {
   }
 
   const limited = items.slice(0, 8);
-  updateHint(getString("citegeist-progress", { args: { count: limited.length } }));
+  updateHint(
+    getString("citegeist-progress", { args: { count: limited.length } }),
+  );
   const results: CitegeistLookupResult[] = [];
   for (let i = 0; i < limited.length; i++) {
     results.push(await lookupItem(limited[i]));

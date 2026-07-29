@@ -49,11 +49,7 @@ function appendTimelineEntry(
   saveTimeline(entries);
 }
 
-function pairInTimelineSince(
-  a: number,
-  b: number,
-  sinceMs: number,
-): boolean {
+function pairInTimelineSince(a: number, b: number, sinceMs: number): boolean {
   const lo = Math.min(a, b);
   const hi = Math.max(a, b);
   for (const e of loadTimeline()) {

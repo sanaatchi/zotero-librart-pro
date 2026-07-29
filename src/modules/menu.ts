@@ -11,14 +11,23 @@ import { getZoteroAdapter } from "../adapters/zoteroAdapter";
 import { referenceExtractorMenuChild } from "./referenceExtractor";
 import { safeImportMenuChild } from "./safeImportBridge";
 import { docxCitedMenuChild } from "./docxCitedBridge";
-import { readingFlowMenuChild, readingStatusMenuChild, isReadingFlowEnabled } from "./readingFlowBridge";
+import {
+  readingFlowMenuChild,
+  readingStatusMenuChild,
+  isReadingFlowEnabled,
+} from "./readingFlowBridge";
 import { ankiMenuChild } from "./ankiBridge";
 import { markdbMenuChild } from "./markdbBridge";
 import { semanticMenuChild } from "./semanticBridge";
 import { noteWorkspaceMenuChild } from "./noteWorkspace";
 import { citegeistMenuChild } from "./citegeistBridge";
 
-export { initItemMenu, initReaderMenu, initReaderAnnotationMenu, buildItemMenu };
+export {
+  initItemMenu,
+  initReaderMenu,
+  initReaderAnnotationMenu,
+  buildItemMenu,
+};
 
 /** "Eylem Tetikle" nested submenu — dynamic, populated by buildItemMenu() on popupshowing. */
 function actionsMenuChild(target: "item" | "collection" | "tools") {

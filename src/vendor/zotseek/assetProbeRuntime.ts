@@ -36,10 +36,9 @@ async function probeContentLength(url: string): Promise<number | null> {
     const root = getRootURI();
     if (root && root.startsWith("file:")) {
       const base = root.replace(/\/?$/, "/");
-      const full =
-        url.startsWith("chrome://")
-          ? base + "content/" + url.split("/content/")[1]
-          : url;
+      const full = url.startsWith("chrome://")
+        ? base + "content/" + url.split("/content/")[1]
+        : url;
       if (full.startsWith("file:")) {
         let path = full.replace(/^file:\/\//i, "");
         if (/^\/[A-Za-z]:\//.test(path)) path = path.slice(1);

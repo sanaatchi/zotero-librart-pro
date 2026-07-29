@@ -347,10 +347,7 @@ function readLayerState(doc: Document): ConnectionMapLayerState {
   };
 }
 
-function updateStatus(
-  status: Element | null,
-  graph: ConnectionGraph,
-) {
+function updateStatus(status: Element | null, graph: ConnectionGraph) {
   if (!status) return;
   const confirmed = graph.edges.filter((e) => e.state === "confirmed").length;
   const suggested = graph.edges.filter((e) => e.state === "suggested").length;

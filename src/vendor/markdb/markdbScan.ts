@@ -45,10 +45,7 @@ function splitFrontmatter(content: string): { yaml: string; body: string } {
   return { yaml, body };
 }
 
-function extractCitekeyFromYaml(
-  content: string,
-  keyword = "citekey",
-): string {
+function extractCitekeyFromYaml(content: string, keyword = "citekey"): string {
   const { yaml } = splitFrontmatter(content);
   if (!yaml) return "";
   const keys = keyword ? [keyword, ...YAML_CITEKEY_KEYS] : YAML_CITEKEY_KEYS;

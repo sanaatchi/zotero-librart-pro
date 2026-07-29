@@ -197,7 +197,9 @@ class ReadingFlowStore {
   }
 
   private isClosedOrShuttingDown(): boolean {
-    const startup = (globalThis as { Services?: { startup?: { shuttingDown?: boolean } } }).Services?.startup;
+    const startup = (
+      globalThis as { Services?: { startup?: { shuttingDown?: boolean } } }
+    ).Services?.startup;
     return this.closed || Boolean(startup?.shuttingDown);
   }
 
@@ -337,9 +339,7 @@ class ReadingFlowStore {
   }
 
   private normalizeTimestamp(value: number | undefined): number {
-    return typeof value === "number" &&
-      Number.isFinite(value) &&
-      value >= 0
+    return typeof value === "number" && Number.isFinite(value) && value >= 0
       ? value
       : Date.now();
   }
@@ -348,7 +348,11 @@ class ReadingFlowStore {
     const dirtyItem = item as Zotero.Item & { isDirty?: () => boolean };
     if (typeof dirtyItem.isDirty !== "function") return true;
 
-    for (let attempt = 0; attempt < ReadingFlowStore.DIRTY_RETRY_COUNT; attempt++) {
+    for (
+      let attempt = 0;
+      attempt < ReadingFlowStore.DIRTY_RETRY_COUNT;
+      attempt++
+    ) {
       if (!dirtyItem.isDirty()) return true;
       if (this.isClosedOrShuttingDown()) return false;
       if (attempt < ReadingFlowStore.DIRTY_RETRY_COUNT - 1) {

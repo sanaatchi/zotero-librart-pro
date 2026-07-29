@@ -56,14 +56,14 @@ function buildNoteLink(
   if (!key) return "";
   let link = `zotero://note/${libraryToken}/${key}/`;
   if (options.ignore) link = addParam(link, "ignore=1");
-  if (typeof options.lineIndex === "number" && Number.isFinite(options.lineIndex)) {
+  if (
+    typeof options.lineIndex === "number" &&
+    Number.isFinite(options.lineIndex)
+  ) {
     link = addParam(link, `line=${Math.floor(options.lineIndex)}`);
   }
   if (options.sectionName) {
-    link = addParam(
-      link,
-      `section=${encodeURIComponent(options.sectionName)}`,
-    );
+    link = addParam(link, `section=${encodeURIComponent(options.sectionName)}`);
   }
   if (options.selectionText) {
     link = `${link}#${encodeURIComponent(options.selectionText)}`;

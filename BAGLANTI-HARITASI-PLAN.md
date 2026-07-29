@@ -1,4 +1,5 @@
 <!-- @ajan: codex · @etiket: librart-pro, baglanti-haritasi, tarihsel-plan -->
+
 # Bağlantı Haritası (Connection Map) — v1 Uygulama Planı
 
 > **Tarihsel uygulama kaydı:** Bu belge v1'in nasıl inşa edildiğini ve manuel
@@ -40,11 +41,11 @@ Bu plan sadece **v1**'i kapsıyor; veri modeli v1.1/v2'nin mimariyi bozmadan ekl
 
 ## 0. Naming and scope conventions
 
-| Anahtar | Değer |
-|--------|--------|
-| `config.addonRef` | `zoterotag` |
-| `config.addonInstance` | `ActionsTags` |
-| `config.prefsPrefix` | `extensions.actionsTags` |
+| Anahtar                | Değer                    |
+| ---------------------- | ------------------------ |
+| `config.addonRef`      | `zoterotag`              |
+| `config.addonInstance` | `ActionsTags`            |
+| `config.prefsPrefix`   | `extensions.actionsTags` |
 
 - Yeni DOM/window ID'leri: `zoterotag-connection-map-*` (dashboard'daki `zoterotag-dashboard-*` ile aynı kalıp)
 - v1 katmanları: **A** tag, **B** manual, **C** semantic (ZotSeek), **D** note/highlight — D(iii) feature flag arkasında, varsayılan kapalı, ship'i bloklamaz
@@ -100,7 +101,10 @@ export type GraphEdge = {
   confidence: number; // 0..1; confirmed → 1
   viaTags?: string[]; // sadece layer "tag"
   viaNoteID?: number; // sadece layer "note"
-  viaNoteSource?: "citation-span" | "better-notes-wikilink" | "highlight-semantic";
+  viaNoteSource?:
+    | "citation-span"
+    | "better-notes-wikilink"
+    | "highlight-semantic";
   crossDiscipline: boolean; // ortak disciplineID yoksa true
   createdAt?: string; // ISO; relatedItem'da native yok — best-effort
 };
@@ -137,13 +141,13 @@ Deterministik, sıra-bağımsız; DOM/SVG diff ve seçim state için stabil anah
 
 ### 1.5 Persistence split
 
-| Layer | State | Persist | Cache |
-|-------|-------|---------|-------|
-| A Tag | görsel confirmed-looking, gerçek relation değil | Yok — her açılışta yeniden türetilir | `addon.data.connectionMap.lastGraph` (bellek) |
-| B Manual | confirmed | `addRelatedItem` + `saveTx({skipSelect:true, skipNotifier:true})` her iki item'da (connectedpapers deseni); okuma: `item.relatedItems` | Yok (SSOT = relatedItem) |
-| C Semantic | suggested → accept → confirmed | Öneriler persist edilmez; accept = B ile aynı | Session `semanticCache?: Map<itemID, SearchResult[]>` |
-| D(i)/(ii) | HIGH → auto-promote relatedItem | Notifier "note saved" → `recordConfirmedConnection` | Promote sonrası gerekmez |
-| D(iii) | LOW suggested | Accept'e kadar yok | Session, C gibi |
+| Layer      | State                                           | Persist                                                                                                                                | Cache                                                 |
+| ---------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| A Tag      | görsel confirmed-looking, gerçek relation değil | Yok — her açılışta yeniden türetilir                                                                                                   | `addon.data.connectionMap.lastGraph` (bellek)         |
+| B Manual   | confirmed                                       | `addRelatedItem` + `saveTx({skipSelect:true, skipNotifier:true})` her iki item'da (connectedpapers deseni); okuma: `item.relatedItems` | Yok (SSOT = relatedItem)                              |
+| C Semantic | suggested → accept → confirmed                  | Öneriler persist edilmez; accept = B ile aynı                                                                                          | Session `semanticCache?: Map<itemID, SearchResult[]>` |
+| D(i)/(ii)  | HIGH → auto-promote relatedItem                 | Notifier "note saved" → `recordConfirmedConnection`                                                                                    | Promote sonrası gerekmez                              |
+| D(iii)     | LOW suggested                                   | Accept'e kadar yok                                                                                                                     | Session, C gibi                                       |
 
 **Yeni SQLite / JSON dosyası YOK.** Gerekçe: projede private data file precedent yok; AGPL/toolkit Zotero.Item içinde kalmayı tercih eder; relatedItem sync + "İlgili" UI ücretsiz gelir.
 
@@ -159,23 +163,23 @@ Deterministik, sıra-bağımsız; DOM/SVG diff ve seçim state için stabil anah
 
 ### Yeni `src/utils/`
 
-| Dosya | Ayna | Sorumluluk |
-|-------|------|------------|
-| `connectionGraph.ts` | `tagAnalysis.ts` | Tipler, `buildConnectionGraph`, `getNodeDisciplineKey`. ZotSeek çağırmaz. `foldTag`/`categorize`/`similarity` import. |
-| `connectionTagLayer.ts` | graphView `getGraphByItemArrLink` yaklaşımı | `computeTagLayerEdges` — foldTag ile, %90 persentil hub vs pairwise; hub node yoksa yoğun etiketlerde clique skip (hairball). |
-| `connectionSemanticLayer.ts` | — | `isZotSeekReady()`, `computeSemanticSuggestions`. Yoksa `{available:false, edges:[]}`. Union approx: B∈findSimilar(A) ∨ A∈findSimilar(B). |
-| `connectionNoteLayer.ts` | — | (i) citation span parse (ii) BN wikilink HTML parse — iç modül yok (iii) `computeHighlightSemanticEdges()` stub + pref |
-| `connectionActions.ts` | `tagActions.ts` | `confirmManualConnection`, `acceptSuggestedConnection`, `removeConnection`, `offerBridgeTag`; hepsi `recordConfirmedConnection` |
-| `connectionNotify.ts` | `notify.ts` pattern, scoped | `register`/`unregister` window lifecycle; debounce ~800ms; D auto-promote |
+| Dosya                        | Ayna                                        | Sorumluluk                                                                                                                                |
+| ---------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `connectionGraph.ts`         | `tagAnalysis.ts`                            | Tipler, `buildConnectionGraph`, `getNodeDisciplineKey`. ZotSeek çağırmaz. `foldTag`/`categorize`/`similarity` import.                     |
+| `connectionTagLayer.ts`      | graphView `getGraphByItemArrLink` yaklaşımı | `computeTagLayerEdges` — foldTag ile, %90 persentil hub vs pairwise; hub node yoksa yoğun etiketlerde clique skip (hairball).             |
+| `connectionSemanticLayer.ts` | —                                           | `isZotSeekReady()`, `computeSemanticSuggestions`. Yoksa `{available:false, edges:[]}`. Union approx: B∈findSimilar(A) ∨ A∈findSimilar(B). |
+| `connectionNoteLayer.ts`     | —                                           | (i) citation span parse (ii) BN wikilink HTML parse — iç modül yok (iii) `computeHighlightSemanticEdges()` stub + pref                    |
+| `connectionActions.ts`       | `tagActions.ts`                             | `confirmManualConnection`, `acceptSuggestedConnection`, `removeConnection`, `offerBridgeTag`; hepsi `recordConfirmedConnection`           |
+| `connectionNotify.ts`        | `notify.ts` pattern, scoped                 | `register`/`unregister` window lifecycle; debounce ~800ms; D auto-promote                                                                 |
 
 **Gerekli küçük değişiklik:** `tagAnalysis.ts` — `similarity` export listesine ekle (henüz yoksa).
 
 ### Yeni `src/modules/`
 
-| Dosya | Ayna | Sorumluluk |
-|-------|------|------------|
-| `connectionMap.ts` | `tagDashboard.ts` | Window lifecycle, `connection-map.xhtml`, `width=1280,height=920`, addon-scope init, note observer register/unregister |
-| `connectionMapRenderer.ts` | (bilinçli sapma) | SVG + hand-rolled force-sim; pan/zoom; click→selectItem; connect gesture; layer filter |
+| Dosya                      | Ayna              | Sorumluluk                                                                                                             |
+| -------------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `connectionMap.ts`         | `tagDashboard.ts` | Window lifecycle, `connection-map.xhtml`, `width=1280,height=920`, addon-scope init, note observer register/unregister |
+| `connectionMapRenderer.ts` | (bilinçli sapma)  | SVG + hand-rolled force-sim; pan/zoom; click→selectItem; connect gesture; layer filter                                 |
 
 ### Entegrasyon değişiklikleri
 
@@ -252,7 +256,9 @@ connection-map-filter-placeholder = Filtrele…
 ### 4.2 ZotSeek
 
 ```ts
-if (!Zotero.ZotSeek?.api) { /* unavailable */ }
+if (!Zotero.ZotSeek?.api) {
+  /* unavailable */
+}
 // + api.isReady() sync
 ```
 
@@ -327,12 +333,12 @@ addon/content/tag-dashboard.xhtml
 
 Adım adım ilerleme. Her fazın kabul testi geçmeden sonrakine geçilmez.
 
-| Faz | Kapsam | Kabul |
-|-----|--------|--------|
-| **1** | İskelet + Katman A (etiket, disiplin vurgusu, pencere/UI) | A checklist |
+| Faz   | Kapsam                                                           | Kabul                   |
+| ----- | ---------------------------------------------------------------- | ----------------------- |
+| **1** | İskelet + Katman A (etiket, disiplin vurgusu, pencere/UI)        | A checklist             |
 | **2** | Katman B — bağla modu, `recordConfirmedConnection`, köprü etiket | İlgili sekmesi + bridge |
-| **3** | Katman C — ZotSeek soft-dep, suggested, accept | ZotSeek var/yok |
-| **4** | Katman D — citation/BN wikilink, Notifier lifecycle, D(iii) stub | auto-promote + no leak |
+| **3** | Katman C — ZotSeek soft-dep, suggested, accept                   | ZotSeek var/yok         |
+| **4** | Katman D — citation/BN wikilink, Notifier lifecycle, D(iii) stub | auto-promote + no leak  |
 
 ### Faz 1 checklist (iskelet + A)
 
@@ -353,6 +359,7 @@ Adım adım ilerleme. Her fazın kabul testi geçmeden sonrakine geçilmez.
 5. “Ortak etiket” checkbox kapatılınca kenarlar kaybolur; Yenile çalışır
 
 > **Faz 1 agent çıkışı:** plan fazları, A soft-fail, dense-skip, kenar odaklı render ve build tamam. UI checklist yukarıda — `npm run start` ile doğrulayıp kutuyu işaretleyin. Sonraki dilim: **Faz 2 (Katman B)**.
+
 ### Faz 2–4 checklist
 
 #### Faz 2 checklist (Katman B — elle bağlantı)

@@ -18,7 +18,14 @@ const DISCIPLINE_LEXICON: Array<{ label: string; keys: string[] }> = [
   },
   {
     label: "Felsefe",
-    keys: ["felsefe", "philosophy", "ontology", "epistemology", "etik", "ethics"],
+    keys: [
+      "felsefe",
+      "philosophy",
+      "ontology",
+      "epistemology",
+      "etik",
+      "ethics",
+    ],
   },
   {
     label: "Sanat tarihi",
@@ -171,10 +178,7 @@ function inferDisciplineProfile(
 
 /** Attach profile onto an existing node (mutates). Fast/sync path — no ISBN lookup. */
 export function attachDisciplineProfile(node: GraphNode, item: Zotero.Item) {
-  node.disciplineProfile = inferDisciplineProfile(
-    item,
-    node.disciplineLabels,
-  );
+  node.disciplineProfile = inferDisciplineProfile(item, node.disciplineLabels);
 }
 
 /**

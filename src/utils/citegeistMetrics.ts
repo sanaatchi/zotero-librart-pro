@@ -58,7 +58,8 @@ function slimCitegeistWork(work: unknown): CitegeistWorkMetrics | null {
         ? w.referenced_works.length
         : 0;
   const year =
-    typeof w.publication_year === "number" && Number.isFinite(w.publication_year)
+    typeof w.publication_year === "number" &&
+    Number.isFinite(w.publication_year)
       ? w.publication_year
       : null;
   return {

@@ -11,10 +11,7 @@ export type RelatedNoteCandidate = {
   kind: RelatedNoteKind;
 };
 
-export {
-  extractOutboundNoteKeysFromHtml,
-  mergeRelatedNoteCandidates,
-};
+export { extractOutboundNoteKeysFromHtml, mergeRelatedNoteCandidates };
 
 function extractOutboundNoteKeysFromHtml(html: string): string[] {
   const keys = new Set<string>();

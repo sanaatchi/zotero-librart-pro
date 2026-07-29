@@ -43,7 +43,10 @@ class FeatureRegistry {
     return !!value;
   }
 
-  enabledFeatures(phase: FeaturePhase, readPref: PrefReader): FeatureDefinition[] {
+  enabledFeatures(
+    phase: FeaturePhase,
+    readPref: PrefReader,
+  ): FeatureDefinition[] {
     return this.list().filter(
       (def) => def.phase === phase && this.isEnabled(def, readPref),
     );

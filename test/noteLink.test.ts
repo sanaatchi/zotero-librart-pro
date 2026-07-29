@@ -18,9 +18,7 @@ describe("better-notes link helpers", () => {
         sectionName: "Intro",
         selectionText: "hello world",
       }),
-    ).toBe(
-      "zotero://note/u/ABCD1234/?section=Intro#hello%20world",
-    );
+    ).toBe("zotero://note/u/ABCD1234/?section=Intro#hello%20world");
   });
 
   it("parses note link hrefs", () => {
@@ -39,7 +37,7 @@ describe("better-notes link helpers", () => {
 
   it("builds anchors extractBetterNotesWikilinks can match", () => {
     const href = buildNoteLink("u", "ZZZZ9999");
-    const html = buildNoteLinkAnchorHtml(href, 'Title <x>');
+    const html = buildNoteLinkAnchorHtml(href, "Title <x>");
     expect(html).toContain('href="zotero://note/u/ZZZZ9999/"');
     expect(html).toContain("Title &lt;x&gt;");
     expect(html).toMatch(/href="zotero:\/\/note\/(?:u|\d+)\/[A-Z0-9]+\//i);

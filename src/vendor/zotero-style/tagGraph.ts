@@ -34,10 +34,18 @@ export function getTagCooccurrencePairs(
     .sort((a, b) => a - b);
   const limit =
     countArr.length > 0
-      ? countArr[Math.min(countArr.length - 1, Math.floor(countArr.length * percentile))]
+      ? countArr[
+          Math.min(
+            countArr.length - 1,
+            Math.floor(countArr.length * percentile),
+          )
+        ]
       : Infinity;
 
-  const pairMap = new Map<string, { a: number; b: number; sharedTags: string[] }>();
+  const pairMap = new Map<
+    string,
+    { a: number; b: number; sharedTags: string[] }
+  >();
 
   Object.keys(sharedValues).forEach((value: string) => {
     const group = [...sharedValues[value].items];

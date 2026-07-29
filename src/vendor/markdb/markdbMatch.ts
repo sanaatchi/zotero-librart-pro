@@ -8,7 +8,11 @@ export type MarkdbIdMaps = {
   itemKeyToItemId: Map<string, number>;
 };
 
-export { resolvePrimaryItemId, buildMarkdbEdgeCandidates, extractCitationKeyFromExtra };
+export {
+  resolvePrimaryItemId,
+  buildMarkdbEdgeCandidates,
+  extractCitationKeyFromExtra,
+};
 
 function extractCitationKeyFromExtra(extra: string): string | null {
   if (!extra) return null;

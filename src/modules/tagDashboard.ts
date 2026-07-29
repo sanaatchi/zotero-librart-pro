@@ -2,10 +2,7 @@ import { config } from "../../package.json";
 import { getString } from "../utils/locale";
 import { isWindowAlive } from "../utils/window";
 import { updateHint } from "../utils/hint";
-import {
-  TagAnalysisReport,
-  analyzeLibraryTags,
-} from "../utils/tagAnalysis";
+import { TagAnalysisReport, analyzeLibraryTags } from "../utils/tagAnalysis";
 import { mergeTags, deleteTags } from "../utils/tagActions";
 import {
   findItemsMissingMetadata,
@@ -214,7 +211,10 @@ function wireMetadataEnrichment(win: Window, missingItems: Zotero.Item[]) {
   const renderRow = (p: EnrichmentProposal): string => {
     const changes = Object.keys(p.proposed)
       .filter((f) => p.proposed[f])
-      .map((f) => `${f}: ${escapeHtml(p.current[f] || "—")} → ${escapeHtml(p.proposed[f]!)}`)
+      .map(
+        (f) =>
+          `${f}: ${escapeHtml(p.current[f] || "—")} → ${escapeHtml(p.proposed[f]!)}`,
+      )
       .join(" · ");
     return `<div class="list-row action-row" data-metadata-item="${p.itemID}">
       <span class="action-text" title="${escapeHtml(p.title)}">
@@ -237,7 +237,9 @@ function wireMetadataEnrichment(win: Window, missingItems: Zotero.Item[]) {
       if (count) {
         updateHint(getString("metadata-enrich-done", { args: { count } }));
         row.closest(".list-row")?.remove();
-        currentProposals = currentProposals.filter((x) => x.itemID !== p.itemID);
+        currentProposals = currentProposals.filter(
+          (x) => x.itemID !== p.itemID,
+        );
       } else {
         row.disabled = false;
       }
@@ -317,7 +319,9 @@ function renderMetadataCard(state: MetadataCardState): string {
         : ""
     }
     <p class="muted small">${escapeHtml(
-      getString("metadata-enrich-missing-count", { args: { count: missingCount } }),
+      getString("metadata-enrich-missing-count", {
+        args: { count: missingCount },
+      }),
     )}</p>
     <div class="manual-row">
       <button type="button" id="${config.addonRef}-metadata-preview" class="btn-mini btn-primary" ${
@@ -341,7 +345,10 @@ function renderMetadataCard(state: MetadataCardState): string {
 </article>`;
 }
 
-function renderDashboard(r: TagAnalysisReport, meta: MetadataCardState): string {
+function renderDashboard(
+  r: TagAnalysisReport,
+  meta: MetadataCardState,
+): string {
   const s = r.summary;
   const catEntries = [
     {

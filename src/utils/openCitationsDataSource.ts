@@ -27,7 +27,9 @@ export {
 const API_BASE = "https://api.opencitations.net/index/v1";
 const MS_PER_DAY = 86_400_000;
 
-function normalizeOpenCitationsDoi(raw: string | null | undefined): string | null {
+function normalizeOpenCitationsDoi(
+  raw: string | null | undefined,
+): string | null {
   if (!raw) return null;
   let s = String(raw).trim().toLowerCase();
   if (!s) return null;

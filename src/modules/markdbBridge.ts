@@ -157,9 +157,9 @@ function buildIdMapsFromNodes(nodes: Map<number, GraphNode>): MarkdbIdMaps {
       const ck = extractCitationKeyFromExtra(extra);
       if (ck) citekeyToItemId.set(ck.toLowerCase(), node.itemID);
       // Better BibTeX may expose citationKey on some builds.
-      const bbt = (item as Zotero.Item & { getField: (f: string) => unknown }).getField(
-        "citationKey",
-      );
+      const bbt = (
+        item as Zotero.Item & { getField: (f: string) => unknown }
+      ).getField("citationKey");
       if (typeof bbt === "string" && bbt.trim()) {
         citekeyToItemId.set(bbt.trim().toLowerCase(), node.itemID);
       }
@@ -180,10 +180,7 @@ async function computeMarkdbNoteEdges(
 
   let notes: MarkdbParsedNote[];
   try {
-    notes = await scanVaultMarkdownNotes(
-      vaultPath,
-      getMarkdbMatchStrategy(),
-    );
+    notes = await scanVaultMarkdownNotes(vaultPath, getMarkdbMatchStrategy());
   } catch (err) {
     ztoolkit.log("MarkDB vault scan failed", err);
     return [];

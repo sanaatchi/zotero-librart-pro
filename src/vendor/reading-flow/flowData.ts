@@ -106,7 +106,9 @@ export function mergeFlowData(
     ...current,
     ...updates,
     p: shouldReplaceProgress ? {} : { ...current.p, ...(updates.p || {}) },
-    pageCount: Object.keys(mergedPageCount).length ? mergedPageCount : undefined,
+    pageCount: Object.keys(mergedPageCount).length
+      ? mergedPageCount
+      : undefined,
     ts: current.ts,
   });
   return { ...nextWithoutTimestamp, ts: now };

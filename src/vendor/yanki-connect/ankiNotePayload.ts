@@ -28,7 +28,14 @@ export const ANKI_EXTRA_PREFIX = "LibRart-Anki: ";
 export const ANKI_TAG = "librart";
 export const ITEM_KEY_TAG_PREFIX = "librart:itemKey=";
 
-export { parseAnkiLink, writeAnkiLink, itemKeyTag, findNotesQuery, buildBasicFields, decideNoteId };
+export {
+  parseAnkiLink,
+  writeAnkiLink,
+  itemKeyTag,
+  findNotesQuery,
+  buildBasicFields,
+  decideNoteId,
+};
 
 function parseAnkiLink(extra: string): AnkiLinkData | null {
   const line = (extra || "")
@@ -36,7 +43,9 @@ function parseAnkiLink(extra: string): AnkiLinkData | null {
     .find((l) => l.startsWith(ANKI_EXTRA_PREFIX));
   if (!line) return null;
   try {
-    const parsed = JSON.parse(line.slice(ANKI_EXTRA_PREFIX.length)) as Partial<AnkiLinkData>;
+    const parsed = JSON.parse(
+      line.slice(ANKI_EXTRA_PREFIX.length),
+    ) as Partial<AnkiLinkData>;
     if (
       parsed?.v === 1 &&
       typeof parsed.noteId === "number" &&
@@ -49,7 +58,8 @@ function parseAnkiLink(extra: string): AnkiLinkData | null {
         deck: typeof parsed.deck === "string" ? parsed.deck : "",
         model: typeof parsed.model === "string" ? parsed.model : "",
         updatedAt:
-          typeof parsed.updatedAt === "number" && Number.isFinite(parsed.updatedAt)
+          typeof parsed.updatedAt === "number" &&
+          Number.isFinite(parsed.updatedAt)
             ? parsed.updatedAt
             : 0,
       };
@@ -93,9 +103,7 @@ function buildBasicFields(item: AnkiItemFields): BasicNoteFields {
   const backParts = [
     meta.length ? `<p><b>${meta.join(" · ")}</b></p>` : "",
     abstract ? `<p>${escapeHtml(abstract)}</p>` : "",
-    item.doi.trim()
-      ? `<p>DOI: ${escapeHtml(item.doi.trim())}</p>`
-      : "",
+    item.doi.trim() ? `<p>DOI: ${escapeHtml(item.doi.trim())}</p>` : "",
     `<p><code>zotero:${escapeHtml(item.key)}</code></p>`,
   ].filter(Boolean);
   return {

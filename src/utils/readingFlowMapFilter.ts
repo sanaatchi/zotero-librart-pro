@@ -129,7 +129,5 @@ function findUnreadHubs(
     hubs.push({ itemID, title: node.title, degree: d });
   }
 
-  return hubs
-    .sort((a, b) => b.degree - a.degree)
-    .slice(0, maxResults);
+  return hubs.sort((a, b) => b.degree - a.degree).slice(0, maxResults);
 }

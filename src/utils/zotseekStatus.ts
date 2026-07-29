@@ -2,10 +2,7 @@
 // Live ZotSeek probe against Zotero.ZotSeek + vendored stub.
 
 import { getPref } from "./prefs";
-import {
-  evaluateZotSeekProbe,
-  type ZotSeekProbeResult,
-} from "./zotseekProbe";
+import { evaluateZotSeekProbe, type ZotSeekProbeResult } from "./zotseekProbe";
 import {
   isVendoredZotSeekConfigured,
   isVendoredZotSeekReady,

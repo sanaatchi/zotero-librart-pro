@@ -5,7 +5,11 @@ import { config } from "../../package.json";
 import { getString } from "../utils/locale";
 import { getReferenceUtils } from "../vendor/zotero-reference";
 
-export { extractReferencesFromPdf, onExtractReferences, referenceExtractorMenuChild };
+export {
+  extractReferencesFromPdf,
+  onExtractReferences,
+  referenceExtractorMenuChild,
+};
 
 /**
  * Extract bibliography entries from the active PDF reader using the
@@ -85,7 +89,9 @@ async function onExtractReferences(): Promise<void> {
 
   await saveReferencesAsNote(parentItem, references);
   progressLine(
-    getString("reference-extractor-success", { args: { count: references.length } }),
+    getString("reference-extractor-success", {
+      args: { count: references.length },
+    }),
   );
 }
 

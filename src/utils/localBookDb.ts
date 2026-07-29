@@ -78,9 +78,7 @@ async function nextCkCode(): Promise<string> {
   const db = getIncitefulDb();
   if (!db) throw new Error("Inciteful cache DB not configured");
   await ensureIncitefulSchema();
-  await db.queryAsync(
-    "UPDATE citekey_seq SET value = value + 1 WHERE id = 1",
-  );
+  await db.queryAsync("UPDATE citekey_seq SET value = value + 1 WHERE id = 1");
   const rows = await db.queryAsync(
     "SELECT value FROM citekey_seq WHERE id = 1",
   );
@@ -143,7 +141,10 @@ function normalizeIsbnCandidates(raw: string): string[] {
 /** ALL CAPS "ILETISIM YAYINLARI" -> "İletişim Yayınları" (Turkish-aware). */
 function toTitleCaseTr(s: string): string {
   const lower = s.toLocaleLowerCase("tr");
-  return lower.replace(/(^|\s)(\p{L})/gu, (_, sep, ch) => sep + ch.toLocaleUpperCase("tr"));
+  return lower.replace(
+    /(^|\s)(\p{L})/gu,
+    (_, sep, ch) => sep + ch.toLocaleUpperCase("tr"),
+  );
 }
 
 async function readCache(isbn: string): Promise<EditionRecord | null | "miss"> {
@@ -163,7 +164,9 @@ async function readCache(isbn: string): Promise<EditionRecord | null | "miss"> {
       publisher: row.publisher || undefined,
       publishDate: row.publish_date || undefined,
       publishCity: row.publish_city || undefined,
-      subjects: row.subjects ? String(row.subjects).split(";").filter(Boolean) : undefined,
+      subjects: row.subjects
+        ? String(row.subjects).split(";").filter(Boolean)
+        : undefined,
       kutuphaneKp: row.kutuphane_kp || undefined,
       source: "cache",
     };
@@ -173,7 +176,10 @@ async function readCache(isbn: string): Promise<EditionRecord | null | "miss"> {
   }
 }
 
-async function writeCache(isbn: string, record: EditionRecord | null): Promise<void> {
+async function writeCache(
+  isbn: string,
+  record: EditionRecord | null,
+): Promise<void> {
   const db = getIncitefulDb();
   if (!db) return;
   await ensureIncitefulSchema();

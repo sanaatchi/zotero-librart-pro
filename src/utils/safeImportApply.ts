@@ -6,7 +6,11 @@ import type { ImportCandidate } from "./safeImportTypes";
 
 export { importSelectedCandidates };
 
-function setFieldSafe(item: Zotero.Item, field: string, value: string | undefined): void {
+function setFieldSafe(
+  item: Zotero.Item,
+  field: string,
+  value: string | undefined,
+): void {
   if (typeof value !== "string" || !value.length) return;
   try {
     item.setField(field, value);
@@ -15,11 +19,18 @@ function setFieldSafe(item: Zotero.Item, field: string, value: string | undefine
   }
 }
 
-function applyRawCslFields(item: Zotero.Item, raw: Record<string, unknown>): void {
+function applyRawCslFields(
+  item: Zotero.Item,
+  raw: Record<string, unknown>,
+): void {
   const str = (k: string): string | undefined =>
     typeof raw[k] === "string" ? (raw[k] as string) : undefined;
   setFieldSafe(item, "title", str("title"));
-  setFieldSafe(item, "publicationTitle", str("publicationTitle") ?? str("bookTitle"));
+  setFieldSafe(
+    item,
+    "publicationTitle",
+    str("publicationTitle") ?? str("bookTitle"),
+  );
   setFieldSafe(item, "journalAbbreviation", str("journalAbbreviation"));
   setFieldSafe(item, "volume", str("volume"));
   setFieldSafe(item, "issue", str("issue"));
@@ -31,7 +42,12 @@ function applyRawCslFields(item: Zotero.Item, raw: Record<string, unknown>): voi
   setFieldSafe(item, "url", str("url"));
 
   const creators = raw.creators as
-    | Array<{ creatorType?: string; firstName?: string; lastName?: string; name?: string }>
+    | Array<{
+        creatorType?: string;
+        firstName?: string;
+        lastName?: string;
+        name?: string;
+      }>
     | undefined;
   if (Array.isArray(creators) && creators.length) {
     item.setCreators(

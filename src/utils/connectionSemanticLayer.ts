@@ -359,8 +359,9 @@ async function computeSemanticSuggestionsViaKutuphane(
     return { available: true, edges: [] };
   }
 
-  let queryIDs = (seedItemIDs?.length ? seedItemIDs : [...nodes.keys()])
-    .filter((id) => nodes.has(id));
+  let queryIDs = (seedItemIDs?.length ? seedItemIDs : [...nodes.keys()]).filter(
+    (id) => nodes.has(id),
+  );
   if (queryIDs.length > maxQueries) {
     queryIDs = queryIDs
       .map((id) => ({ id, tagCount: nodes.get(id)?.tagCount ?? 0 }))

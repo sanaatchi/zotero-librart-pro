@@ -61,14 +61,54 @@ const ITEM_TYPE_REGISTRY: Record<string, ItemTypePackage> = {
     source: "unsupported",
     targetFields: ["university", "place", "date"],
   },
-  webpage: { itemType: "webpage", identifierField: null, source: "unsupported", targetFields: [] },
-  tvBroadcast: { itemType: "tvBroadcast", identifierField: null, source: "unsupported", targetFields: [] },
-  magazineArticle: { itemType: "magazineArticle", identifierField: null, source: "unsupported", targetFields: ["publicationTitle"] },
-  document: { itemType: "document", identifierField: null, source: "unsupported", targetFields: [] },
-  report: { itemType: "report", identifierField: null, source: "unsupported", targetFields: ["place", "date"] },
-  film: { itemType: "film", identifierField: null, source: "unsupported", targetFields: [] },
-  videoRecording: { itemType: "videoRecording", identifierField: null, source: "unsupported", targetFields: [] },
-  newspaperArticle: { itemType: "newspaperArticle", identifierField: null, source: "unsupported", targetFields: ["publicationTitle"] },
+  webpage: {
+    itemType: "webpage",
+    identifierField: null,
+    source: "unsupported",
+    targetFields: [],
+  },
+  tvBroadcast: {
+    itemType: "tvBroadcast",
+    identifierField: null,
+    source: "unsupported",
+    targetFields: [],
+  },
+  magazineArticle: {
+    itemType: "magazineArticle",
+    identifierField: null,
+    source: "unsupported",
+    targetFields: ["publicationTitle"],
+  },
+  document: {
+    itemType: "document",
+    identifierField: null,
+    source: "unsupported",
+    targetFields: [],
+  },
+  report: {
+    itemType: "report",
+    identifierField: null,
+    source: "unsupported",
+    targetFields: ["place", "date"],
+  },
+  film: {
+    itemType: "film",
+    identifierField: null,
+    source: "unsupported",
+    targetFields: [],
+  },
+  videoRecording: {
+    itemType: "videoRecording",
+    identifierField: null,
+    source: "unsupported",
+    targetFields: [],
+  },
+  newspaperArticle: {
+    itemType: "newspaperArticle",
+    identifierField: null,
+    source: "unsupported",
+    targetFields: ["publicationTitle"],
+  },
 };
 
 const SUPPORTED_TYPES = Object.values(ITEM_TYPE_REGISTRY)

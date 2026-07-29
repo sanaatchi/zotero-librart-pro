@@ -1,4 +1,5 @@
 <!-- @ajan: cursor · @etiket: yonlendirme, stub -->
+
 # Yeniden adlandırıldı
 
 → [**LIBRART-YAPILANDIRMA.md**](LIBRART-YAPILANDIRMA.md) (eklenti yapılandırma planı)

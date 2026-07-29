@@ -1,4 +1,5 @@
 <!-- @ajan: cursor · @etiket: yonlendirme, stub -->
+
 # Taşındı
 
 → [LIBRART-YAPILANDIRMA.md](LIBRART-YAPILANDIRMA.md) (faz sırası)

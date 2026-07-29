@@ -35,11 +35,14 @@ function isAnkiEnabled(): boolean {
 
 function ensureAnkiPrefDefaults(): void {
   if (getPref("anki.enabled") === undefined) setPref("anki.enabled", false);
-  if (getPref("anki.host") === undefined) setPref("anki.host", "http://127.0.0.1");
+  if (getPref("anki.host") === undefined)
+    setPref("anki.host", "http://127.0.0.1");
   if (getPref("anki.port") === undefined) setPref("anki.port", 8765);
   if (getPref("anki.key") === undefined) setPref("anki.key", "");
-  if (getPref("anki.deckName") === undefined) setPref("anki.deckName", "LibRart");
-  if (getPref("anki.modelName") === undefined) setPref("anki.modelName", "Basic");
+  if (getPref("anki.deckName") === undefined)
+    setPref("anki.deckName", "LibRart");
+  if (getPref("anki.modelName") === undefined)
+    setPref("anki.modelName", "Basic");
 }
 
 function alertDialog(message: string) {
@@ -53,7 +56,8 @@ function readStringPref(key: string, fallback: string): string {
 
 function readPortPref(): number {
   const v = getPref("anki.port");
-  if (typeof v === "number" && Number.isFinite(v) && v > 0) return Math.floor(v);
+  if (typeof v === "number" && Number.isFinite(v) && v > 0)
+    return Math.floor(v);
   if (typeof v === "string") {
     const n = Number(v);
     if (Number.isFinite(n) && n > 0) return Math.floor(n);
@@ -95,7 +99,10 @@ function itemToFields(item: Zotero.Item) {
     key: item.key,
     title: String(item.getField("title") || ""),
     creators: formatCreators(item),
-    year: String(item.getField("year") || item.getField("date") || "").slice(0, 4),
+    year: String(item.getField("year") || item.getField("date") || "").slice(
+      0,
+      4,
+    ),
     abstractNote: String(item.getField("abstractNote") || ""),
     doi: String(item.getField("DOI") || ""),
   };
@@ -189,7 +196,9 @@ async function sendSelectedItemsToAnki(): Promise<void> {
     await client.versionProbe();
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    alertDialog(getString("anki-error-unreachable", { args: { message: msg } }));
+    alertDialog(
+      getString("anki-error-unreachable", { args: { message: msg } }),
+    );
     return;
   }
 
@@ -198,9 +207,7 @@ async function sendSelectedItemsToAnki(): Promise<void> {
   let failed = 0;
   const errors: string[] = [];
 
-  updateHint(
-    getString("anki-progress", { args: { count: selected.length } }),
-  );
+  updateHint(getString("anki-progress", { args: { count: selected.length } }));
 
   for (const item of selected) {
     try {

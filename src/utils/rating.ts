@@ -18,7 +18,10 @@ async function setRating(item: Zotero.Item, rating: number): Promise<void> {
   const extra = (item.getField("extra") as string) || "";
   let next: string;
   if (n === 0) {
-    next = extra.replace(RATING_LINE, "").replace(/\n{2,}/g, "\n").trim();
+    next = extra
+      .replace(RATING_LINE, "")
+      .replace(/\n{2,}/g, "\n")
+      .trim();
   } else if (RATING_LINE.test(extra)) {
     next = extra.replace(RATING_LINE, `Rate: ${n}`);
   } else {

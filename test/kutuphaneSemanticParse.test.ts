@@ -61,8 +61,6 @@ describe("kutuphaneSemanticParse", () => {
       excludeItemIds: [10],
       minScore: 0.5,
     });
-    expect(mapped).toEqual([
-      { itemId: 30, similarity: 0.7, title: "b" },
-    ]);
+    expect(mapped).toEqual([{ itemId: 30, similarity: 0.7, title: "b" }]);
   });
 });

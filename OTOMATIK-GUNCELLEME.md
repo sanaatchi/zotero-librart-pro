@@ -1,4 +1,5 @@
 <!-- @ajan: codex · @etiket: librart-pro, updater, bilinen-tutarsizlik -->
+
 # Güncelleme (elle tetikleme)
 
 > **Mevcut durum — yayınlamaya hazır değil:** Yapılandırma
@@ -11,9 +12,9 @@
 
 Kaynak **private**; Zotero güncellemesi için yalnızca `.xpi` + `update.json` **public** release reposunda tutulur.
 
-| Repo | Görünürlük | İçerik |
-|---|---|---|
-| `sanaatchi/zotero-librart-pro` | Private | Kaynak |
+| Repo                                    | Görünürlük                                                 | İçerik                                  |
+| --------------------------------------- | ---------------------------------------------------------- | --------------------------------------- |
+| `sanaatchi/zotero-librart-pro`          | Private                                                    | Kaynak                                  |
 | `sanaatchi/zotero-librart-pro-releases` | **Planlanan public repo — henüz mevcut/doğrulanmış değil** | `.xpi` + `update.json` (kaynak kod yok) |
 
 ## Elle güncelleme (Zotero içinden)
@@ -38,9 +39,9 @@ Bu, Translate for Zotero ile aynı model: kalıcı bir `update` release’inde y
 
 `update.json` içinde:
 
-- `version` — yeni eklenti sürümü  
-- `update_link` — sürümün `.xpi` adresi (`v1.0.x/...`)  
-- `update_hash` — `sha512:...` (Zotero 9 için gerekli)  
+- `version` — yeni eklenti sürümü
+- `update_link` — sürümün `.xpi` adresi (`v1.0.x/...`)
+- `update_hash` — `sha512:...` (Zotero 9 için gerekli)
 - `strict_min/max_version` — `7.0` … `10.9.9`
 
 ## Yayın
@@ -56,8 +57,8 @@ npm run gh-release
 
 ## Neden eskiden bozuluyordu?
 
-1. `raw.githubusercontent.com` / `latest/download` CDN’si dakikalarca **eski** `update.json` veriyordu.  
-2. Hızlı ardışık release’lerde Zotero hâlâ eski sürümü görüyordu → “güncelleme yok”.  
+1. `raw.githubusercontent.com` / `latest/download` CDN’si dakikalarca **eski** `update.json` veriyordu.
+2. Hızlı ardışık release’lerde Zotero hâlâ eski sürümü görüyordu → “güncelleme yok”.
 3. `update_hash` yoktu; çalışan eklentilerde (PDF Translate) hash var.
 
 Bu sorunlar tarihsel olarak tespit edildi; mevcut LibRart Pro yapılandırmasında hash

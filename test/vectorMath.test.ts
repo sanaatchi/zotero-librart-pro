@@ -1,6 +1,9 @@
 // @ajan: cursor · @etiket: f9.2.3, zotseek, vitest
 import { describe, expect, it } from "vitest";
-import { cosineSimilarity, topKSimilar } from "../src/vendor/zotseek/vectorMath";
+import {
+  cosineSimilarity,
+  topKSimilar,
+} from "../src/vendor/zotseek/vectorMath";
 import {
   contentHashForText,
   emptyJsonVectorStore,

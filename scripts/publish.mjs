@@ -13,12 +13,7 @@
 
 import { execSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import {
-  readdirSync,
-  writeFileSync,
-  readFileSync,
-  unlinkSync,
-} from "node:fs";
+import { readdirSync, writeFileSync, readFileSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -111,7 +106,9 @@ function publishUpdateJsonToBranch(body) {
   const tmp = join(tmpdir(), `evt-update-put-${Date.now()}.json`);
   writeFileSync(tmp, JSON.stringify(payload));
   try {
-    run(`gh api --method PUT repos/${DIST_REPO}/contents/${path} --input "${tmp}"`);
+    run(
+      `gh api --method PUT repos/${DIST_REPO}/contents/${path} --input "${tmp}"`,
+    );
   } finally {
     try {
       unlinkSync(tmp);
@@ -150,7 +147,10 @@ function fetchUpdateManifest() {
 }
 
 /** Block until Zotero's update_url actually serves this version. */
-function waitUntilUpdateVisible(expectedVersion, { attempts = 18, delayMs = 10000 } = {}) {
+function waitUntilUpdateVisible(
+  expectedVersion,
+  { attempts = 18, delayMs = 10000 } = {},
+) {
   console.log(`\n=== Verifying ${UPDATE_URL} serves ${expectedVersion} ===`);
   for (let i = 1; i <= attempts; i++) {
     try {
@@ -161,7 +161,9 @@ function waitUntilUpdateVisible(expectedVersion, { attempts = 18, delayMs = 1000
         console.log(`OK — update channel live at attempt ${i}: ${got}`);
         return;
       }
-      console.log(`Attempt ${i}/${attempts}: channel has "${got}", want "${expectedVersion}"`);
+      console.log(
+        `Attempt ${i}/${attempts}: channel has "${got}", want "${expectedVersion}"`,
+      );
     } catch (e) {
       console.log(`Attempt ${i}/${attempts}: fetch failed (${e.message || e})`);
     }

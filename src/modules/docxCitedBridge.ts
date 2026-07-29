@@ -84,7 +84,10 @@ async function getOrCreateTagForPath(
 async function readDocumentXml(filePath: string): Promise<string> {
   const nsIFile = Zotero.File.pathToFile(filePath);
   const zipReader = (
-    Components.classes as Record<string, { createInstance: (iid: unknown) => unknown }>
+    Components.classes as Record<
+      string,
+      { createInstance: (iid: unknown) => unknown }
+    >
   )["@mozilla.org/libjar/zip-reader;1"].createInstance(
     Components.interfaces.nsIZipReader,
   ) as {
@@ -100,7 +103,10 @@ async function readDocumentXml(filePath: string): Promise<string> {
     }
     const inputStream = zipReader.getInputStream("word/document.xml");
     const bstream = (
-      Components.classes as Record<string, { createInstance: (iid: unknown) => unknown }>
+      Components.classes as Record<
+        string,
+        { createInstance: (iid: unknown) => unknown }
+      >
     )["@mozilla.org/binaryinputstream;1"].createInstance(
       Components.interfaces.nsIBinaryInputStream,
     ) as {
@@ -134,16 +140,24 @@ async function resolveItems(uris: Iterable<string>): Promise<Zotero.Item[]> {
   return items;
 }
 
-async function getTaggedItemIDs(tag: string, libraryID: number): Promise<Set<number>> {
+async function getTaggedItemIDs(
+  tag: string,
+  libraryID: number,
+): Promise<Set<number>> {
   const s = new Zotero.Search({ libraryID }) as Zotero.Search;
   s.addCondition("tag", "is", tag);
   const ids = await s.search();
   return new Set(ids);
 }
 
-async function ensureSavedSearch(tag: string, libraryID: number): Promise<void> {
+async function ensureSavedSearch(
+  tag: string,
+  libraryID: number,
+): Promise<void> {
   const existing = (
-    Zotero.Searches as unknown as { getByLibrary: (id: number) => Zotero.Search[] }
+    Zotero.Searches as unknown as {
+      getByLibrary: (id: number) => Zotero.Search[];
+    }
   ).getByLibrary(libraryID);
   if (existing.some((search) => search.name === tag)) return;
   const s = new Zotero.Search({ libraryID }) as Zotero.Search;
@@ -152,7 +166,10 @@ async function ensureSavedSearch(tag: string, libraryID: number): Promise<void> 
   await s.saveTx();
 }
 
-async function refreshTag(tag: string, citedItems: Zotero.Item[]): Promise<RefreshResult> {
+async function refreshTag(
+  tag: string,
+  citedItems: Zotero.Item[],
+): Promise<RefreshResult> {
   const citedByLibrary = new Map<number, Set<number>>();
   for (const item of citedItems) {
     if (!citedByLibrary.has(item.libraryID)) {

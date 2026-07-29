@@ -1,4 +1,5 @@
 <!-- @ajan: codex · @etiket: librart-pro, commit, eski-kimlik -->
+
 # Claude Code — Git commit prompt
 
 > **Kimlik düzeltmesi:** Güncel proje **LibRart Pro**

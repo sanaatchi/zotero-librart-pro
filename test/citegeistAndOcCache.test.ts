@@ -18,7 +18,11 @@ describe("openCitations cache", () => {
 
   it("treats fresh entries as hit", () => {
     expect(
-      isOpenCitationsCacheFresh({ fetched: now - 1000, cited: ["10.1/b"] }, now, 30),
+      isOpenCitationsCacheFresh(
+        { fetched: now - 1000, cited: ["10.1/b"] },
+        now,
+        30,
+      ),
     ).toBe(true);
     expect(
       isOpenCitationsCacheFresh(
@@ -30,21 +34,27 @@ describe("openCitations cache", () => {
   });
 
   it("reads and writes cache entries", () => {
-    let cache = writeOpenCitationsCache(
+    const cache = writeOpenCitationsCache(
       { refs: {} },
       "https://doi.org/10.1/A",
       ["10.1/b"],
       now,
     );
-    expect(readOpenCitationsCache(cache, "10.1/a", now, 30)).toEqual(["10.1/b"]);
-    expect(readOpenCitationsCache(cache, "10.1/a", now + 40 * 86_400_000, 30)).toBeNull();
+    expect(readOpenCitationsCache(cache, "10.1/a", now, 30)).toEqual([
+      "10.1/b",
+    ]);
+    expect(
+      readOpenCitationsCache(cache, "10.1/a", now + 40 * 86_400_000, 30),
+    ).toBeNull();
   });
 });
 
 describe("openCitations parse + edges (regression)", () => {
   it("still parses multi-DOI cited", () => {
     expect(
-      parseOpenCitationsReferences([{ citing: "10.1/a", cited: "10.1/b 10.1/c" }]),
+      parseOpenCitationsReferences([
+        { citing: "10.1/a", cited: "10.1/b 10.1/c" },
+      ]),
     ).toEqual(["10.1/b", "10.1/c"]);
   });
 

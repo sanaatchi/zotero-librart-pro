@@ -1,7 +1,4 @@
-import {
-  ConnectionGraph,
-  getNodeDisciplineKey,
-} from "./connectionGraph";
+import { ConnectionGraph, getNodeDisciplineKey } from "./connectionGraph";
 
 export type BlindSpotPair = {
   a: string;
@@ -81,7 +78,9 @@ function findBlindSpots(
   return spots
     .sort(
       (p, q) =>
-        q.sizeA * q.sizeB - q.bridges * 50 - (p.sizeA * p.sizeB - p.bridges * 50),
+        q.sizeA * q.sizeB -
+        q.bridges * 50 -
+        (p.sizeA * p.sizeB - p.bridges * 50),
     )
     .slice(0, maxResults);
 }

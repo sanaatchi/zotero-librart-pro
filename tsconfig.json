@@ -1,9 +1,5 @@
 {
   "extends": "zotero-types/entries/sandbox",
   "include": ["src", "typings", "node_modules/zotero-types"],
-  "exclude": [
-    "build",
-    "addon",
-    "src/vendor/zotseek/worker/embedding-worker.ts"
-  ]
+  "exclude": ["build", "addon", "src/vendor/zotseek/worker/embedding-worker.ts"]
 }

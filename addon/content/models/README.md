@@ -1,4 +1,5 @@
 <!-- @ajan: cursor · @etiket: f9.2.2, zotseek, assets-readme -->
+
 # Vendored ZotSeek assets (not in git)
 
 ```bash

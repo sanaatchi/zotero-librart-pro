@@ -236,10 +236,7 @@ function collectRelatedNotesForItem(sourceNote: Zotero.Item): RelatedNoteRow[] {
     }
     if (!note) {
       for (const lib of Zotero.Libraries.getAll()) {
-        const found = Zotero.Items.getByLibraryAndKey(
-          lib.libraryID,
-          c.noteKey,
-        );
+        const found = Zotero.Items.getByLibraryAndKey(lib.libraryID, c.noteKey);
         if (found && typeof found !== "boolean" && found.isNote()) {
           note = found;
           break;
@@ -260,7 +257,9 @@ function collectRelatedNotesForItem(sourceNote: Zotero.Item): RelatedNoteRow[] {
   return rows;
 }
 
-function selectRelatedNoteInteractive(rows: RelatedNoteRow[]): Zotero.Item | null {
+function selectRelatedNoteInteractive(
+  rows: RelatedNoteRow[],
+): Zotero.Item | null {
   if (!rows.length) return null;
   if (rows.length === 1) return rows[0].note;
 

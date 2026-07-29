@@ -13,9 +13,15 @@ function getCitationKeyFromExtra(item: Zotero.Item): string | null {
 function setCitationKeyInExtra(item: Zotero.Item, key: string): void {
   const extra = (item.getField("extra") as string) || "";
   if (CITATION_KEY_LINE.test(extra)) {
-    item.setField("extra", extra.replace(CITATION_KEY_LINE, `Citation Key: ${key}`));
+    item.setField(
+      "extra",
+      extra.replace(CITATION_KEY_LINE, `Citation Key: ${key}`),
+    );
   } else {
-    item.setField("extra", extra ? `${extra}\nCitation Key: ${key}` : `Citation Key: ${key}`);
+    item.setField(
+      "extra",
+      extra ? `${extra}\nCitation Key: ${key}` : `Citation Key: ${key}`,
+    );
   }
 }
 

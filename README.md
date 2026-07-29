@@ -2,12 +2,12 @@
 
 Zotero eklentisi — etiketler, eylemler, Bağlantı Haritası, referans araçları.
 
-| Alan | Değer |
-|------|--------|
-| Görünen ad | **LibRart Pro** |
-| `addonID` | `librartpro@euclpts.com` |
-| `addonRef` | `librartpro` |
-| Kaynak repo | `sanaatchi/zotero-librart-pro` |
+| Alan         | Değer                                   |
+| ------------ | --------------------------------------- |
+| Görünen ad   | **LibRart Pro**                         |
+| `addonID`    | `librartpro@euclpts.com`                |
+| `addonRef`   | `librartpro`                            |
+| Kaynak repo  | `sanaatchi/zotero-librart-pro`          |
 | Release repo | `sanaatchi/zotero-librart-pro-releases` |
 
 ## Geliştirme

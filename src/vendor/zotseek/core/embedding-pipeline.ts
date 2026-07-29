@@ -1,8 +1,14 @@
 // @ts-nocheck
 // Adapted from ZotSeek (MIT) src/core/embedding-pipeline.ts
-import { Logger } from '../logger';
-import { getActiveModel, getModel, ModelConfig, modelBasePath, setActiveModelId } from './model-registry';
-import { config } from '../../../../package.json';
+import { Logger } from "../logger";
+import {
+  getActiveModel,
+  getModel,
+  ModelConfig,
+  modelBasePath,
+  setActiveModelId,
+} from "./model-registry";
+import { config } from "../../../../package.json";
 
 declare const ChromeWorker: any;
 
@@ -16,7 +22,7 @@ export interface EmbeddingProgress {
   current: number;
   total: number;
   currentTitle: string;
-  status: 'loading' | 'processing' | 'done' | 'error';
+  status: "loading" | "processing" | "done" | "error";
 }
 
 export type ProgressCallback = (progress: EmbeddingProgress) => void;
@@ -29,7 +35,10 @@ export class EmbeddingPipeline {
   private model: ModelConfig = getActiveModel();
   private worker: any = null;
   private workerReady = false;
-  private pendingJobs = new Map<string, { resolve: Function; reject: Function }>();
+  private pendingJobs = new Map<
+    string,
+    { resolve: Function; reject: Function }
+  >();
   private ready = false;
   // In-flight init() promise so N concurrent cold-start callers share a single
   // worker creation instead of each spawning (and leaking) their own. Cleared
@@ -41,7 +50,7 @@ export class EmbeddingPipeline {
   private static MAX_RECOVERIES_PER_EMBED = 2;
 
   constructor() {
-    this.logger = new Logger('EmbeddingPipeline');
+    this.logger = new Logger("EmbeddingPipeline");
   }
 
   /**
@@ -53,9 +62,9 @@ export class EmbeddingPipeline {
     this.model = getActiveModel();
 
     this.initPromise = (async () => {
-      this.logger.info('Initializing embedding pipeline with Transformers.js');
-      await this.initWorker();  // Will throw on failure
-      this.logger.info('Using Transformers.js via ChromeWorker');
+      this.logger.info("Initializing embedding pipeline with Transformers.js");
+      await this.initWorker(); // Will throw on failure
+      this.logger.info("Using Transformers.js via ChromeWorker");
       this.ready = true;
     })();
     const thisAttempt = this.initPromise;
@@ -81,38 +90,51 @@ export class EmbeddingPipeline {
         this.worker = new ChromeWorker(workerPath);
 
         const timeout = setTimeout(() => {
-          reject(new Error('Worker initialization timeout'));
+          reject(new Error("Worker initialization timeout"));
         }, 30000);
 
         this.worker.onmessage = (event: any) => {
-          const { type, status, jobId, error, embedding, modelId, processingTimeMs, message, level, data } = event.data;
+          const {
+            type,
+            status,
+            jobId,
+            error,
+            embedding,
+            modelId,
+            processingTimeMs,
+            message,
+            level,
+            data,
+          } = event.data;
 
-          if (type === 'log') {
+          if (type === "log") {
             // Handle log messages from worker
-            const logMessage = data ? `${message} - ${JSON.stringify(data)}` : message;
-            switch(level) {
-              case 'error':
+            const logMessage = data
+              ? `${message} - ${JSON.stringify(data)}`
+              : message;
+            switch (level) {
+              case "error":
                 this.logger.error(logMessage);
                 break;
-              case 'warn':
+              case "warn":
                 this.logger.warn(logMessage);
                 break;
-              case 'info':
+              case "info":
               default:
                 this.logger.info(logMessage);
                 break;
             }
-          } else if (type === 'status') {
+          } else if (type === "status") {
             // Only log important status updates, suppress repetitive loading progress
-            if (status !== 'loading' || !message?.includes('Loading model:')) {
+            if (status !== "loading" || !message?.includes("Loading model:")) {
               this.logger.info(`Worker status: ${status} - ${message}`);
             }
-            if (status === 'ready') {
+            if (status === "ready") {
               clearTimeout(timeout);
               this.workerReady = true;
               resolve();
             }
-          } else if (type === 'error') {
+          } else if (type === "error") {
             this.logger.error(`Worker error: ${error}`);
             if (jobId && this.pendingJobs.has(jobId)) {
               const job = this.pendingJobs.get(jobId)!;
@@ -122,7 +144,7 @@ export class EmbeddingPipeline {
               clearTimeout(timeout);
               reject(new Error(error));
             }
-          } else if (type === 'embedding' && jobId) {
+          } else if (type === "embedding" && jobId) {
             const job = this.pendingJobs.get(jobId);
             if (job) {
               this.pendingJobs.delete(jobId);
@@ -134,13 +156,18 @@ export class EmbeddingPipeline {
         this.worker.onerror = (event: any) => {
           // Extract detailed error info from ErrorEvent
           const errorInfo = {
-            message: event.message || 'Unknown error',
-            filename: event.filename || 'unknown',
+            message: event.message || "Unknown error",
+            filename: event.filename || "unknown",
             lineno: event.lineno || 0,
             colno: event.colno || 0,
-            error: event.error?.toString() || event.error?.message || 'No error details',
+            error:
+              event.error?.toString() ||
+              event.error?.message ||
+              "No error details",
           };
-          this.logger.error(`Worker error: ${errorInfo.message} at ${errorInfo.filename}:${errorInfo.lineno}:${errorInfo.colno}`);
+          this.logger.error(
+            `Worker error: ${errorInfo.message} at ${errorInfo.filename}:${errorInfo.lineno}:${errorInfo.colno}`,
+          );
           this.logger.error(`Error details: ${errorInfo.error}`);
           clearTimeout(timeout);
 
@@ -149,7 +176,7 @@ export class EmbeddingPipeline {
           // caller knows to retry rather than treat as permanent failure.
           this.workerReady = false;
           for (const [jobId, job] of this.pendingJobs) {
-            job.reject(new Error('WORKER_DIED'));
+            job.reject(new Error("WORKER_DIED"));
             this.pendingJobs.delete(jobId);
           }
 
@@ -157,7 +184,7 @@ export class EmbeddingPipeline {
         };
 
         this.worker.postMessage({
-          type: 'init',
+          type: "init",
           model: {
             modelId: this.model.id,
             hfPath: this.model.hfPath,
@@ -168,9 +195,8 @@ export class EmbeddingPipeline {
             basePath: modelBasePath(this.model),
           },
         });
-
       } catch (error) {
-        this.logger.error('Failed to create ChromeWorker:', error);
+        this.logger.error("Failed to create ChromeWorker:", error);
         reject(error);
       }
     });
@@ -181,14 +207,17 @@ export class EmbeddingPipeline {
    * @param text - Text to embed
    * @param kind - 'query' for search queries, 'doc' for documents
    */
-  private async embedWithWorker(text: string, kind: 'query' | 'doc' = 'doc'): Promise<EmbeddingResult> {
+  private async embedWithWorker(
+    text: string,
+    kind: "query" | "doc" = "doc",
+  ): Promise<EmbeddingResult> {
     return new Promise((resolve, reject) => {
       const jobId = Math.random().toString(36).substring(2, 15);
 
       this.pendingJobs.set(jobId, { resolve, reject });
 
       this.worker.postMessage({
-        type: 'embed',
+        type: "embed",
         jobId,
         data: { text, kind },
       });
@@ -199,7 +228,7 @@ export class EmbeddingPipeline {
       setTimeout(() => {
         if (this.pendingJobs.has(jobId)) {
           this.pendingJobs.delete(jobId);
-          reject(new Error('Embedding timeout'));
+          reject(new Error("Embedding timeout"));
         }
       }, 60000); // 60 seconds - enough for first-run WASM compilation
     });
@@ -216,7 +245,10 @@ export class EmbeddingPipeline {
    * MAX_RECOVERIES_PER_EMBED to prevent an infinite loop on a permanently
    * broken state.
    */
-  async embed(text: string, kind: 'query' | 'doc' = 'doc'): Promise<EmbeddingResult> {
+  async embed(
+    text: string,
+    kind: "query" | "doc" = "doc",
+  ): Promise<EmbeddingResult> {
     for (let attempt = 0; ; attempt++) {
       if (!this.ready || !this.workerReady) {
         await this.recoverWorker();
@@ -226,16 +258,16 @@ export class EmbeddingPipeline {
         this.consecutiveRecoveries = 0;
         return result;
       } catch (e: any) {
-        const isWorkerDeath = e?.message === 'WORKER_DIED' || !this.workerReady;
+        const isWorkerDeath = e?.message === "WORKER_DIED" || !this.workerReady;
         if (!isWorkerDeath) throw e;
         if (attempt >= EmbeddingPipeline.MAX_RECOVERIES_PER_EMBED) {
           throw new Error(
-            `Embedding worker died and could not be recovered after ${attempt + 1} attempts`
+            `Embedding worker died and could not be recovered after ${attempt + 1} attempts`,
           );
         }
         this.consecutiveRecoveries++;
         this.logger.warn(
-          `Embedding worker died - attempting recovery (${this.consecutiveRecoveries} total)`
+          `Embedding worker died - attempting recovery (${this.consecutiveRecoveries} total)`,
         );
         // Loop: recoverWorker() will run at the top of the next iteration.
       }
@@ -248,7 +280,11 @@ export class EmbeddingPipeline {
    */
   private async recoverWorker(): Promise<void> {
     if (this.worker) {
-      try { this.worker.terminate(); } catch { /* ignore */ }
+      try {
+        this.worker.terminate();
+      } catch {
+        /* ignore */
+      }
       this.worker = null;
     }
     this.workerReady = false;
@@ -263,7 +299,7 @@ export class EmbeddingPipeline {
    * Uses the model's query prefix for better retrieval
    */
   async embedQuery(query: string): Promise<EmbeddingResult> {
-    return this.embed(query, 'query');
+    return this.embed(query, "query");
   }
 
   /**
@@ -271,7 +307,7 @@ export class EmbeddingPipeline {
    * Uses the model's document prefix for better retrieval
    */
   async embedDocument(text: string): Promise<EmbeddingResult> {
-    return this.embed(text, 'doc');
+    return this.embed(text, "doc");
   }
 
   /**
@@ -280,7 +316,7 @@ export class EmbeddingPipeline {
    */
   async embedBatch(
     texts: { id: number; text: string; title: string }[],
-    onProgress?: ProgressCallback
+    onProgress?: ProgressCallback,
   ): Promise<Map<number, EmbeddingResult>> {
     if (!this.ready) {
       await this.init();
@@ -297,7 +333,7 @@ export class EmbeddingPipeline {
           current: i + 1,
           total,
           currentTitle: title,
-          status: 'processing',
+          status: "processing",
         });
       }
 
@@ -311,7 +347,7 @@ export class EmbeddingPipeline {
 
       // Yield to UI thread periodically
       if (i % 10 === 0) {
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
       }
     }
 
@@ -319,8 +355,8 @@ export class EmbeddingPipeline {
       onProgress({
         current: total,
         total,
-        currentTitle: '',
-        status: 'done',
+        currentTitle: "",
+        status: "done",
       });
     }
 
@@ -338,9 +374,13 @@ export class EmbeddingPipeline {
    * Reset pipeline to force re-initialization with new settings
    */
   reset(): void {
-    this.logger.info('Resetting embedding pipeline');
+    this.logger.info("Resetting embedding pipeline");
     if (this.worker) {
-      try { this.worker.terminate(); } catch { /* ignore */ }
+      try {
+        this.worker.terminate();
+      } catch {
+        /* ignore */
+      }
       this.worker = null;
     }
     this.workerReady = false;
@@ -348,7 +388,7 @@ export class EmbeddingPipeline {
     this.initPromise = null;
     this.consecutiveRecoveries = 0;
     for (const [, job] of this.pendingJobs) {
-      job.reject(new Error('Pipeline reset'));
+      job.reject(new Error("Pipeline reset"));
     }
     this.pendingJobs.clear();
   }
@@ -360,7 +400,9 @@ export class EmbeddingPipeline {
   async setModel(modelId: string): Promise<void> {
     const found = getModel(modelId);
     if (!found) {
-      this.logger.warn(`setModel: unknown model id '${modelId}', keeping active model`);
+      this.logger.warn(
+        `setModel: unknown model id '${modelId}', keeping active model`,
+      );
       return;
     }
     if (found.id === this.model.id && this.ready && this.workerReady) return;

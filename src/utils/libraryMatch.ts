@@ -24,9 +24,7 @@ async function searchItemByDoi(
 }
 
 function pureText(s: string): string {
-  return (s || "")
-    .toLocaleLowerCase("tr")
-    .replace(/[^0-9a-zçğıöşü]/gi, "");
+  return (s || "").toLocaleLowerCase("tr").replace(/[^0-9a-zçğıöşü]/gi, "");
 }
 
 /**

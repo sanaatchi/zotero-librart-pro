@@ -9,7 +9,9 @@ import {
   type GraphNode,
 } from "../src/utils/connectionGraph";
 
-function node(partial: Partial<GraphNode> & Pick<GraphNode, "itemID">): GraphNode {
+function node(
+  partial: Partial<GraphNode> & Pick<GraphNode, "itemID">,
+): GraphNode {
   return {
     key: "ABC",
     libraryID: 1,
@@ -52,7 +54,11 @@ describe("isCrossDiscipline", () => {
       disciplineIDs: [UNSORTED_DISCIPLINE_ID],
       disciplineLabels: [UNSORTED_DISCIPLINE_LABEL],
     });
-    const art = node({ itemID: 2, disciplineIDs: [10], disciplineLabels: ["Sanat"] });
+    const art = node({
+      itemID: 2,
+      disciplineIDs: [10],
+      disciplineLabels: ["Sanat"],
+    });
     expect(isCrossDiscipline(unsorted, art)).toBe(false);
   });
 });

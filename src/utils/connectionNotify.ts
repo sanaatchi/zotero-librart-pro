@@ -67,9 +67,7 @@ function registerConnectionMapNoteObserver(
       if (!numericIDs.length) return;
 
       const items = Zotero.Items.get(numericIDs);
-      const noteIDs = items
-        .filter((i) => i?.isNote())
-        .map((i) => i.id);
+      const noteIDs = items.filter((i) => i?.isNote()).map((i) => i.id);
       if (!noteIDs.length) return;
 
       for (const id of noteIDs) pendingNoteIDs.add(id);

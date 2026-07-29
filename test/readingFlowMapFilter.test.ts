@@ -10,7 +10,8 @@ import type { GraphEdge } from "../src/utils/connectionGraph";
 
 describe("readingFlowMapFilter", () => {
   const index = buildReadingActivityIndex([1, 2, 3], (id) => {
-    if (id === 1) return { lastReadAt: Date.now() - 86400000, status: "reading" };
+    if (id === 1)
+      return { lastReadAt: Date.now() - 86400000, status: "reading" };
     if (id === 2) return { lastReadAt: null, status: "to-read" };
     return { lastReadAt: Date.now() - 40 * 86400000, status: "read" };
   });
@@ -50,12 +51,47 @@ describe("readingFlowMapFilter", () => {
       [3, { title: "Read paper" }],
     ]);
     const edges: GraphEdge[] = [
-      { id: "a", source: 2, target: 3, layer: "manual", state: "confirmed", confidence: 1, crossDiscipline: false },
-      { id: "b", source: 2, target: 3, layer: "tag", state: "confirmed", confidence: 1, crossDiscipline: false },
-      { id: "c", source: 2, target: 3, layer: "note", state: "confirmed", confidence: 1, crossDiscipline: false },
-      { id: "d", source: 2, target: 3, layer: "citation", state: "confirmed", confidence: 1, crossDiscipline: false },
+      {
+        id: "a",
+        source: 2,
+        target: 3,
+        layer: "manual",
+        state: "confirmed",
+        confidence: 1,
+        crossDiscipline: false,
+      },
+      {
+        id: "b",
+        source: 2,
+        target: 3,
+        layer: "tag",
+        state: "confirmed",
+        confidence: 1,
+        crossDiscipline: false,
+      },
+      {
+        id: "c",
+        source: 2,
+        target: 3,
+        layer: "note",
+        state: "confirmed",
+        confidence: 1,
+        crossDiscipline: false,
+      },
+      {
+        id: "d",
+        source: 2,
+        target: 3,
+        layer: "citation",
+        state: "confirmed",
+        confidence: 1,
+        crossDiscipline: false,
+      },
     ];
-    const hubs = findUnreadHubs(nodes, edges, index, { minDegree: 4, maxResults: 2 });
+    const hubs = findUnreadHubs(nodes, edges, index, {
+      minDegree: 4,
+      maxResults: 2,
+    });
     expect(hubs[0]?.itemID).toBe(2);
     expect(hubs[0]?.degree).toBe(4);
   });

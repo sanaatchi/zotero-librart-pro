@@ -57,10 +57,7 @@ async function mergeTags(
  * Remove one or more tags from every item in a library.
  * Returns the number of distinct items touched.
  */
-async function deleteTags(
-  libraryID: number,
-  names: string[],
-): Promise<number> {
+async function deleteTags(libraryID: number, names: string[]): Promise<number> {
   const touched = new Set<number>();
   for (const rawName of names) {
     const name = rawName.trim();

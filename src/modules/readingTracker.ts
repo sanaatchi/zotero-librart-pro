@@ -13,11 +13,7 @@ class ReadingTracker {
   private generation = 0;
   private static readonly MAX_REASONABLE_PAGE_COUNT = 100000;
   private readonly observer = {
-    notify: (
-      action: string,
-      type: string,
-      ids: number[] | string[],
-    ) => {
+    notify: (action: string, type: string, ids: number[] | string[]) => {
       this.notify(action, type, ids);
     },
   };
@@ -64,14 +60,27 @@ class ReadingTracker {
     const readers = Zotero.Reader._readers as Array<{
       itemID?: number;
       _type?: string;
-      _state?: { pageIndex?: number; scrollYPercent?: number; numPages?: number };
+      _state?: {
+        pageIndex?: number;
+        scrollYPercent?: number;
+        numPages?: number;
+      };
       _internalReader?: {
         _state?: { pageIndex?: number; numPages?: number };
-        _primaryView?: { _state?: { numPages?: number }; _iframeWindow?: Window };
+        _primaryView?: {
+          _state?: { numPages?: number };
+          _iframeWindow?: Window;
+        };
         _iframeWindow?: Window;
       };
       _iframeWindow?: Window;
-      PDFViewerApplication?: { pdfDocument?: { numPages?: number }; pdfViewer?: { pagesCount?: number; _pages?: unknown[] }; pagesCount?: number; _pagesCount?: number; _numPages?: number };
+      PDFViewerApplication?: {
+        pdfDocument?: { numPages?: number };
+        pdfViewer?: { pagesCount?: number; _pages?: unknown[] };
+        pagesCount?: number;
+        _pagesCount?: number;
+        _numPages?: number;
+      };
       _numPages?: number;
       _primaryView?: { _state?: { numPages?: number } };
     }>;
@@ -158,7 +167,9 @@ class ReadingTracker {
   }
 
   private isZoteroShuttingDown(): boolean {
-    const startup = (globalThis as { Services?: { startup?: { shuttingDown?: boolean } } }).Services?.startup;
+    const startup = (
+      globalThis as { Services?: { startup?: { shuttingDown?: boolean } } }
+    ).Services?.startup;
     return Boolean(startup?.shuttingDown);
   }
 
@@ -187,13 +198,17 @@ class ReadingTracker {
     maxPage?: number,
   ): number | null {
     const pageIndex = this.getCurrentPageIndex(reader, item);
-    if (typeof pageIndex !== "number" || !Number.isFinite(pageIndex)) return null;
+    if (typeof pageIndex !== "number" || !Number.isFinite(pageIndex))
+      return null;
     const page = pageIndex + 1;
     if (!maxPage || maxPage <= 0) return page;
     return Math.min(page, maxPage);
   }
 
-  private getCurrentPageIndex(reader: unknown, item: Zotero.Item): number | null {
+  private getCurrentPageIndex(
+    reader: unknown,
+    item: Zotero.Item,
+  ): number | null {
     const r = reader as {
       _state?: { pageIndex?: number };
       _internalReader?: { _state?: { pageIndex?: number } };
@@ -223,7 +238,9 @@ class ReadingTracker {
   private getPDFPageCount(reader: unknown, item: Zotero.Item): number {
     const r = reader as {
       _internalReader?: {
-        _primaryView?: { _iframeWindow?: Window & { PDFViewerApplication?: PdfApp } };
+        _primaryView?: {
+          _iframeWindow?: Window & { PDFViewerApplication?: PdfApp };
+        };
         _iframeWindow?: Window & { PDFViewerApplication?: PdfApp };
       };
       _iframeWindow?: Window & { PDFViewerApplication?: PdfApp };

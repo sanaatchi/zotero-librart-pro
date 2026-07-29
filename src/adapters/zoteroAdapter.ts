@@ -8,15 +8,14 @@ export type ZoteroAdapter = {
   getActivePane(): _ZoteroTypes.ZoteroPane | undefined;
   getSelectedTabType(): string | undefined;
   getSelectedTabId(): string | undefined;
-  getItemByLibraryAndKey(
-    libraryID: number,
-    key: string,
-  ): Zotero.Item | false;
+  getItemByLibraryAndKey(libraryID: number, key: string): Zotero.Item | false;
   getAllItems(
     libraryID: number,
     asIds: boolean,
   ): Promise<Zotero.Item[] | number[]>;
-  findReaderByInstanceId(instanceId: string): _ZoteroTypes.ReaderInstance | undefined;
+  findReaderByInstanceId(
+    instanceId: string,
+  ): _ZoteroTypes.ReaderInstance | undefined;
   getReaderByTabId(tabId: string): _ZoteroTypes.ReaderInstance | undefined;
 };
 

@@ -169,9 +169,7 @@ class OpenAlexDataSource {
   }
 
   private mailtoParam(): string {
-    return this.mailto
-      ? `&mailto=${encodeURIComponent(this.mailto)}`
-      : "";
+    return this.mailto ? `&mailto=${encodeURIComponent(this.mailto)}` : "";
   }
 
   private cacheGet(key: string): OpenAlexWorkSlim | null {

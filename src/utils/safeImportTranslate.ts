@@ -47,9 +47,7 @@ async function translateFile(path: string): Promise<CslItem[]> {
 }
 
 async function toPreviewRows(items: CslItem[]): Promise<ImportPreviewRow[]> {
-  const candidates = items.map((item) =>
-    cslItemToCandidate(item, nextRowId()),
-  );
+  const candidates = items.map((item) => cslItemToCandidate(item, nextRowId()));
   return buildPreviewRows(candidates);
 }
 
@@ -59,7 +57,9 @@ async function parseBibliographyText(raw: string): Promise<ImportPreviewRow[]> {
   return toPreviewRows(items);
 }
 
-async function parseBibliographyFile(path: string): Promise<ImportPreviewRow[]> {
+async function parseBibliographyFile(
+  path: string,
+): Promise<ImportPreviewRow[]> {
   rowSeq = 0;
   const items = await translateFile(path);
   return toPreviewRows(items);

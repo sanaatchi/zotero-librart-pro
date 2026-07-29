@@ -402,9 +402,8 @@ function wireDraftSearch(win: Window, graph: ConnectionGraph) {
         bindBtn.className = "btn";
         bindBtn.textContent = getString("connection-map-draft-bind");
         bindBtn.onclick = async () => {
-          const selected = Zotero.getActiveZoteroPane()?.getSelectedItems?.(
-            false,
-          );
+          const selected =
+            Zotero.getActiveZoteroPane()?.getSelectedItems?.(false);
           const seed = selected?.find((it) => it.isRegularItem?.());
           if (!seed) {
             updateHint(getString("connection-map-connect-pick-first"));
@@ -482,7 +481,8 @@ function paintNodeStates(win: Window) {
     `${config.addonRef}-connection-map-canvas`,
   );
   if (!st || !canvas) return;
-  const picking = (st.connectMode && st.connectFirst != null) || !!st.shiftConnectFrom;
+  const picking =
+    (st.connectMode && st.connectFirst != null) || !!st.shiftConnectFrom;
   canvas.querySelectorAll("g[data-node-id] circle").forEach((el) => {
     const circle = el as SVGCircleElement;
     const g = circle.parentElement;
@@ -523,9 +523,7 @@ function updateZotSeekUI(win: Window, ready: boolean) {
   const semanticWrap = doc.getElementById(
     `${config.addonRef}-layer-semantic-wrap`,
   );
-  const missing = doc.getElementById(
-    `${config.addonRef}-zotseek-missing`,
-  );
+  const missing = doc.getElementById(`${config.addonRef}-zotseek-missing`);
   if (semanticWrap) {
     (semanticWrap as HTMLElement).style.display = ready ? "" : "none";
   }
@@ -576,9 +574,7 @@ function buildSimulation(
   oldPos?: Map<number, { x: number; y: number }>,
 ) {
   const doc = win.document;
-  const canvas = doc.getElementById(
-    `${config.addonRef}-connection-map-canvas`,
-  );
+  const canvas = doc.getElementById(`${config.addonRef}-connection-map-canvas`);
   if (!canvas) return;
 
   const filterEl = doc.getElementById(
@@ -690,8 +686,12 @@ function buildSimulation(
     const t = byId.get(edge.target);
     if (!s || !t) continue;
     if (filter) {
-      const hayS = `${s.node.title} ${s.node.creatorSummary}`.toLocaleLowerCase("tr");
-      const hayT = `${t.node.title} ${t.node.creatorSummary}`.toLocaleLowerCase("tr");
+      const hayS = `${s.node.title} ${s.node.creatorSummary}`.toLocaleLowerCase(
+        "tr",
+      );
+      const hayT = `${t.node.title} ${t.node.creatorSummary}`.toLocaleLowerCase(
+        "tr",
+      );
       if (!hayS.includes(filter) && !hayT.includes(filter)) continue;
     }
     simEdges.push({
@@ -719,9 +719,7 @@ function buildSimulation(
     activePointerId: null,
     energy: 1,
     viewSize: { w, h },
-    pinned: new Set(
-      [...(prev?.pinned ?? [])].filter((id) => nodeIDs.has(id)),
-    ),
+    pinned: new Set([...(prev?.pinned ?? [])].filter((id) => nodeIDs.has(id))),
     selected: new Set(
       [...(prev?.selected ?? [])].filter((id) => nodeIDs.has(id)),
     ),
@@ -905,8 +903,7 @@ function mountSvg(
       sn.node.title,
       sn.node.creatorSummary,
       sn.node.year ? String(sn.node.year) : "",
-      sn.node.disciplineProfile?.primary ||
-        sn.node.disciplineLabels.join(", "),
+      sn.node.disciplineProfile?.primary || sn.node.disciplineLabels.join(", "),
       getNodeDisciplineKey(sn.node),
       sn.node.bridgeScore
         ? getString("connection-map-node-bridge-score", {
@@ -938,7 +935,9 @@ function mountSvg(
     g.addEventListener("pointerenter", () => {
       label.style.display = "";
       const picking =
-        (st.connectMode && st.connectFirst != null && st.connectFirst !== sn.id) ||
+        (st.connectMode &&
+          st.connectFirst != null &&
+          st.connectFirst !== sn.id) ||
         (!!st.shiftConnectFrom && st.shiftConnectFrom.id !== sn.id);
       if (picking) {
         st.hoverTargetId = sn.id;
@@ -1471,10 +1470,7 @@ function wireViewportControls(
 
   svg.addEventListener("pointermove", (ev) => {
     const pe = ev as PointerEvent;
-    if (
-      st.activePointerId != null &&
-      pe.pointerId !== st.activePointerId
-    ) {
+    if (st.activePointerId != null && pe.pointerId !== st.activePointerId) {
       return;
     }
 
@@ -1486,8 +1482,7 @@ function wireViewportControls(
       const rawHoverId = nodeG
         ? Number(nodeG.getAttribute("data-node-id"))
         : null;
-      const hoverId =
-        rawHoverId === st.shiftConnectFrom.id ? null : rawHoverId;
+      const hoverId = rawHoverId === st.shiftConnectFrom.id ? null : rawHoverId;
       if (hoverId !== st.hoverTargetId) {
         st.hoverTargetId = hoverId;
         paintNodeStates(win);
@@ -1712,10 +1707,7 @@ function truncate(s: string, n: number): string {
   return s.slice(0, n - 1) + "…";
 }
 
-function applyTransform(
-  g: SVGElement,
-  t: { x: number; y: number; k: number },
-) {
+function applyTransform(g: SVGElement, t: { x: number; y: number; k: number }) {
   g.setAttribute("transform", `translate(${t.x},${t.y}) scale(${t.k})`);
 }
 
@@ -1937,9 +1929,7 @@ function paint(win: Window) {
   const st = stateByWin.get(win);
   if (!st) return;
   const doc = win.document;
-  const canvas = doc.getElementById(
-    `${config.addonRef}-connection-map-canvas`,
-  );
+  const canvas = doc.getElementById(`${config.addonRef}-connection-map-canvas`);
   if (!canvas) return;
 
   for (const se of st.simEdges) {

@@ -29,13 +29,14 @@ async function openSafeImport() {
   if (!mainWin) return;
 
   const url = `chrome://${config.addonRef}/content/safe-import.xhtml`;
-  const features = "chrome,centerscreen,resizable,dialog=no,width=920,height=640";
+  const features =
+    "chrome,centerscreen,resizable,dialog=no,width=920,height=640";
   const win =
     (mainWin.openDialog(url, DIALOG_ID, features) as Window | null) ||
     (mainWin.open(url, DIALOG_ID, features) as Window | null);
   if (!win) return;
 
-  (addon.data.safeImport = { window: win });
+  addon.data.safeImport = { window: win };
   win.addEventListener("unload", () => {
     if (addon.data.safeImport?.window === win) {
       addon.data.safeImport.window = undefined;
@@ -183,7 +184,9 @@ async function initSafeImportWindow(win: Window) {
     ?.addEventListener("click", async () => {
       const picked = previewRows.filter((r) => selectedIds.has(r.rowId));
       if (!picked.length) return;
-      const status = doc.getElementById(`${config.addonRef}-safe-import-status`);
+      const status = doc.getElementById(
+        `${config.addonRef}-safe-import-status`,
+      );
       if (status) status.textContent = getString("safe-import-importing");
       const { importedIds, skipped } = await importSelectedCandidates(picked);
       updateHint(

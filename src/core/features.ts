@@ -11,7 +11,10 @@ import {
 } from "../modules/menu";
 import { registerRatingColumn } from "../utils/rating";
 import { initReferenceReader } from "../modules/referenceReader";
-import { initNoteWorkspace, ensureNoteWorkspacePrefDefaults } from "../modules/noteWorkspace";
+import {
+  initNoteWorkspace,
+  ensureNoteWorkspacePrefDefaults,
+} from "../modules/noteWorkspace";
 import { initIncitefulMenus } from "../modules/incitefulBridge";
 import {
   initReadingFlow,

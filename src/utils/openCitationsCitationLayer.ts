@@ -100,7 +100,9 @@ async function computeOpenCitationsCitationSuggestions(
   for (const node of nodes.values()) {
     const item = Zotero.Items.get(node.itemID);
     if (!item || !item.isRegularItem()) continue;
-    const doi = normalizeOpenCitationsDoi((item.getField("DOI") as string) || "");
+    const doi = normalizeOpenCitationsDoi(
+      (item.getField("DOI") as string) || "",
+    );
     if (doi) doiToItem.set(doi, node.itemID);
   }
   if (doiToItem.size < 2) return [];

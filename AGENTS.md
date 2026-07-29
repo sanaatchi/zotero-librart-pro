@@ -1,4 +1,5 @@
 <!-- @ajan: cursor · @etiket: librart-pro, coordination, agents, plan -->
+
 # LibRart Pro — üç ajan koordinasyonu (Cursor · Claude · Codex)
 
 Görev başı: **[`LIBRART-GIRIS.md`](LIBRART-GIRIS.md)** (plan rehberi ve isim haritası).
@@ -14,12 +15,12 @@ Ana Kütüphane: üst [`AGENTS.md`](../../AGENTS.md), [`Changes.md`](../../Chang
 
 ## SSOT (iki plan)
 
-| Ne | Dosya |
-|---|---|
-| Faz, pref, menü, test, release | `LIBRART-YAPILANDIRMA.md` |
-| Lisans, port, modül eşlemesi | `LIBRART-REFERANS-PORT.md` |
-| Vendor satırı | `LIBRART-VENDOR.md` |
-| Oturum kaydı | `Kutuphane/Changes.md` |
+| Ne                             | Dosya                      |
+| ------------------------------ | -------------------------- |
+| Faz, pref, menü, test, release | `LIBRART-YAPILANDIRMA.md`  |
+| Lisans, port, modül eşlemesi   | `LIBRART-REFERANS-PORT.md` |
+| Vendor satırı                  | `LIBRART-VENDOR.md`        |
+| Oturum kaydı                   | `Kutuphane/Changes.md`     |
 
 **Arşiv:** `LIBRART-ARSIV.md` · **Güvenlik blocklist:** [`../REFERANS-BLOCKLIST.md`](../REFERANS-BLOCKLIST.md)
 

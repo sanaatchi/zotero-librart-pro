@@ -192,7 +192,12 @@ async function waitForMainItemsView() {
   for (let attempt = 0; attempt < 120; attempt++) {
     const pane = Zotero.getActiveZoteroPane?.();
     const itemsView = pane?.itemsView as
-      | { id?: string; _columnPrefs?: Record<string, { hidden?: boolean }>; _resetColumns?: () => Promise<void>; _writeColumnPrefsToFile?: (force?: boolean) => Promise<void> }
+      | {
+          id?: string;
+          _columnPrefs?: Record<string, { hidden?: boolean }>;
+          _resetColumns?: () => Promise<void>;
+          _writeColumnPrefsToFile?: (force?: boolean) => Promise<void>;
+        }
       | undefined;
     if (itemsView?.id?.startsWith("item-tree-main-")) {
       return itemsView;
@@ -335,13 +340,7 @@ function renderDashboard(snapshot: ReadingFlowSnapshot): string {
   ].join("");
 
   const statusRows = (
-    [
-      "to-read",
-      "reading",
-      "skimmed",
-      "read",
-      "important",
-    ] as ReadingStatus[]
+    ["to-read", "reading", "skimmed", "read", "important"] as ReadingStatus[]
   )
     .map(
       (status) =>
