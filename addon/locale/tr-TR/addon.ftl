@@ -66,6 +66,13 @@ inciteful-menu-collection-search = Koleksiyonu Inciteful ile Tara
 inciteful-error-no-item = Seçili öğelerde DOI veya URL bulunamadı.
 inciteful-error-too-many = Makaleleri bağlamak için en fazla iki öğe seçin.
 
+menu-reference-extractor = Kaynakçayı çıkar
+reference-extractor-note-title = Çıkarılan kaynakça
+reference-extractor-error-no-reader = Açık bir PDF okuyucu bulunamadı.
+reference-extractor-error-failed = Kaynakça çıkarılamadı.
+reference-extractor-empty = PDF'te kaynakça bulunamadı.
+reference-extractor-success = { $count } kaynakça bulundu, not olarak eklendi.
+
 connection-map-title = Bağlantı Haritası
 connection-map-subtitle = { $library } · { $items } yayın · { $edges } bağlantı
 connection-map-loading = Bağlantılar hesaplanıyor…

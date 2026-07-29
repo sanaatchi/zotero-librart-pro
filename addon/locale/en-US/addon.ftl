@@ -66,6 +66,13 @@ inciteful-menu-collection-search = Graph Search using Inciteful
 inciteful-error-no-item = Seçili öğelerde DOI veya URL bulunamadı.
 inciteful-error-too-many = Connect Papers için en fazla iki öğe seçin.
 
+menu-reference-extractor = Extract bibliography
+reference-extractor-note-title = Extracted bibliography
+reference-extractor-error-no-reader = No open PDF reader found.
+reference-extractor-error-failed = Failed to extract bibliography.
+reference-extractor-empty = No references found in this PDF.
+reference-extractor-success = { $count } references found, saved as a note.
+
 connection-map-title = Bağlantı Haritası
 connection-map-subtitle = { $library } · { $items } yayın · { $edges } bağlantı
 connection-map-loading = Bağlantılar hesaplanıyor…

@@ -25,6 +25,7 @@ barındırır veya `../referanslar/` üzerinden port eder. Dosya başında kayna
 | [Local-Citation-Graph](https://github.com/SubhadityaMukherjee/Local-Citation-Graph) | **lisans yok** | `referanslar/Local-Citation-Graph/` | **vendor yasak** | Yalnız export/görselleştirme fikri |
 | [zotero-citegeist](https://github.com/phdemotions/zotero-citegeist) | GPL-3.0 | `referanslar/zotero-citegeist/` | `src/modules/citegeistBridge.ts` | OpenAlex snowball + atıf metrikleri |
 | [citation-graph](https://github.com/OleksiyPenkov/citation-graph) | **MIT** | `referanslar/citation-graph-openalex-cli/` | Kutuphane köprüsü (Python) | CLI/MCP: neighborhood, missing, bridges |
+| [scite-zotero-plugin](https://github.com/scitedotai/scite-zotero-plugin) | **lisans yok** (kendisi + 15 fork'un tamamı doğrulandı) | `referanslar/scite-zotero-plugin/` | **vendor/port yasak** | Atıf-tipi (supporting/contrasting/mentioning) — lisanslı muadil: `zotero-open-citations` (AGPL) veya `zotero-citation-tally` (AGPL); alternatif: `mcp__zotero__scite_*` MCP araçları (kod portu gerektirmez) |
 
 Detaylı faz planı: **`REFERANS-ANALIZ.md`** §5 ve §10–§11.
 

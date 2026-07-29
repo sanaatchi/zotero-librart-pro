@@ -7,6 +7,7 @@ import { getCurrentItems, getItemIDsByKey } from "../utils/items";
 import { getIcon } from "../utils/icon";
 import { setRating, ratingStars } from "../utils/rating";
 import { initIncitefulMenus } from "./incitefulBridge";
+import { referenceExtractorMenuChild } from "./referenceExtractor";
 
 export { initItemMenu, initReaderMenu, initReaderAnnotationMenu, buildItemMenu };
 
@@ -110,6 +111,7 @@ function initItemMenu(win: Window) {
       actionsMenuChild("tools"),
       tagDashboardMenuChild(),
       connectionMapMenuChild(),
+      referenceExtractorMenuChild(),
     ],
   });
 
