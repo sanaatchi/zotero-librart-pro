@@ -123,41 +123,34 @@ function publishUpdateJsonToBranch(body) {
 
 /** Dedicated release holding only update.json — stable update_url target. */
 function syncUpdateRelease() {
+  // Full delete+recreate: --clobber / delete-asset often leaves GitHub's
+  // release-assets CDN serving the previous bytes for several minutes.
   try {
     execSync(`gh release view ${UPDATE_RELEASE} --repo ${DIST_REPO}`, {
       stdio: "ignore",
     });
-  } catch {
     run(
-      `gh release create ${UPDATE_RELEASE} update.json --repo ${DIST_REPO} ` +
-        `--title "update manifest" --notes "Stable Zotero auto-update manifest."`,
-    );
-    return;
-  }
-
-  // delete+reupload: GitHub --clobber leaves CDN serving the old bytes for minutes
-  try {
-    execSync(
-      `gh release delete-asset ${UPDATE_RELEASE} update.json --repo ${DIST_REPO} --yes`,
-      { stdio: "ignore" },
+      `gh release delete ${UPDATE_RELEASE} --repo ${DIST_REPO} --yes --cleanup-tag`,
     );
   } catch {
-    /* first upload or already gone */
+    /* none yet */
   }
-  run(`gh release upload ${UPDATE_RELEASE} update.json --repo ${DIST_REPO}`);
+  run(
+    `gh release create ${UPDATE_RELEASE} update.json --repo ${DIST_REPO} ` +
+      `--title "update manifest" --notes "Stable Zotero auto-update manifest."`,
+  );
 }
 
 function fetchUpdateManifest() {
-  // Cache-bust query is ignored by GitHub for the file body but helps local curl.
-  const url = `${UPDATE_URL}?t=${Date.now()}`;
-  return execSync(`curl -fsSL "${url}"`, {
+  // Exact URL Zotero uses — no cache-buster (that can hide CDN staleness).
+  return execSync(`curl -fsSL "${UPDATE_URL}"`, {
     encoding: "utf8",
     shell: true,
   });
 }
 
 /** Block until Zotero's update_url actually serves this version. */
-function waitUntilUpdateVisible(expectedVersion, { attempts = 12, delayMs = 5000 } = {}) {
+function waitUntilUpdateVisible(expectedVersion, { attempts = 18, delayMs = 10000 } = {}) {
   console.log(`\n=== Verifying ${UPDATE_URL} serves ${expectedVersion} ===`);
   for (let i = 1; i <= attempts; i++) {
     try {
@@ -172,16 +165,15 @@ function waitUntilUpdateVisible(expectedVersion, { attempts = 12, delayMs = 5000
     } catch (e) {
       console.log(`Attempt ${i}/${attempts}: fetch failed (${e.message || e})`);
     }
-    if (i < attempts) {
-      // Re-sync asset once mid-wait if CDN still stale
-      if (i === 3 || i === 7) {
-        console.log("Re-syncing update release asset…");
-        try {
-          syncUpdateRelease();
-        } catch (e) {
-          console.warn("Re-sync failed:", e.message || e);
-        }
+    if (i === 4 || i === 10) {
+      console.log("CDN still stale — recreating update release…");
+      try {
+        syncUpdateRelease();
+      } catch (e) {
+        console.warn("Re-sync failed:", e.message || e);
       }
+    }
+    if (i < attempts) {
       execSync(`powershell -Command "Start-Sleep -Milliseconds ${delayMs}"`, {
         stdio: "ignore",
         shell: true,
@@ -189,8 +181,7 @@ function waitUntilUpdateVisible(expectedVersion, { attempts = 12, delayMs = 5000
     }
   }
   throw new Error(
-    `Update channel still not serving ${expectedVersion} after ${attempts} attempts. ` +
-      `Do not tell users to Check for Updates yet.`,
+    `Update channel still not serving ${expectedVersion} after ${attempts} attempts.`,
   );
 }
 
