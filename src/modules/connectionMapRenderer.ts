@@ -1287,13 +1287,14 @@ function stepForces(st: RendererState) {
     return;
   }
 
-  // Soft, elastic layout: weak springs + mild repulsion (capped so collisions don't fling).
-  const repulsion = 450;
-  const spring = 0.012;
-  const springLen = 150;
-  const centering = 0.003;
-  const damp = 0.93;
-  const maxRepulse = 2.5;
+  // Zero-g threads: links only pull when taut (no rod-like push), soft stretch.
+  const repulsion = 380;
+  const thread = 0.005;
+  const slack = 130;
+  const centering = 0.001;
+  const damp = 0.94;
+  const maxRepulse = 1.8;
+  const maxTension = 1.2;
 
   let cx = 0;
   let cy = 0;
@@ -1317,7 +1318,6 @@ function stepForces(st: RendererState) {
         dist2 = dx * dx + dy * dy;
       }
       const dist = Math.sqrt(dist2);
-      // Soften close-range spikes: clamp 1/r² so overlaps nudge instead of fling.
       let force = repulsion / dist2;
       if (force > maxRepulse) force = maxRepulse;
       const fx = (dx / dist) * force;
@@ -1335,7 +1335,11 @@ function stepForces(st: RendererState) {
     const dx = b.x - a.x;
     const dy = b.y - a.y;
     const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-    const f = (dist - springLen) * spring;
+    const stretch = dist - slack;
+    // Slack string: no force when loose; gentle pull only when taut.
+    if (stretch <= 0) continue;
+    let f = stretch * thread;
+    if (f > maxTension) f = maxTension;
     const fx = (dx / dist) * f;
     const fy = (dy / dist) * f;
     a.vx += fx;

@@ -1,6 +1,6 @@
 {
   "name": "zotero-actions-tags",
-  "version": "1.0.22",
+  "version": "1.0.23",
   "description": "Eylem tetikle, etiketle, düzenle. Etiket Analizi ve Bağlantı Haritası dahil.",
   "config": {
     "addonName": "Eylemler ve Etiketler",
