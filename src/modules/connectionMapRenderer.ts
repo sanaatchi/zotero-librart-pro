@@ -81,6 +81,16 @@ type RendererState = {
   activePointerId: number | null;
   energy: number;
   viewSize: { w: number; h: number };
+  /** Nodes excluded from force simulation — user-fixed position. */
+  pinned: Set<number>;
+  /** Multi-selected nodes (Ctrl/Cmd+click) for bulk actions. */
+  selected: Set<number>;
+  /** Shift+drag-to-connect gesture source, if active. */
+  shiftConnectFrom: SimNode | null;
+  shiftConnectLine: SVGLineElement | null;
+  /** Node currently under the pointer during connect-mode pick / shift-drag. */
+  hoverTargetId: number | null;
+  contextMenuEl: HTMLDivElement | null;
 };
 
 const stateByWin = new WeakMap<Window, RendererState>();
@@ -204,7 +214,7 @@ function wireChrome(
       st.connectFirst = null;
       connectBtn.classList.toggle("active", st.connectMode);
       setConnectHint(win, st);
-      paintConnectSelection(win);
+      paintNodeStates(win);
     };
   }
 
@@ -265,6 +275,17 @@ function wireChrome(
       if (exportConnectionMapPng(win)) {
         updateHint(getString("connection-map-export-done"));
       }
+    };
+  }
+
+  const connectSelectedBtn = doc.getElementById(
+    `${config.addonRef}-connection-map-connect-selected`,
+  ) as HTMLButtonElement | null;
+  if (connectSelectedBtn) {
+    connectSelectedBtn.onclick = async () => {
+      const st = stateByWin.get(win);
+      if (!st) return;
+      await connectSelected(win, st, graph);
     };
   }
 
@@ -412,22 +433,49 @@ function setConnectHint(win: Window, st: RendererState) {
   }
 }
 
-function paintConnectSelection(win: Window) {
+/**
+ * Repaints per-node stroke/dash to reflect connect-pick, shift-drag hover
+ * target, multi-select, and pin state. Precedence: active connect/shift
+ * source > hover target (while picking) > selected > pinned > default.
+ */
+function paintNodeStates(win: Window) {
   const st = stateByWin.get(win);
   const canvas = win.document.getElementById(
     `${config.addonRef}-connection-map-canvas`,
   );
   if (!st || !canvas) return;
+  const picking = (st.connectMode && st.connectFirst != null) || !!st.shiftConnectFrom;
   canvas.querySelectorAll("g[data-node-id] circle").forEach((el) => {
     const circle = el as SVGCircleElement;
     const g = circle.parentElement;
     const id = Number(g?.getAttribute("data-node-id"));
-    if (st.connectMode && st.connectFirst === id) {
+    const isSource =
+      (st.connectMode && st.connectFirst === id) ||
+      st.shiftConnectFrom?.id === id;
+    const isHoverTarget = picking && st.hoverTargetId === id && !isSource;
+    const isSelected = st.selected.has(id);
+    const isPinned = st.pinned.has(id);
+
+    if (isSource) {
       circle.setAttribute("stroke", "var(--map-bridge)");
       circle.setAttribute("stroke-width", "2.5");
+      circle.removeAttribute("stroke-dasharray");
+    } else if (isHoverTarget) {
+      circle.setAttribute("stroke", "var(--map-edge-note)");
+      circle.setAttribute("stroke-width", "2.5");
+      circle.removeAttribute("stroke-dasharray");
+    } else if (isSelected) {
+      circle.setAttribute("stroke", "var(--map-accent)");
+      circle.setAttribute("stroke-width", "2.2");
+      circle.removeAttribute("stroke-dasharray");
+    } else if (isPinned) {
+      circle.setAttribute("stroke", "var(--map-node-stroke)");
+      circle.setAttribute("stroke-width", "2");
+      circle.setAttribute("stroke-dasharray", "2 2");
     } else {
       circle.setAttribute("stroke", "var(--map-node-stroke)");
       circle.setAttribute("stroke-width", "1.25");
+      circle.removeAttribute("stroke-dasharray");
     }
   });
 }
@@ -595,6 +643,16 @@ function buildSimulation(
     activePointerId: null,
     energy: 1,
     viewSize: { w, h },
+    pinned: new Set(
+      [...(prev?.pinned ?? [])].filter((id) => nodeIDs.has(id)),
+    ),
+    selected: new Set(
+      [...(prev?.selected ?? [])].filter((id) => nodeIDs.has(id)),
+    ),
+    shiftConnectFrom: null,
+    shiftConnectLine: null,
+    hoverTargetId: null,
+    contextMenuEl: null,
   };
   stateByWin.set(win, st);
 
@@ -803,9 +861,20 @@ function mountSvg(
 
     g.addEventListener("pointerenter", () => {
       label.style.display = "";
+      const picking =
+        (st.connectMode && st.connectFirst != null && st.connectFirst !== sn.id) ||
+        (!!st.shiftConnectFrom && st.shiftConnectFrom.id !== sn.id);
+      if (picking) {
+        st.hoverTargetId = sn.id;
+        paintNodeStates(win);
+      }
     });
     g.addEventListener("pointerleave", () => {
       syncOneLabel(label, st.transform.k);
+      if (st.hoverTargetId === sn.id) {
+        st.hoverTargetId = null;
+        paintNodeStates(win);
+      }
     });
 
     g.addEventListener("pointerdown", (ev) => {
@@ -819,6 +888,20 @@ function mountSvg(
         /* ignore */
       }
       st.activePointerId = pe.pointerId;
+
+      // Shift+drag: draw a rubber-band line and connect on release over
+      // another node — faster than toggling "connect mode" for one link.
+      if (pe.shiftKey && !st.connectMode) {
+        st.shiftConnectFrom = sn;
+        const line = ensureShiftLine(win, root);
+        line.setAttribute("x1", String(sn.x));
+        line.setAttribute("y1", String(sn.y));
+        line.setAttribute("x2", String(sn.x));
+        line.setAttribute("y2", String(sn.y));
+        paintNodeStates(win);
+        return;
+      }
+
       st.dragging = sn;
       st.dragMoved = false;
       st.dragStart = { x: pe.clientX, y: pe.clientY };
@@ -833,6 +916,11 @@ function mountSvg(
         st.dragMoved = false;
         return;
       }
+      const me = ev as MouseEvent;
+      if (me.ctrlKey || me.metaKey) {
+        toggleSelect(win, st, sn.id);
+        return;
+      }
       if (st.connectMode) {
         await handleConnectClick(win, st, sn, graph);
         return;
@@ -845,6 +933,19 @@ function mountSvg(
       }
     });
 
+    g.addEventListener("dblclick", (ev) => {
+      ev.stopPropagation();
+      ev.preventDefault();
+      togglePin(win, st, sn.id);
+    });
+
+    g.addEventListener("contextmenu", (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const me = ev as MouseEvent;
+      showNodeContextMenu(win, st, sn, me.clientX, me.clientY);
+    });
+
     nodeLayer.appendChild(g);
   }
 
@@ -852,9 +953,9 @@ function mountSvg(
   root.appendChild(nodeLayer);
   svg.appendChild(root);
   canvas.appendChild(svg);
-  paintConnectSelection(win);
+  paintNodeStates(win);
   applyViewport(root, svg, st.transform);
-  wireViewportControls(win, svg, root, st);
+  wireViewportControls(win, svg, root, st, graph);
 }
 
 async function handleConnectClick(
@@ -866,69 +967,308 @@ async function handleConnectClick(
   if (st.connectFirst == null) {
     st.connectFirst = sn.id;
     setConnectHint(win, st);
-    paintConnectSelection(win);
+    paintNodeStates(win);
     return;
   }
   if (st.connectFirst === sn.id) {
     st.connectFirst = null;
     setConnectHint(win, st);
-    paintConnectSelection(win);
+    paintNodeStates(win);
     return;
   }
 
   const firstId = st.connectFirst;
-  const a = Zotero.Items.get(firstId);
-  const b = Zotero.Items.get(sn.id);
   st.connectFirst = null;
-  paintConnectSelection(win);
+  paintNodeStates(win);
   setConnectHint(win, st);
-  if (!a || !b) return;
+
+  const ok = await performConnect(win, firstId, sn.id, graph);
+  if (ok) afterConnectSuccess(win);
+}
+
+/**
+ * Shared connect flow used by connect-mode clicks, shift-drag, and bulk
+ * "connect selected". Handles the already-related check, confirmation,
+ * relatedItem write, and the cross-discipline bridge-tag offer.
+ */
+async function performConnect(
+  win: Window,
+  aId: number,
+  bId: number,
+  graph: ConnectionGraph,
+  opts: { skipConfirm?: boolean; skipBridgeTag?: boolean } = {},
+): Promise<boolean> {
+  const a = Zotero.Items.get(aId);
+  const b = Zotero.Items.get(bId);
+  if (!a || !b) return false;
 
   if (areItemsRelated(a, b)) {
     updateHint(getString("connection-map-already-related"));
-    return;
+    return false;
   }
 
-  const msg = getString("connection-map-confirm-connect", {
-    args: { a: a.getDisplayTitle(), b: b.getDisplayTitle() },
-  });
-  if (!win.confirm(msg)) return;
+  if (!opts.skipConfirm) {
+    const msg = getString("connection-map-confirm-connect", {
+      args: { a: a.getDisplayTitle(), b: b.getDisplayTitle() },
+    });
+    if (!win.confirm(msg)) return false;
+  }
 
   const wrote = await confirmManualConnection(a, b);
   if (!wrote) {
     updateHint(getString("connection-map-already-related"));
-    return;
+    return false;
   }
 
-  const nodeA = graph.nodes.get(a.id);
-  const nodeB = graph.nodes.get(b.id);
-  if (nodeA && nodeB && isCrossDiscipline(nodeA, nodeB)) {
-    const shared = suggestBridgeTagLabel(nodeA, nodeB);
-    if (shared) {
-      const candidate = findBridgeTagCandidate(a, b, shared);
-      if (candidate) {
-        const offer = getString("connection-map-offer-bridge-tag", {
-          args: { tag: candidate },
-        });
-        if (win.confirm(offer)) {
-          await offerBridgeTag(a, b, candidate, graph.nodes);
+  if (!opts.skipBridgeTag) {
+    const nodeA = graph.nodes.get(a.id);
+    const nodeB = graph.nodes.get(b.id);
+    if (nodeA && nodeB && isCrossDiscipline(nodeA, nodeB)) {
+      const shared = suggestBridgeTagLabel(nodeA, nodeB);
+      if (shared) {
+        const candidate = findBridgeTagCandidate(a, b, shared);
+        if (candidate) {
+          const offer = getString("connection-map-offer-bridge-tag", {
+            args: { tag: candidate },
+          });
+          if (win.confirm(offer)) {
+            await offerBridgeTag(a, b, candidate, graph.nodes);
+          }
         }
       }
     }
   }
 
-  updateHint(getString("connection-map-connect-done"));
+  return true;
+}
 
-  // Ensure manual layer is visible after creating a relation.
+/** Post-write UI refresh shared by all connect flows. */
+function afterConnectSuccess(win: Window) {
+  updateHint(getString("connection-map-connect-done"));
   const manualToggle = win.document.getElementById(
     `${config.addonRef}-layer-manual`,
   ) as HTMLInputElement | null;
   if (manualToggle) manualToggle.checked = true;
-
   const refreshBtn = win.document.getElementById(
     `${config.addonRef}-connection-map-refresh`,
   ) as HTMLButtonElement | null;
   refreshBtn?.click();
+}
+
+async function finishShiftConnect(
+  win: Window,
+  fromId: number,
+  toId: number,
+  graph: ConnectionGraph,
+) {
+  const ok = await performConnect(win, fromId, toId, graph);
+  if (ok) afterConnectSuccess(win);
+}
+
+/** Bulk-connect every pair in the current multi-selection. */
+async function connectSelected(
+  win: Window,
+  st: RendererState,
+  graph: ConnectionGraph,
+) {
+  const ids = [...st.selected];
+  if (ids.length < 2) return;
+  const pairs: Array<[number, number]> = [];
+  for (let i = 0; i < ids.length; i++) {
+    for (let j = i + 1; j < ids.length; j++) pairs.push([ids[i], ids[j]]);
+  }
+  const msg = getString("connection-map-connect-selected-confirm", {
+    args: { count: pairs.length },
+  });
+  if (!win.confirm(msg)) return;
+
+  let made = 0;
+  for (const [a, b] of pairs) {
+    const ok = await performConnect(win, a, b, graph, {
+      skipConfirm: true,
+      skipBridgeTag: true,
+    });
+    if (ok) made++;
+  }
+
+  st.selected.clear();
+  updateSelectionUI(win, st);
+  paintNodeStates(win);
+  if (made > 0) afterConnectSuccess(win);
+}
+
+/** Toggle a node's fixed-position pin state. */
+function togglePin(win: Window, st: RendererState, id: number) {
+  if (st.pinned.has(id)) st.pinned.delete(id);
+  else st.pinned.add(id);
+  paintNodeStates(win);
+}
+
+function toggleSelect(win: Window, st: RendererState, id: number) {
+  if (st.selected.has(id)) st.selected.delete(id);
+  else st.selected.add(id);
+  paintNodeStates(win);
+  updateSelectionUI(win, st);
+}
+
+function updateSelectionUI(win: Window, st: RendererState) {
+  const btn = win.document.getElementById(
+    `${config.addonRef}-connection-map-connect-selected`,
+  ) as HTMLButtonElement | null;
+  if (btn) {
+    if (st.selected.size >= 2) {
+      btn.style.display = "";
+      btn.textContent = getString("connection-map-connect-selected", {
+        args: { count: st.selected.size },
+      });
+    } else {
+      btn.style.display = "none";
+    }
+  }
+  if (st.selected.size > 0) {
+    const hint = win.document.getElementById(
+      `${config.addonRef}-connection-map-hint`,
+    );
+    if (hint) {
+      hint.textContent = getString("connection-map-select-hint", {
+        args: { count: st.selected.size },
+      });
+    }
+  } else {
+    setConnectHint(win, st);
+  }
+}
+
+/** Simple fixed-position context menu with a handful of node actions. */
+function showNodeContextMenu(
+  win: Window,
+  st: RendererState,
+  sn: SimNode,
+  clientX: number,
+  clientY: number,
+) {
+  closeContextMenu(win);
+  const doc = win.document;
+  const menu = doc.createElement("div");
+  menu.style.cssText = [
+    "position:fixed",
+    `left:${clientX}px`,
+    `top:${clientY}px`,
+    "z-index:1000",
+    "background:var(--map-card)",
+    "border:1px solid var(--map-border)",
+    "border-radius:6px",
+    "box-shadow:0 4px 16px rgba(0,0,0,.28)",
+    "padding:4px",
+    "font:13px system-ui, Segoe UI, sans-serif",
+    "min-width:190px",
+    "color:var(--map-fg)",
+  ].join(";");
+
+  const items: Array<{ label: string; action: () => void }> = [
+    {
+      label: getString("connection-map-ctx-show"),
+      action: () => {
+        try {
+          Zotero.getActiveZoteroPane()?.selectItem(sn.id);
+        } catch (e) {
+          ztoolkit.log("selectItem failed", e);
+        }
+      },
+    },
+    {
+      label: getString("connection-map-ctx-connect-from"),
+      action: () => {
+        st.connectMode = true;
+        st.connectFirst = sn.id;
+        const connectBtn = doc.getElementById(
+          `${config.addonRef}-connection-map-connect`,
+        );
+        connectBtn?.classList.add("active");
+        setConnectHint(win, st);
+        paintNodeStates(win);
+      },
+    },
+    {
+      label: st.pinned.has(sn.id)
+        ? getString("connection-map-ctx-unpin")
+        : getString("connection-map-ctx-pin"),
+      action: () => togglePin(win, st, sn.id),
+    },
+  ];
+
+  for (const it of items) {
+    const row = doc.createElement("div");
+    row.textContent = it.label;
+    row.style.cssText = "padding:6px 10px;border-radius:4px;cursor:pointer;";
+    row.addEventListener(
+      "pointerenter",
+      () => (row.style.background = "var(--map-panel)"),
+    );
+    row.addEventListener("pointerleave", () => (row.style.background = ""));
+    row.addEventListener("click", (e) => {
+      e.stopPropagation();
+      it.action();
+      closeContextMenu(win);
+    });
+    menu.appendChild(row);
+  }
+
+  doc.body.appendChild(menu);
+  st.contextMenuEl = menu;
+
+  const closeOnce = () => {
+    closeContextMenu(win);
+    win.removeEventListener("pointerdown", closeOnce, true);
+  };
+  win.addEventListener("pointerdown", closeOnce, true);
+}
+
+function closeContextMenu(win: Window) {
+  const st = stateByWin.get(win);
+  if (st?.contextMenuEl) {
+    st.contextMenuEl.remove();
+    st.contextMenuEl = null;
+  }
+}
+
+function ensureShiftLine(win: Window, root: SVGElement): SVGLineElement {
+  const st = stateByWin.get(win)!;
+  if (st.shiftConnectLine) return st.shiftConnectLine;
+  const doc = win.document;
+  const line = doc.createElementNS(
+    "http://www.w3.org/2000/svg",
+    "line",
+  ) as SVGLineElement;
+  line.setAttribute("stroke", "var(--map-bridge)");
+  line.setAttribute("stroke-width", "2");
+  line.setAttribute("stroke-dasharray", "6 4");
+  line.setAttribute("pointer-events", "none");
+  root.appendChild(line);
+  st.shiftConnectLine = line;
+  return line;
+}
+
+function updateShiftLine(
+  win: Window,
+  from: { x: number; y: number },
+  tx: number,
+  ty: number,
+) {
+  const st = stateByWin.get(win);
+  if (!st?.shiftConnectLine) return;
+  st.shiftConnectLine.setAttribute("x1", String(from.x));
+  st.shiftConnectLine.setAttribute("y1", String(from.y));
+  st.shiftConnectLine.setAttribute("x2", String(tx));
+  st.shiftConnectLine.setAttribute("y2", String(ty));
+}
+
+function removeShiftLine(win: Window) {
+  const st = stateByWin.get(win);
+  if (st?.shiftConnectLine) {
+    st.shiftConnectLine.remove();
+    st.shiftConnectLine = null;
+  }
 }
 
 function suggestBridgeTagLabel(a: GraphNode, b: GraphNode): string | null {
@@ -973,6 +1313,7 @@ function wireViewportControls(
   svg: SVGSVGElement,
   root: SVGElement,
   st: RendererState,
+  graph: ConnectionGraph,
 ) {
   const endPointer = (pe?: PointerEvent) => {
     if (
@@ -989,6 +1330,17 @@ function wireViewportControls(
         }
       } catch {
         /* ignore */
+      }
+    }
+    if (st.shiftConnectFrom) {
+      const fromId = st.shiftConnectFrom.id;
+      const toId = st.hoverTargetId;
+      st.shiftConnectFrom = null;
+      st.hoverTargetId = null;
+      removeShiftLine(win);
+      paintNodeStates(win);
+      if (toId != null && toId !== fromId) {
+        void finishShiftConnect(win, fromId, toId, graph);
       }
     }
     st.dragging = null;
@@ -1047,6 +1399,23 @@ function wireViewportControls(
       st.activePointerId != null &&
       pe.pointerId !== st.activePointerId
     ) {
+      return;
+    }
+
+    if (st.shiftConnectFrom) {
+      const pt = clientToSvg(svg, pe.clientX, pe.clientY, st.transform);
+      updateShiftLine(win, st.shiftConnectFrom, pt.x, pt.y);
+      const el = win.document.elementFromPoint(pe.clientX, pe.clientY);
+      const nodeG = (el as Element | null)?.closest?.("g[data-node-id]");
+      const rawHoverId = nodeG
+        ? Number(nodeG.getAttribute("data-node-id"))
+        : null;
+      const hoverId =
+        rawHoverId === st.shiftConnectFrom.id ? null : rawHoverId;
+      if (hoverId !== st.hoverTargetId) {
+        st.hoverTargetId = hoverId;
+        paintNodeStates(win);
+      }
       return;
     }
 
@@ -1130,6 +1499,28 @@ function wireViewportControls(
         rect.top + rect.height / 2,
         1 / 1.12,
       );
+    } else if (ev.key === "Escape") {
+      let changed = false;
+      if (cur.shiftConnectFrom) {
+        cur.shiftConnectFrom = null;
+        cur.hoverTargetId = null;
+        removeShiftLine(win);
+        changed = true;
+      }
+      if (cur.connectFirst != null) {
+        cur.connectFirst = null;
+        changed = true;
+      }
+      if (cur.selected.size) {
+        cur.selected.clear();
+        updateSelectionUI(win, cur);
+        changed = true;
+      }
+      closeContextMenu(win);
+      if (changed) {
+        setConnectHint(win, cur);
+        paintNodeStates(win);
+      }
     }
   };
   const onKeyUp = (ev: KeyboardEvent) => {
@@ -1383,6 +1774,11 @@ function stepForces(st: RendererState) {
   let energy = 0;
   for (const a of nodes) {
     if (st.dragging === a) continue;
+    if (st.pinned.has(a.id)) {
+      a.vx = 0;
+      a.vy = 0;
+      continue;
+    }
     a.vx += (cx - a.x) * centering;
     a.vy += (cy - a.y) * centering;
     a.vx *= damp;
