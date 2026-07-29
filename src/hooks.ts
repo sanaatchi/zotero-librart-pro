@@ -27,6 +27,7 @@ import { editAction } from "./modules/edit";
 import { getZoteroAdapter } from "./adapters/zoteroAdapter";
 import { getFeatureRegistry } from "./core/featureRegistry";
 import { registerLibRartFeatures } from "./core/features";
+import { initPrefReconcile, shutdownPrefReconcile } from "./core/prefReconcile";
 import { runProgramStartupThenMainWindow } from "./utils/startupOrder";
 
 let featuresRegistered = false;
@@ -53,6 +54,7 @@ async function onStartup() {
   const registry = getFeatureRegistry();
   const ctx = { adapter };
   await registry.initPhase("startup", ctx, getPref);
+  initPrefReconcile(registry, ctx);
 
   Zotero.PreferencePanes.register({
     pluginID: config.addonID,
@@ -90,6 +92,7 @@ async function onMainWindowUnload(win: Window): Promise<void> {
 }
 
 function onShutdown(): void {
+  shutdownPrefReconcile();
   getFeatureRegistry().shutdownAll();
   ztoolkit.unregisterAll();
   addon.data.alive = false;

@@ -99,6 +99,48 @@ class FeatureRegistry {
   }
 
   /**
+   * Live pref toggle — apply an enabled/disabled transition to a feature
+   * without waiting for a Zotero restart. No-op if the feature is already
+   * in the requested state. For `mainWindow`-phase features this applies to
+   * every window this registry currently knows about.
+   */
+  async setEnabled(
+    id: string,
+    enabled: boolean,
+    ctx: FeatureContext,
+  ): Promise<void> {
+    const def = this.features.get(id);
+    if (!def) return;
+
+    if (def.phase === "startup") {
+      const active = this.startupInitialized.has(id);
+      if (enabled === active) return;
+      if (enabled) {
+        await def.init(ctx);
+        this.startupInitialized.add(id);
+        this.everInitialized.push(id);
+      } else {
+        def.shutdown?.();
+        this.startupInitialized.delete(id);
+      }
+      return;
+    }
+
+    for (const [win, done] of this.windowInitialized) {
+      const active = done.has(id);
+      if (enabled === active) continue;
+      if (enabled) {
+        await def.init(ctx, win);
+        done.add(id);
+        this.everInitialized.push(id);
+      } else {
+        def.shutdownWindow?.(win);
+        done.delete(id);
+      }
+    }
+  }
+
+  /**
    * Tear down mainWindow features for one Zotero window.
    * Does not run process-wide `shutdown` (other windows may still be open).
    */
