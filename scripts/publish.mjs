@@ -1,6 +1,10 @@
 // Publish a release to the PUBLIC dist repo so Zotero can auto-update.
 // Source stays private in sanaatchi/eylemler-ve-etiketler.
 //
+// Update channel (same pattern as Translate for Zotero):
+//   manifest update_url →
+//   https://github.com/.../releases/download/update/update.json
+//
 // Usage:
 //   npm run gh-release
 //   node scripts/publish.mjs --notes "Tag Analysis fix"
@@ -20,6 +24,8 @@ import { tmpdir } from "node:os";
 
 const DIST_REPO = "sanaatchi/eylemler-ve-etiketler-releases";
 const SOURCE_REPO = "sanaatchi/eylemler-ve-etiketler";
+const UPDATE_RELEASE = "update";
+const UPDATE_URL = `https://github.com/${DIST_REPO}/releases/download/${UPDATE_RELEASE}/update.json`;
 
 const pkg = JSON.parse(
   readFileSync(new URL("../package.json", import.meta.url), "utf8"),
@@ -48,12 +54,6 @@ function findXpi() {
   return join("build", xpIs[0]);
 }
 
-/**
- * GitHub's /releases/latest/download/<name> CDN often serves a stale
- * same-named asset from a previous release. Prefer:
- * - versioned XPI links in update.json
- * - update.json on the dist repo's default branch (raw.githubusercontent)
- */
 function sha512File(filePath) {
   return createHash("sha512").update(readFileSync(filePath)).digest("hex");
 }
@@ -71,8 +71,6 @@ function writeUpdateFiles(xpiPath, xpiName) {
             update_hash: updateHash,
             applications: {
               zotero: {
-                // Match plugins that successfully auto-update on Zotero 9
-                // (e.g. Translate for Zotero uses 7.9.9 … 10.9.9).
                 strict_min_version: "7.0",
                 strict_max_version: "10.9.9",
               },
@@ -91,7 +89,6 @@ function writeUpdateFiles(xpiPath, xpiName) {
 }
 
 function publishUpdateJsonToBranch(body) {
-  // Keep a stable update manifest on main — not subject to latest/download CDN bugs.
   const path = "update.json";
   let sha;
   try {
@@ -124,6 +121,79 @@ function publishUpdateJsonToBranch(body) {
   }
 }
 
+/** Dedicated release holding only update.json — stable update_url target. */
+function syncUpdateRelease() {
+  try {
+    execSync(`gh release view ${UPDATE_RELEASE} --repo ${DIST_REPO}`, {
+      stdio: "ignore",
+    });
+  } catch {
+    run(
+      `gh release create ${UPDATE_RELEASE} update.json --repo ${DIST_REPO} ` +
+        `--title "update manifest" --notes "Stable Zotero auto-update manifest."`,
+    );
+    return;
+  }
+
+  // delete+reupload: GitHub --clobber leaves CDN serving the old bytes for minutes
+  try {
+    execSync(
+      `gh release delete-asset ${UPDATE_RELEASE} update.json --repo ${DIST_REPO} --yes`,
+      { stdio: "ignore" },
+    );
+  } catch {
+    /* first upload or already gone */
+  }
+  run(`gh release upload ${UPDATE_RELEASE} update.json --repo ${DIST_REPO}`);
+}
+
+function fetchUpdateManifest() {
+  // Cache-bust query is ignored by GitHub for the file body but helps local curl.
+  const url = `${UPDATE_URL}?t=${Date.now()}`;
+  return execSync(`curl -fsSL "${url}"`, {
+    encoding: "utf8",
+    shell: true,
+  });
+}
+
+/** Block until Zotero's update_url actually serves this version. */
+function waitUntilUpdateVisible(expectedVersion, { attempts = 12, delayMs = 5000 } = {}) {
+  console.log(`\n=== Verifying ${UPDATE_URL} serves ${expectedVersion} ===`);
+  for (let i = 1; i <= attempts; i++) {
+    try {
+      const body = fetchUpdateManifest();
+      const json = JSON.parse(body);
+      const got = json?.addons?.[addonID]?.updates?.[0]?.version;
+      if (got === expectedVersion) {
+        console.log(`OK — update channel live at attempt ${i}: ${got}`);
+        return;
+      }
+      console.log(`Attempt ${i}/${attempts}: channel has "${got}", want "${expectedVersion}"`);
+    } catch (e) {
+      console.log(`Attempt ${i}/${attempts}: fetch failed (${e.message || e})`);
+    }
+    if (i < attempts) {
+      // Re-sync asset once mid-wait if CDN still stale
+      if (i === 3 || i === 7) {
+        console.log("Re-syncing update release asset…");
+        try {
+          syncUpdateRelease();
+        } catch (e) {
+          console.warn("Re-sync failed:", e.message || e);
+        }
+      }
+      execSync(`powershell -Command "Start-Sleep -Milliseconds ${delayMs}"`, {
+        stdio: "ignore",
+        shell: true,
+      });
+    }
+  }
+  throw new Error(
+    `Update channel still not serving ${expectedVersion} after ${attempts} attempts. ` +
+      `Do not tell users to Check for Updates yet.`,
+  );
+}
+
 console.log(`\n=== Building ${tag} ===`);
 run("npm run build");
 
@@ -147,67 +217,8 @@ run(
 );
 
 publishUpdateJsonToBranch(updateBody);
-
-// Stable update_url target: a dedicated "update" release whose only asset is
-// update.json (same pattern as Translate for Zotero). Avoids raw.githubusercontent
-// Fastly staleness and latest/download CDN quirks.
-try {
-  try {
-    execSync(`gh release view update --repo ${DIST_REPO}`, { stdio: "ignore" });
-  } catch {
-    run(
-      `gh release create update update.json --repo ${DIST_REPO} ` +
-        `--title "update manifest" --notes "Stable Zotero auto-update manifest."`,
-    );
-  }
-  // delete+reupload beats GitHub's clobber CDN cache on same-named assets
-  try {
-    execSync(
-      `gh release delete-asset update update.json --repo ${DIST_REPO} --yes`,
-      { stdio: "ignore" },
-    );
-  } catch {
-    /* first upload */
-  }
-  run(`gh release upload update update.json --repo ${DIST_REPO}`);
-} catch (e) {
-  console.warn("Dedicated update release sync skipped:", e.message || e);
-}
-
-// Bust jsDelivr CDN (optional mirror).
-try {
-  run(
-    `curl -s "https://purge.jsdelivr.net/gh/sanaatchi/eylemler-ve-etiketler-releases@main/update.json"`,
-  );
-} catch (e) {
-  console.warn("jsDelivr purge skipped:", e.message || e);
-}
-
-// Also clobber update.json on the previous release asset name path used by
-// older installs that still point at /releases/latest/download/update.json.
-// Uploading a matching file onto the Latest release is already done above;
-// additionally rewrite a few recent tags so CDN/stale pointers still advertise
-// the newest version.
-try {
-  const list = execSync(
-    `gh release list --repo ${DIST_REPO} --limit 5 --json tagName`,
-    { encoding: "utf8", shell: true },
-  );
-  const tags = JSON.parse(list)
-    .map((r) => r.tagName)
-    .filter((t) => t && t !== tag);
-  for (const oldTag of tags.slice(0, 3)) {
-    try {
-      run(
-        `gh release upload ${oldTag} update.json --repo ${DIST_REPO} --clobber`,
-      );
-    } catch (e) {
-      console.warn(`Could not clobber update.json on ${oldTag}:`, e.message || e);
-    }
-  }
-} catch (e) {
-  console.warn("Stale-release update.json clobber skipped:", e.message || e);
-}
+syncUpdateRelease();
+waitUntilUpdateVisible(version);
 
 // Mirror tag on private source repo (optional convenience)
 try {
@@ -221,9 +232,8 @@ console.log(`
 Done.
   Dist:    https://github.com/${DIST_REPO}/releases/tag/${tag}
   Source:  https://github.com/${SOURCE_REPO}
-  Update:  ${pkg.config.updateJSON}
+  Update:  ${UPDATE_URL}
   XPI:     https://github.com/${DIST_REPO}/releases/download/${tag}/${xpiName}
 
-Zotero picks this up via Add-ons → Check for Updates
-(or install the XPI from the Dist link once).
+Zotero: Add-ons → gear → Check for Updates  (no manual XPI reinstall needed)
 `);
