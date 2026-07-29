@@ -148,7 +148,26 @@ run(
 
 publishUpdateJsonToBranch(updateBody);
 
-// Bust jsDelivr CDN so update_url clients see the new manifest immediately.
+// Stable update_url target: a dedicated "update" release whose only asset is
+// update.json (same pattern as Translate for Zotero). Avoids raw.githubusercontent
+// Fastly staleness and latest/download CDN quirks.
+try {
+  try {
+    execSync(`gh release view update --repo ${DIST_REPO}`, { stdio: "ignore" });
+  } catch {
+    run(
+      `gh release create update update.json --repo ${DIST_REPO} ` +
+        `--title "update manifest" --notes "Stable Zotero auto-update manifest."`,
+    );
+  }
+  run(
+    `gh release upload update update.json --repo ${DIST_REPO} --clobber`,
+  );
+} catch (e) {
+  console.warn("Dedicated update release sync skipped:", e.message || e);
+}
+
+// Bust jsDelivr CDN (optional mirror).
 try {
   run(
     `curl -s "https://purge.jsdelivr.net/gh/sanaatchi/eylemler-ve-etiketler-releases@main/update.json"`,
