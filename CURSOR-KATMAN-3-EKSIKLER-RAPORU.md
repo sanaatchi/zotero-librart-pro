@@ -8,12 +8,12 @@
 
 ## 2026-07-30 — Cursor düzeltmesi (startup izolasyonu)
 
-| Madde | Durum | Not |
-| ----- | ----- | --- |
-| Startup action hata izolasyonu | ✅ | `programStartup` `.catch` + her zaman `onMainWindowLoad` |
-| Typecheck | ✅ | `tsc --noEmit` |
-| Gerçek Zotero checklist | 🟡 | Manuel |
-| P2 pref/vektör/HTTP/eval/locale | ❌ | Önceki Codex listesi açık |
+| Madde                           | Durum | Not                                                      |
+| ------------------------------- | ----- | -------------------------------------------------------- |
+| Startup action hata izolasyonu  | ✅    | `programStartup` `.catch` + her zaman `onMainWindowLoad` |
+| Typecheck                       | ✅    | `tsc --noEmit`                                           |
+| Gerçek Zotero checklist         | 🟡    | Manuel                                                   |
+| P2 pref/vektör/HTTP/eval/locale | ❌    | Önceki Codex listesi açık                                |
 
 ---
 
@@ -35,18 +35,18 @@ başarılı. İndirilen public XPI **645.032 bayt**; SHA-512
 `f4c1c9c4cc816dcd85dd3789395ca80c5b1fbfb8458a23b039b632f67ec6407e4f1e852fb3e1d78d406c59ab490d6d07fe14f1726f518d353d81af6b53753965`
 ve public `update.json` eşleşiyor.
 
-| Madde                         | Durum | Sonuç                                                         |
-| ----------------------------- | ----- | ------------------------------------------------------------- |
-| F0–F9.2.3 / test / build      | ✅    | 94 test ve statik kapılar yeşil                               |
-| Public XPI / update SHA-512   | ✅    | v1.0.46 artefact bütünlüğü doğrulandı                          |
-| Startup action hata izolasyonu| ❌ P1 | Action reject olursa main-window init çalışmayabilir           |
-| Gerçek Zotero kabulü          | 🟡 P1 | Checklist sonuç/kanıt hücreleri boş                            |
-| Canlı pref reconcile          | ❌ P2 | Feature aç/kapat restart gerektiriyor                          |
-| Vektör delete/prune/recovery  | ❌ P2 | Runtime item-delete/invalidation zinciri yok                   |
-| HTTP hedef politikası         | ❌ P2 | Semantic/Anki URL’leri loopback/redirect allowlist’siz         |
-| Vendored `eval()`             | ❌ P2 | Çalıştırılabilir string vendor lint alanı dışında              |
-| Locale eşitliği               | ❌ P2 | Build it-IT/zh-CN için 14 eksik ID uyarısı verdi               |
-| Gerçek 10k / feature compose  | 🟡 P2 | Saf helper smoke var; Zotero runtime/bellek ölçümü yok         |
+| Madde                          | Durum | Sonuç                                                  |
+| ------------------------------ | ----- | ------------------------------------------------------ |
+| F0–F9.2.3 / test / build       | ✅    | 94 test ve statik kapılar yeşil                        |
+| Public XPI / update SHA-512    | ✅    | v1.0.46 artefact bütünlüğü doğrulandı                  |
+| Startup action hata izolasyonu | ❌ P1 | Action reject olursa main-window init çalışmayabilir   |
+| Gerçek Zotero kabulü           | 🟡 P1 | Checklist sonuç/kanıt hücreleri boş                    |
+| Canlı pref reconcile           | ❌ P2 | Feature aç/kapat restart gerektiriyor                  |
+| Vektör delete/prune/recovery   | ❌ P2 | Runtime item-delete/invalidation zinciri yok           |
+| HTTP hedef politikası          | ❌ P2 | Semantic/Anki URL’leri loopback/redirect allowlist’siz |
+| Vendored `eval()`              | ❌ P2 | Çalıştırılabilir string vendor lint alanı dışında      |
+| Locale eşitliği                | ❌ P2 | Build it-IT/zh-CN için 14 eksik ID uyarısı verdi       |
+| Gerçek 10k / feature compose   | 🟡 P2 | Saf helper smoke var; Zotero runtime/bellek ölçümü yok |
 
 ### P1 — startup action reddi pencere özelliklerini hâlâ engelliyor
 
