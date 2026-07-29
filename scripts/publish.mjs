@@ -238,6 +238,13 @@ run(
     `--repo ${DIST_REPO} --title "${tag}" --notes "${notesEscaped}"`,
 );
 
+// GitHub's default "latest" resolution is creation-date based (legacy mode),
+// which the "update" release (recreated below on every publish, and again
+// mid-poll on CDN staleness) would otherwise win by being newest. Explicitly
+// pin "latest" to the versioned tag so /releases/latest never resolves to
+// the update-manifest-only release.
+run(`gh release edit ${tag} --repo ${DIST_REPO} --latest`);
+
 publishUpdateJsonToBranch(updateBody);
 syncUpdateRelease();
 waitUntilUpdateVisible(version);
