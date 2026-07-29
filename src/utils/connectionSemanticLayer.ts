@@ -4,13 +4,33 @@ import {
   isCrossDiscipline,
   makeEdgeId,
 } from "./connectionGraph";
+import {
+  isKutuphaneSemanticConfigured,
+  isKutuphaneSemanticReady,
+  searchKutuphaneSemantic,
+  buildKpIndex,
+} from "./kutuphaneSemanticBridge";
 
 export {
   isZotSeekReady,
   isZotSeekAvailable,
+  isSemanticLayerReady,
   computeSemanticSuggestions,
   searchByText,
 };
+
+/**
+ * True if EITHER backend can be used — Kutuphane's GPU-accelerated,
+ * multilingual qwen3-embedding:8b (stronger, preferred when configured and
+ * live) or ZotSeek (CPU-only, English-centric, but zero-setup). Used by the
+ * UI to decide whether to show the "Anlamsal öneri" layer at all.
+ */
+async function isSemanticLayerReady(): Promise<boolean> {
+  if (isKutuphaneSemanticConfigured() && (await isKutuphaneSemanticReady())) {
+    return true;
+  }
+  return isZotSeekReady();
+}
 
 export type SemanticSuggestionResult = {
   available: boolean;
@@ -124,7 +144,54 @@ function libraryIdFromZotSeekHit(
 }
 
 /**
- * Free-text semantic search via ZotSeek (highlight / draft proposal).
+ * Free-text search against Kutuphane's chunk index, mapped back to Zotero
+ * items via each hit's kpId -> Citation Key. Hits with no KP-linked item in
+ * this library (Kutuphane content not yet cross-referenced) are dropped —
+ * this is the documented scope limit of the bridge, not a bug.
+ */
+async function searchTextViaKutuphane(
+  query: string,
+  options: {
+    topK?: number;
+    minSimilarity?: number;
+    excludeItemIds?: number[];
+    libraryId?: number;
+    nodeIDSet?: Set<number>;
+    allowOutsideGraph?: boolean;
+  },
+): Promise<Array<{ itemId: number; similarity: number; title?: string }>> {
+  const hits = await searchKutuphaneSemantic(query, {
+    topK: options.topK,
+    minSimilarity: options.minSimilarity,
+  });
+  if (!hits.length) return [];
+
+  const libraryID = options.libraryId ?? Zotero.Libraries.userLibraryID;
+  let candidateIDs: Set<number>;
+  if (options.nodeIDSet && !options.allowOutsideGraph) {
+    candidateIDs = options.nodeIDSet;
+  } else {
+    const allItems = await Zotero.Items.getAll(libraryID);
+    candidateIDs = new Set(allItems.map((i) => i.id));
+  }
+  const kpIndex = buildKpIndex(candidateIDs);
+  const excluded = new Set(options.excludeItemIds || []);
+
+  const seen = new Set<number>();
+  const out: Array<{ itemId: number; similarity: number; title?: string }> =
+    [];
+  for (const hit of hits) {
+    const itemID = kpIndex.get(hit.kpId.toUpperCase());
+    if (!itemID || seen.has(itemID) || excluded.has(itemID)) continue;
+    seen.add(itemID);
+    out.push({ itemId: itemID, similarity: hit.score, title: hit.text });
+  }
+  return out;
+}
+
+/**
+ * Free-text semantic search — Kutuphane bridge preferred (searchByText's
+ * caller checks isKutuphaneSemanticReady first), ZotSeek as fallback.
  */
 async function searchByText(
   query: string,
@@ -142,6 +209,13 @@ async function searchByText(
   if (!cleaned) return [];
   // Long pasted paragraphs: embed the head — better recall, less noise.
   const q = cleaned.length > 900 ? cleaned.slice(0, 900) : cleaned;
+
+  if (isKutuphaneSemanticConfigured() && (await isKutuphaneSemanticReady())) {
+    const kutuphaneHits = await searchTextViaKutuphane(q, options);
+    if (kutuphaneHits.length) return kutuphaneHits;
+    // Empty result: fall through to ZotSeek rather than reporting "no match"
+    // when Kutuphane simply has no coverage for this query.
+  }
 
   const api = getZotSeekApi();
   if (!api?.search) {
@@ -252,6 +326,98 @@ function pairKey(a: number, b: number): string {
 }
 
 /**
+ * Kutuphane path: each node's title is used as the query against the
+ * chunk index (no per-item "find similar" primitive there either — same
+ * asymmetric-union approximation as the ZotSeek path). Only meaningful for
+ * nodes that already have a KP-linked counterpart in Kutuphane; nodes
+ * without one simply never appear as a target (documented scope limit).
+ */
+async function computeSemanticSuggestionsViaKutuphane(
+  nodes: Map<number, GraphNode>,
+  options: ComputeSemanticOptions,
+): Promise<SemanticSuggestionResult> {
+  const {
+    topK = 5,
+    minSimilarity = 0.5,
+    maxQueries = 80,
+    seedItemIDs,
+    dismissedIds,
+    relatedPairs,
+    onProgress,
+  } = options;
+
+  const kpIndex = buildKpIndex(nodes.keys());
+  if (kpIndex.size < 2) {
+    // Nothing in this graph is KP-linked — Kutuphane has no coverage here.
+    return { available: true, edges: [] };
+  }
+
+  let queryIDs = (seedItemIDs?.length ? seedItemIDs : [...nodes.keys()])
+    .filter((id) => nodes.has(id));
+  if (queryIDs.length > maxQueries) {
+    queryIDs = queryIDs
+      .map((id) => ({ id, tagCount: nodes.get(id)?.tagCount ?? 0 }))
+      .sort((a, b) => b.tagCount - a.tagCount)
+      .slice(0, maxQueries)
+      .map((x) => x.id);
+  }
+
+  const pairBest = new Map<string, { a: number; b: number; score: number }>();
+
+  for (let i = 0; i < queryIDs.length; i++) {
+    const itemID = queryIDs[i];
+    onProgress?.(i, queryIDs.length);
+    const node = nodes.get(itemID);
+    if (!node?.title) continue;
+
+    try {
+      const hits = await searchKutuphaneSemantic(node.title, {
+        topK,
+        minSimilarity,
+      });
+      for (const hit of hits) {
+        const hitItemID = kpIndex.get(hit.kpId.toUpperCase());
+        if (!hitItemID || hitItemID === itemID) continue;
+        if (hit.score < minSimilarity) continue;
+
+        const a = Math.min(itemID, hitItemID);
+        const b = Math.max(itemID, hitItemID);
+        const pk = pairKey(a, b);
+        if (relatedPairs?.has(pk)) continue;
+        const edgeId = makeEdgeId("semantic", a, b, "");
+        if (dismissedIds?.has(edgeId)) continue;
+
+        const prev = pairBest.get(pk);
+        if (!prev || hit.score > prev.score) {
+          pairBest.set(pk, { a, b, score: hit.score });
+        }
+      }
+    } catch (e) {
+      ztoolkit.log("Kutuphane semantic query failed", itemID, e);
+    }
+    if (i % 5 === 4) await Zotero.Promise.delay(0);
+  }
+  onProgress?.(queryIDs.length, queryIDs.length);
+
+  const edges: GraphEdge[] = [];
+  for (const pair of pairBest.values()) {
+    const sourceNode = nodes.get(pair.a);
+    const targetNode = nodes.get(pair.b);
+    if (!sourceNode || !targetNode) continue;
+    edges.push({
+      id: makeEdgeId("semantic", pair.a, pair.b, ""),
+      source: pair.a,
+      target: pair.b,
+      layer: "semantic",
+      state: "suggested",
+      confidence: Math.max(0, Math.min(1, pair.score)),
+      crossDiscipline: isCrossDiscipline(sourceNode, targetNode),
+    });
+  }
+  return { available: true, edges };
+}
+
+/**
  * Approximation: suggest edge(A,B) if B ∈ findSimilar(A) OR A ∈ findSimilar(B)
  * (asymmetric union). No pairwise-similarity primitive exists on ZotSeek.
  */
@@ -259,6 +425,10 @@ async function computeSemanticSuggestions(
   nodes: Map<number, GraphNode>,
   options: ComputeSemanticOptions = {},
 ): Promise<SemanticSuggestionResult> {
+  if (isKutuphaneSemanticConfigured() && (await isKutuphaneSemanticReady())) {
+    return computeSemanticSuggestionsViaKutuphane(nodes, options);
+  }
+
   if (!isZotSeekReady()) {
     return { available: false, edges: [] };
   }

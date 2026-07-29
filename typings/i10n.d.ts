@@ -82,6 +82,8 @@ export type FluentMessageId =
   | 'connection-map-title'
   | 'connection-map-zotseek-missing'
   | 'help'
+  | 'kutuphane-semantic-hint'
+  | 'kutuphane-semantic-url'
   | 'local-book-db'
   | 'local-book-db-hint'
   | 'local-book-db-kitaplar'

@@ -24,8 +24,7 @@ import {
   exportConnectionMapSvg,
 } from "../utils/connectionExport";
 import {
-  isZotSeekReady,
-  isZotSeekAvailable,
+  isSemanticLayerReady,
   searchByText,
 } from "../utils/connectionSemanticLayer";
 
@@ -316,7 +315,7 @@ function wireDraftSearch(win: Window, graph: ConnectionGraph) {
     results.classList.remove("open");
     if (!q) return;
 
-    if (!isZotSeekAvailable()) {
+    if (!(await isSemanticLayerReady())) {
       results.textContent = getString("connection-map-zotseek-missing");
       results.classList.add("open");
       return;

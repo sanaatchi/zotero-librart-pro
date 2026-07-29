@@ -9,7 +9,7 @@ import {
 import { enrichDisciplineProfilesFromOpenLibrary } from "../utils/connectionDiscipline";
 import {
   computeSemanticSuggestions,
-  isZotSeekReady,
+  isSemanticLayerReady,
   SemanticCacheEntry,
 } from "../utils/connectionSemanticLayer";
 import {
@@ -108,7 +108,7 @@ async function initConnectionMapWindow(win: Window) {
     const layerState = readLayerState(doc);
     renderConnectionMap(win, base, layerState, {
       onRefresh: () => initConnectionMapWindow(win),
-      zotSeekReady: isZotSeekReady(),
+      zotSeekReady: await isSemanticLayerReady(),
     });
     updateStatus(status, base);
     updateBlindSpotBanner(win, base);
@@ -229,8 +229,8 @@ async function loadOptionalLayers(
   }
 
   try {
-    if (isZotSeekReady()) {
-      onStatus(getString("connection-map-loading") + " (ZotSeek…)");
+    if (await isSemanticLayerReady()) {
+      onStatus(getString("connection-map-loading") + " (anlamsal…)");
       if (!addon.data.connectionMap) {
         addon.data.connectionMap = { window: win };
       }

@@ -29,6 +29,7 @@ function initLocalBookDbInputs() {
   };
   bind(`${config.addonRef}-openlibrary-path`, "openLibraryDbPath");
   bind(`${config.addonRef}-kitaplar-path`, "kitaplarDbPath");
+  bind(`${config.addonRef}-kutuphane-semantic-url`, "kutuphaneSemanticUrl");
 }
 
 function getColumnsWithSortIndicator() {

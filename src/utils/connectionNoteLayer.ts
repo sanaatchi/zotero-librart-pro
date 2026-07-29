@@ -6,7 +6,7 @@ import {
   makeEdgeId,
 } from "./connectionGraph";
 import { recordConfirmedConnection } from "./connectionActions";
-import { isZotSeekReady, searchByText } from "./connectionSemanticLayer";
+import { isSemanticLayerReady, searchByText } from "./connectionSemanticLayer";
 
 export {
   extractCitationSpansFromNote,
@@ -370,7 +370,7 @@ async function computeHighlightSemanticEdges(
 ): Promise<GraphEdge[]> {
   const enabled = getPref("connectionMapEnableHighlightLayer");
   if (!enabled) return [];
-  if (!isZotSeekReady()) return [];
+  if (!(await isSemanticLayerReady())) return [];
 
   const MAX_HIGHLIGHTS_PER_NOTE = 3;
   const MAX_QUERIES = 24;

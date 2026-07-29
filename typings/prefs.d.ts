@@ -18,6 +18,7 @@ declare namespace _ZoteroTypes {
       "connectionMapTimelineJson": string;
       "openLibraryDbPath": string;
       "kitaplarDbPath": string;
+      "kutuphaneSemanticUrl": string;
     };
   }
 }

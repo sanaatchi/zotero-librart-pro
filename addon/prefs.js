@@ -13,3 +13,4 @@ pref("__prefsPrefix__.connectionMapTimelineJson", "[]");
 /* Local book DB bridge — empty path disables the feature. */
 pref("__prefsPrefix__.openLibraryDbPath", "");
 pref("__prefsPrefix__.kitaplarDbPath", "");
+pref("__prefsPrefix__.kutuphaneSemanticUrl", "");
