@@ -1,4 +1,4 @@
-// @ajan: cursor · @etiket: f1, hooks, feature-registry, multi-window, startup-isolation
+// @ajan: cursor · @etiket: f1, hooks, feature-registry, multi-window, startup-order
 import { config, homepage } from "../package.json";
 import { getString, initLocale } from "./utils/locale";
 import { initPrefPane } from "./modules/preferenceWindow";
@@ -27,6 +27,7 @@ import { editAction } from "./modules/edit";
 import { getZoteroAdapter } from "./adapters/zoteroAdapter";
 import { getFeatureRegistry } from "./core/featureRegistry";
 import { registerLibRartFeatures } from "./core/features";
+import { runProgramStartupThenMainWindow } from "./utils/startupOrder";
 
 let featuresRegistered = false;
 
@@ -61,13 +62,17 @@ async function onStartup() {
     image: rootURI + "content/icons/favicon.png",
   });
 
-  addon.api.actionManager
-    .dispatchActionByEvent(ActionEventTypes.programStartup, {})
-    .catch((err) => {
+  await runProgramStartupThenMainWindow(
+    () =>
+      addon.api.actionManager.dispatchActionByEvent(
+        ActionEventTypes.programStartup,
+        {},
+      ),
+    () => onMainWindowLoad(window),
+    (err) => {
       ztoolkit.log("programStartup action failed (window init continues)", err);
-    });
-  // Window features must not depend on user startup actions succeeding.
-  await onMainWindowLoad(window);
+    },
+  );
 }
 
 async function onMainWindowLoad(win: Window): Promise<void> {

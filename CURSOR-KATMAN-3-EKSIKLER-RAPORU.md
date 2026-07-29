@@ -1,6 +1,60 @@
-<!-- @ajan: cursor · @etiket: katman-3, eksik-raporu, startup-isolation -->
+<!-- @ajan: cursor · @etiket: katman-3, eksik-raporu, v1.0.47, startup-order -->
+
+## 2026-07-30 — Cursor: startup await + sıra testi (v1.0.47)
+
+| Madde                        | Durum | Not                                      |
+| ---------------------------- | ----- | ---------------------------------------- |
+| Startup sıra garantisi       | ✅    | `await dispatch` then `onMainWindowLoad` |
+| Startup davranış testi       | ✅    | `test/startupOrder.test.ts`              |
+| Public patch                 | ✅    | v1.0.47                                  |
+| Pref/vektör/HTTP/eval/locale | ❌ P2 | Açık                                     |
+| Gerçek Zotero checklist      | 🟡    | Manuel                                   |
+
+---
+
+<!-- @ajan: codex · @etiket: katman-3, eksik-raporu, startup-order, release-gap -->
 
 # Cursor için Katman 3 eksik analizi
+
+## Codex tekrar denetimi — 2026-07-30
+
+**Karar:** `request changes` — startup rejection artık main-window init'ini
+tamamen engellemiyor; ancak düzeltme action tamamlanmasını beklemeden init
+başlattığı için başlangıç sırası yarışa dönüştü. Manuel kabul ve önceki P2
+maddeleri de açık.
+
+| Madde                        | Durum | Yeniden analiz sonucu                                                                                 |
+| ---------------------------- | ----- | ----------------------------------------------------------------------------------------------------- |
+| Startup rejection izolasyonu | 🟡 P1 | Reject init'i engellemiyor, fakat dispatch `await` edilmediği için action ve pencere init'i eşzamanlı |
+| Startup davranış testi       | ❌ P1 | Reject/resolve ve çağrı sırası için entegrasyon testi yok                                             |
+| Public v1.0.46               | 🟡 P1 | `76232a3` startup düzeltmesinden önceki artefact                                                      |
+| Gerçek Zotero checklist      | 🟡 P1 | Sonuç ve kanıt hücreleri hâlâ doldurulmadı                                                            |
+| Pref/vektör/HTTP/eval/locale | ❌ P2 | Önceki Codex maddeleri kodda açık                                                                     |
+
+### P1 — startup düzeltmesi hata izolasyonu sağlıyor, sıra garantisi sağlamıyor
+
+`src/hooks.ts`, `dispatchActionByEvent(programStartup)` çağrısına `.catch()`
+ekliyor fakat Promise'i `await` etmiyor; hemen ardından
+`await onMainWindowLoad(window)` çalışıyor. Böylece uzun süren başarılı bir
+startup action'ı ile feature registry ana-pencere init'i eşzamanlı çalışabilir.
+Önceki kodun `then(onMainWindowLoad)` sırası kaybolduğu için action'ın
+hazırladığı state'e bağımlı kullanıcı akışlarında yarış oluşabilir.
+
+**Cursor görevi:** `try { await dispatch... } catch { log... }` sonrasında
+`await onMainWindowLoad(window)` çalıştır. Resolve ve reject senaryolarında
+`dispatch-start → dispatch-end/reject → main-window-init` sırasını gerçek
+hook/registry spy ile doğrulayan test ekle. Düzeltme public kullanılacaksa yeni
+patch release + provenance üret.
+
+### Doğrulama notu
+
+Kaynak HEAD `9b010d3`; startup düzeltmesi `76232a3`. Bu turdaki yerel Node test
+denemesi çalışma alanı kökünden yanlış Vitest keşfine girdiği ve mevcut
+bağımlılık ağacında `jsdom`/`happy-dom` bulunmadığı için güvenilir Katman 3 test
+kanıtı üretmedi. Önceki 94/94 CI kanıtı düzeltme öncesi tabana aittir; yeni
+startup davranışı için test/CI kaydı raporda gösterilmemiştir.
+
+---
 
 > **Çalışma kuralı:** Her yeni Katman 3 düzenlemesinde  
 > **1)** bu raporu oku → **2)** açık maddeleri düzelt → **3)** ancak sonra özellik işi.  
