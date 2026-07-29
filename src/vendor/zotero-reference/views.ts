@@ -523,12 +523,24 @@ export default class Views {
                 }
                 await Zotero.Promise.delay(1000);
               }
-              // SECURITY(P2): vendored PDF dual-view needs iframe context.
-              // Lint-ignored vendor; tracked exception — replace with postMessage
-              // / PDFViewerApplication API when upstream allows (no string eval).
-              // eslint-disable-next-line no-eval -- zotero-reference dual-view destination jump
-              _window.secondViewIframeWindow.eval(`PDFViewerApplication
-                .pdfViewer.linkService.goToDestination("${href.slice(1)}")`);
+              // SECURITY(P2) fix: the original vendored code string-interpolated
+              // `href` (PDF-authored anchor content) directly into an eval'd
+              // source string — a malicious PDF could break out of the quoted
+              // literal and run arbitrary code in the reader's privileged
+              // context. `goToDestination` still has to run *inside* the
+              // second-view iframe's own JS realm (calling it through the
+              // Xray wrapper from outside loses `this` binding on Gecko), so
+              // eval can't be dropped entirely without a live-Zotero-verified
+              // postMessage rewire — but the eval'd string is now a fixed,
+              // literal expression with zero interpolation: it only resolves
+              // a *bound function reference*, which we then call normally
+              // from our own realm, passing `href` as a real argument. No PDF
+              // content ever enters the evaluated source.
+              const dest = href.slice(1);
+              const goToDestination = _window.secondViewIframeWindow.eval(
+                "PDFViewerApplication.pdfViewer.linkService.goToDestination.bind(PDFViewerApplication.pdfViewer.linkService)",
+              ) as (dest: string) => void;
+              goToDestination(dest);
             });
           }
 
