@@ -1,4 +1,4 @@
-<!-- @ajan: cursor · @etiket: referans-analiz, entegrasyon-plani, tek-kaynak -->
+<!-- @ajan: cursor · @etiket: referans-analiz, entegrasyon-plani, tek-kaynak, faz-guncelleme, agents -->
 # LibRart Pro — referans envanteri, lisans, kalite ve entegrasyon yol haritası
 
 **Tek kaynak belge (SSOT).** Yeni referans analizi, lisans kararı, faz önceliği, entegrasyon
@@ -20,11 +20,13 @@ kapsamı veya mimari kural değişikliği **yalnız bu dosyada** yapılır.
 | Kutuphane `Changes.md` | Ana repo'da anlamlı oturum kaydı | Zotero analiz tekrarı |
 
 **Stub listesi (dokunma — yönlendirme yeterli):** `../REFERANS-ANALIZI.md`,
-`../referanslar/ANALIZ.md`, `ENTEGRASYON-PLANI.md`, `CITATION-GRAPH-ENTEGRASYON.md`,
-`KALITE-REFERANSLARI.md`, `REFERANS-BEKLEYEN-OZELLIK.md`.
+`../referanslar/ANALIZ.md`, `ENTEGRASYON-PLANI.md`, `CURSOR-GOREV-ORIJINAL-KOD-ENTEGRASYONU.md`,
+`CITATION-GRAPH-ENTEGRASYON.md`, `KALITE-REFERANSLARI.md`, `REFERANS-BEKLEYEN-OZELLIK.md`.
 
-**Ayrı kalır (bu dosyayı tekrarlamaz):** `VENDOR-SOURCES.md`, `CURSOR-GOREV-ORIJINAL-KOD-ENTEGRASYONU.md`,
+**Ayrı kalır (bu dosyayı tekrarlamaz):** `VENDOR-SOURCES.md`, `AGENTS.md`, `CLAUDE.md`,
 `BAGLANTI-HARITASI-PLAN.md`, `../README.md`.
+
+**Tüm ajan girişi:** `AGENTS.md` → bu dosya (SSOT) → `VENDOR-SOURCES.md`.
 
 ### Değişiklik günlüğü (bu belge)
 
@@ -33,6 +35,7 @@ kapsamı veya mimari kural değişikliği **yalnız bu dosyada** yapılır.
 | 2026-07-29 | cursor | Belgeler birleştirildi; SSOT ilan edildi; §18–22 eklendi; stub'lar yönlendirildi |
 | 2026-07-29 | claude+cursor | Lisans §1a (13 lisanssız), scite port yasağı §7, citation-network silindi §6 |
 | 2026-07-29 | cursor+codex | 91 depo envanteri; F0–F9 + F10+ faz planı |
+| 2026-07-29 | cursor | §23 port brifi; `AGENTS.md`; `CURSOR-GOREV` → stub |
 
 ---
 
@@ -290,7 +293,7 @@ hiçbirinde LICENSE dosyası yok.
 alt-kaynakları `GraphEdge` metadata ile ayrılır (breaking change yok):
 
 ```typescript
-// connectionGraph.ts — Faz 2'de eklenecek
+// connectionGraph.ts — atıf adaptörleri eklenirken genişletilecek
 export type CitationSource = "crossref" | "offline" | "openalex" | "pdf" | "open-citations";
 
 export type GraphEdge = {
@@ -298,7 +301,7 @@ export type GraphEdge = {
   citationSource?: CitationSource;
   citationDirection?: "cited-by" | "references";
   openAlexWorkId?: string;
-  readingStatus?: "to-read" | "reading" | "read" | "important"; // Faz 3
+  readingStatus?: "to-read" | "reading" | "read" | "important"; // F4
 };
 ```
 
@@ -306,7 +309,8 @@ export type GraphEdge = {
 
 1. Kaynak: `../referanslar/<depo>/` → hedef: `src/vendor/<ad>/`
 2. Her dosya başı: `// Adapted from <repo> (<LICENSE>) <path>`
-3. Büyük vendor dosyalarında geçici `@ts-nocheck`; davranış orijinale uygun
+3. Upstream snapshot dosyası gerekiyorsa `@ts-nocheck` yalnız vendor sınırında ve
+   gerekçeli olabilir; yeni/uyarlanan uygulama kodunda kullanılamaz
 4. UI LibRart Bağlantı Haritası canvas'ına uyarlanır; Cytoscape ayrı pencere/export
 5. AGPL/MIT → LibRart AGPL uyumlu; lisans yok → **port yok** (§1a), sadece desen/mimari incelemesi
 
@@ -316,7 +320,6 @@ export type GraphEdge = {
 |---|---|---|
 | `inciteful.enabled` | F1 ✅ | true |
 | `citation.layers.crossref` | F1 ✅ | true |
-| `citation.layers.openalex` | F4 | true |
 | `citation.layers.openalex` | F5 | true |
 | `citation.layers.openCitations` | F5 | false |
 | `openalex.mailto` / `openalex.cacheDays` | F5 | "" / 30 |
@@ -331,7 +334,64 @@ export type GraphEdge = {
 
 ---
 
-## 10. Faz planı (F0–F9)
+## 10. Güncel faz planı (F0–F9)
+
+```mermaid
+flowchart LR
+  F0["F0 · Kalite ve yayın kapısı"] --> F1["F1 · Çekirdeği stabilize et"]
+  F1 --> F2["F2 · Güvenli BibTeX/RIS içe aktar"]
+  F2 --> F3["F3 · DOCX'te kullanılanlar"]
+  F3 --> F4["F4 · Okuma durumu ve timeline"]
+  F4 --> F5["F5 · OpenAlex / OpenCitations"]
+  F5 --> F6["F6 · PDF Gelen Kutusu (import-only)"]
+  F6 --> F7["F7 · Anki köprüsü"]
+  F7 --> F8["F8 · MarkDB / Better Notes"]
+  F8 --> F9["F9 · Semantic katman"]
+```
+
+| Faz | Hedef | Zorunlu çıktı | Risk |
+|---|---|---|---|
+| **F0** | Güvenilir temel | Vitest, Zotero mock, PR CI, provenance, updater/hash, sürüm matrisi | orta |
+| **F1** | Çekirdeği stabilize et | FeatureRegistry, Zotero adaptörü, mevcut özellik regresyon testleri | orta |
+| **F2** | Güvenli `.bib/.ris` import | doğrulama tablosu, seçili import, denetim notu | orta |
+| **F3** | DOCX'te kullanılanlar | idempotent etiket ve kayıtlı arama | düşük |
+| **F4** | Okuma durumu ve timeline | sürümlü veri şeması, sütun ve timeline filtresi | orta |
+| **F5** | OpenAlex / OpenCitations | lisanslı adaptör, cache, rate-limit ve hata UX'i | orta |
+| **F6** | PDF Gelen Kutusu | import-only, hash dedup, disk-kopma freni ve işlem günlüğü | orta |
+| **F7** | Anki köprüsü | tipli istemci, kimlik eşleme ve idempotent güncelleme | orta |
+| **F8** | MarkDB / Better Notes | tek not/Markdown şeması ve backlink adaptörü | orta |
+| **F9** | Semantic katman | ZotSeek veya Kutuphane köprüsü ve kontrollü fallback | yüksek |
+
+Fazlar sıralıdır. Ortak tip/adaptör işi tamamlanmadan aynı `hooks`, toolbar,
+prefs veya graf modeline paralel özellik yazılmaz. RefChecker, Systematic
+Reviewer, Citegeist ve Kutuphane citation CLI çekirdek yol haritasından sonra
+deneysel kalır.
+
+### 10.1 F0 zorunlu kalite kapısı
+
+F0 yalnız test scaffold'u değildir. Aşağıdakilerin tamamı geçmeden F1+ başlamaz:
+
+- Vitest + Zotero global mock; saf alan modeli ve adaptör kontrat testleri;
+- PR CI: `npm ci`, salt-okuma format/lint, `tsc --noEmit`, test ve build;
+- vendor provenance envanteri: upstream URL, commit SHA, SPDX, yerel hedef;
+- release deposu, SHA-512 `update_hash` ve gerçek Zotero updater uçtan uca testi;
+- desteklenen her ana Zotero sürümü için açılış, menü ve Reader smoke testi;
+- YAML eylem içe aktarımı için şema, boyut, kuru koşu ve açık güvenlik uyarısı;
+- özel Zotero API/DOM erişimini tek adaptör arkasına alma başlangıcı.
+
+**F0 kabulü:** CI yeşil; `npm test` ve build geçer; updater gerçek kurulumda
+doğrulanır. Manifest yalnız test edilen Zotero sürüm aralığını ilan eder.
+
+### 10.2 Fazlara ortak teslim koşulu
+
+Her faz özellik bayrağı, geri alma/kapatma yolu, idempotans testi, kullanıcıya
+gösterilen hata durumu, tr-TR/en-US metinleri ve provenance satırıyla tamamlanır.
+Kalıcı/toplu işlem önce etkilenecek öğe sayısını ve alan farkını gösterir.
+
+## 10A. Eski F0–F9 taslağı — tarihsel, uygulanmaz
+
+> Aşağıdaki Gantt, sürüm numaraları ve F2–F9 ayrıntıları önceki grafik-ağırlıklı
+> planı korur. Güncel sıra yukarıdaki §10'dur; bu bölümden yeni iş başlatılmaz.
 
 ```mermaid
 gantt
@@ -365,12 +425,15 @@ gantt
 | **F8** | v1.1.1 | citegeist + Better Notes workspace | orta |
 | **F9** | v1.2.0 | Kutuphane citation CLI köprüsü | düşük |
 
-F2 ve F3 birbirinden bağımsız — paralel yapılabilir. F4+ sıralı önerilir (atıf merge mantığı
-her fazda genişler).
+**Eski varsayım (geçersiz):** F2/F3 paralel ve F4+ sıralı düşünülmüştü. Güncel
+§10 tüm fazları sıralı yürütür; bu paragraf yalnız karar geçmişini açıklar.
 
 ---
 
-## 11. Faz detayları
+## 11. Eski faz ayrıntıları — tarihsel
+
+> Bu bölüm eski §10A taslağını açıklar. Faz numaraları güncel §10 ile aynı
+> anlamı taşımaz ve buradaki görev listelerinden doğrudan iş başlatılmaz.
 
 ### Faz 0 — Test ve scaffold temeli (v1.0.33)
 
@@ -573,8 +636,8 @@ LibRart Pro
 | zotero-reading-flow | ✅ | vendor (MIT) |
 | ZoteroCitationMaps | ✅ | vendor (MIT) |
 | zotero-openalex | ✅ | vendor store only (GPL) |
-| Zotero-Citation-Graph | ⚠️ | vendor + kullanıcı onayı (§1a) |
-| citation_map | ⚠️ | TS port + kullanıcı onayı (§1a) |
+| Zotero-Citation-Graph | ❌ | lisans yok; yalnız mimari inceleme / temiz oda |
+| citation_map | ❌ | lisans yok; kod ve çeviri-port yasak / temiz oda |
 | zotero-citegeist | ✅ | bridge/menu (GPL) |
 | zotero-better-notes | ✅ | seçici vendor (AGPL) |
 | ZotSeek | ✅ | vendor (MIT) |
@@ -584,7 +647,9 @@ LibRart Pro
 
 ---
 
-## 14. Bağımlılık grafiği
+## 14. Eski bağımlılık grafiği — tarihsel
+
+> Güncel bağımlılık zinciri §10'daki akış şemasıdır.
 
 ```
 F0 (test)
@@ -598,7 +663,7 @@ F0 (test)
 
 ---
 
-## 15. Doğrulama checklist (her faz sonu)
+## 15. Doğrulama checklist (her güncel faz sonu)
 
 ```bash
 cd zotero-eklentiler/kaynak
@@ -607,15 +672,26 @@ npm test                    # F0 sonrası
 ```
 
 **Zotero manuel:**
-- [ ] Eklenti yüklenir (Zotero 8 ve 9)
+- [ ] Eklenti manifestte ilan edilen her ana Zotero sürümünde yüklenir
 - [ ] Bağlantı Haritası açılır, katman toggle çalışır
 - [ ] Yeni faz özelliği pref ile açılıp kapanır
 - [ ] `onShutdown` — notifier/menu leak yok
 - [ ] tr-TR / en-US locale eksiksiz (kritik stringler)
+- [ ] Dış servis timeout/hata durumu görünür; gönderilecek veri önizlenir
+- [ ] Toplu/kalıcı işlem fark önizlemesi ve idempotans testi geçer
 
 ---
 
-## 16. Sürüm/release ve ilk sprint önerisi
+## 16. Release kapısı ve sürümleme
+
+Sürüm numarası faz başlamadan rezerve edilmez. Release ancak F0 kapıları ve ilgili
+faz kabul ölçütleri geçince hazırlanır. `sanaatchi/zotero-librart-pro-releases`
+public deposu, SHA-512 `update_hash` ve Zotero içinden gerçek güncelleme testi
+doğrulanmadan `npm run gh-release` çalıştırılmaz.
+
+### Eski sürüm/sprint tablosu — tarihsel
+
+> Aşağıdaki tablo önceki grafik-ağırlıklı planı gösterir; güncel taahhüt değildir.
 
 | Faz | Sürüm | Release notu |
 |---|---|---|
@@ -625,7 +701,7 @@ npm test                    # F0 sonrası
 | F4–F6 | 1.0.36–38 | atıf yığını |
 | F7–F9 | 1.1.0–1.2.0 | semantic + köprüler |
 
-Release: `npm run gh-release` → `sanaatchi/zotero-librart-pro-releases`
+Eski hedef: `npm run gh-release` → `sanaatchi/zotero-librart-pro-releases`
 
 **İlk sprint (2 hafta):** Hafta 1 → F0 (1-2 gün) → F2 markdb vendor+note layer (2-3 gün) → F3
 reading-flow veri modeli (2 gün). Hafta 2 → F4 OpenAlex CitationMaps motoru (4-5 gün) →
@@ -633,9 +709,12 @@ reading-flow veri modeli (2 gün). Hafta 2 → F4 OpenAlex CitationMaps motoru (
 
 ## 17. Sonraki adım
 
-**Sıradaki faz:** F0 (scaffold 0.8.8 + `zotero-plugin test` smoke) → F2 markdb veya F2+F3 paralel.
+**Sıradaki ve tek yetkili faz:** Güncel §10.1'deki F0 kalite ve yayın kapısı.
+F0 tamamlanmadan vendor portu veya yeni kullanıcı özelliği başlatılmaz. Sonraki
+iş F1 çekirdek stabilizasyonudur; fazlar paralel yürütülmez.
 
-**Kod portu öncesi:** `npm run build` geçmeli; yeni vendor `VENDOR-SOURCES.md` satırı eklenmeli.
+**Kod portu öncesi:** Test + typecheck + build + provenance kontrolü geçmeli;
+yeni vendor için `VENDOR-SOURCES.md` satırı eklenmeli.
 
 **Bu belgeyi güncelle:** Faz başlangıç/bitiş, lisans teyidi veya yeni referans kararında yalnız §0,
 ilgili faz (§10–§11 / §21) ve üstteki değişiklik günlüğü.
@@ -691,10 +770,10 @@ Lisanssız kaynaklardan kod/özgün ifade aktarılmaz (§1a); davranış clean-r
 
 | Referans | Örüntü | LibRart karşılığı |
 |---|---|---|
-| `scholar-sidekick-zotero` | doğrulama tablosu → seçili import | F10 Güvenli İçe Aktar |
-| `zotero-watch-folder` | sihirbaz + güvenlik freni | F11 PDF Gelen Kutusu |
-| `zotero-tag-cited` | DOCX → etiket | F10 DOCX kullanılanlar |
-| `zotero-reading-flow` | durum sütunu | F3 (öncelikli) |
+| `scholar-sidekick-zotero` | doğrulama tablosu → seçili import | F2 Güvenli İçe Aktar |
+| `zotero-watch-folder` | sihirbaz + güvenlik freni | F6 PDF Gelen Kutusu |
+| `zotero-tag-cited` | DOCX → etiket | F3 DOCX kullanılanlar |
+| `zotero-reading-flow` | durum sütunu | F4 |
 | `notero` | sync durumu göstergesi | entegrasyon paneli |
 | `zotero-annotation-manage` | seçime yakın eylem | Reader UX |
 
@@ -704,18 +783,19 @@ Lisanssız kaynaklardan kod/özgün ifade aktarılmaz (§1a); davranış clean-r
 
 | Alan | Çakışan referanslar | Karar |
 |---|---|---|
-| Dosya yaşam döngüsü | watch-folder, zotmoov, attanger, zotero-file | Tek Dosya Hizmeti; F11'de watch-folder |
+| Dosya yaşam döngüsü | watch-folder, zotmoov, attanger, zotero-file | Tek Dosya Hizmeti; F6 import-only |
 | Metadata doğrulama | scholar-sidekick, refchecker, shortdoi, zotadata | Tek doğrulama hattı |
 | Not/MD | better-notes, mdnotes, zotlit, MdBundle | Tek çıktı şeması |
-| Citation graph | ~19 depo | Yeni klon yok; F4–F6 yeterli |
-| AI/RAG | ~11 depo | Yeni klon yok; F7 + Kutuphane köprüsü |
+| Citation graph | ~19 depo | Yeni klon yok; güncel F5 yalnız lisanslı adaptörler |
+| AI/RAG | ~11 depo | Yeni klon yok; güncel F9 |
 | RefChecker / systematic-reviewer | ayrı servis | Vendor değil; HTTP köprü veya desen |
 
 ---
 
-## 21. Gelecek fazlar (F10+, çekirdek sonrası)
+## 21. Önceki F10+ eşlemesi — güncel plana taşındı
 
-F0–F9 (Bağlantı Haritası + semantic) tamamlandıktan sonra:
+Bu özellikler artık bekleyen F10+ değildir; güncel §10 içinde F2, F3, F6 ve F7
+olarak öne alınmıştır. Aşağıdaki tablo yalnız eski numara eşlemesini korur:
 
 | Faz | Sürüm | İçerik | Referans |
 |---|---|---|---|
@@ -740,23 +820,118 @@ F0–F9 (Bağlantı Haritası + semantic) tamamlandıktan sonra:
 
 ---
 
+## 23. Orijinal kod port brifi (Cursor · Claude · Codex)
+
+AGPL/MIT kaynaklardan doğrudan kod portu için **tüm ajanların** ortak brifi. Güncel
+faz sırası ve teslim koşulları §10'dadır; §10A–§11 yalnız tarihsel eski plandır.
+Bu bölüm modül→dosya eşlemesini ve attribution kuralını tutar.
+
+### 23.1 Attribution (zorunlu)
+
+Kod kopyalarken/uyarlarken dosya başında orijinal telif/lisans notunu koru. Yeni dosyalarda
+üstte kısa kaynak satırı, örn.:
+
+```ts
+// Adapted from zotero-style (AGPL-3.0) src/modules/tags.ts
+```
+
+Port tamamlandığında `VENDOR-SOURCES.md` satırı ekle; §0 vendor tablosunu güncelle.
+
+### 23.2 Tamamlanan portlar (F1 ✅)
+
+| Upstream | LibRart hedef | Not |
+|---|---|---|
+| `inciteful-zotero-plugin` | `src/vendor/inciteful/`, `incitefulBridge.ts` | Menü + harici API |
+| `zotero-reference` | `src/vendor/zotero-reference/` (`api`, `utils`, `pdf`, `views`, `connectedpapers`) | `doiResolver.ts`, `referenceExtractor.ts`, PDF popup |
+| `zotero-style` | `src/vendor/zotero-style/tagGraph.ts`, `connectionNotify.ts` deseni | Tag graph katmanı |
+| `ZotSeek` | `src/vendor/zotseek/` (kısmi), `connectionSemanticLayer.ts` | Kutuphane köprüsü öncelikli |
+| `zotero-better-notes` | henüz minimal | F8 — §11 Faz 8 |
+
+### 23.3 Modül eşlemesi (referans — port sırasında)
+
+**zotero-style** (`referanslar/zotero-style-6.0.8/src/modules/`)
+
+| Kaynak | LibRart | Durum |
+|---|---|---|
+| `tags.ts` | `connectionGraph.ts` / tag katmanı | ✅ tagGraph vendor |
+| `events.ts`, `progress.ts` | `connectionNotify.ts` observer deseni | kısmi |
+| `easyscholar.ts` | `doiResolver.ts` rate-limit/cache deseni | inceleme |
+| `views.ts` (rating sütun) | `ItemTreeManager.registerColumn` | planlı |
+
+**zotero-reference** (`referanslar/zotero-reference-1.7.2/src/modules/`)
+
+| Kaynak | LibRart | Durum |
+|---|---|---|
+| `api.ts`, `utils.ts` | `doiResolver.ts` | ✅ |
+| `pdf.ts` | `referenceExtractor.ts` | ✅ menü bağlı |
+| `tip.ts`, `views.ts` | PDF in-reader popup | ✅ |
+| `connectedpapers.ts` | `connectionCitationLayer.ts` | kısmi (Crossref) |
+
+**zotero-better-notes** (`referanslar/zotero-better-notes-3.2.6/src/`)
+
+| Kaynak | LibRart | Öncelik |
+|---|---|---|
+| `editor/*`, `workspace/*` | `connectionNoteLayer.ts` genişletme | Güncel F8 — §10 |
+| `template/*`, `export/*`, `sync/*` | yeni modüller | F8 sonrası |
+
+**ZotSeek** (`referanslar/ZotSeek-1.18.0/src/worker/embedding-worker.ts`)
+
+| Kaynak | LibRart | Not |
+|---|---|---|
+| WASM embedding worker | `src/vendor/zotseek/` | İsteğe bağlı; Kutuphane Ollama köprüsü güçlü alternatif |
+
+**inciteful-zotero-plugin** — ✅ tamamlandı (`incitefulCore.ts`).
+
+### 23.4 Port yasak / yalnız mimari inceleme
+
+| Kaynak | Karar |
+|---|---|
+| `Zotero-Citation-Graph` | Lisans yok — §11 eski F5 iptal; temiz oda veya lisanslı muadil |
+| `citation_map`, `Local-Citation-Graph` | §1a — kod/çeviri port yok |
+| `scite-zotero-plugin` | §7 — port yok; `zotero-open-citations` / MCP alternatif |
+
+Atıf katmanı genişletme: güncel F5 için §10 ve §13 lisans matrisi. Lisanssız
+offline/PDF taslaklarının iptal geçmişi §11'dedir; oradan iş başlatılmaz.
+
+### 23.5 Doğrulama (her modül sonrası)
+
+1. `npm run build` — TypeScript hatasız
+2. Attribution yorumu her değişen/vendor dosyada
+3. Bağlantı Haritası katmanları (`tag` / `note` / `semantic` / `citation`) çalışır; public API imzası bozulmaz
+4. Yeni UI → Fluent (`addon/locale/`) + menü/pref kaydı
+5. Tam checklist: §15 · kabul ölçütleri: §22
+
+### 23.6 Bilinen yan görev (release)
+
+`scripts/publish.mjs`: "update" etiketli release silinip yeniden oluşturulunca GitHub
+`/releases/latest` yanlış yönlenebilir. Düzeltme: update release'i güncelle veya latest
+işaretini sürümlü release'e taşı — F0 release kapısı (§16) ile birlikte ele alınır.
+
+---
+
 ## Belge haritası
 
 | Dosya | Rol | Güncelleme |
 |---|---|---|
-| **`REFERANS-ANALIZ.md`** (bu dosya) | SSOT — lisans, F0–F9, F10+, mimari, kabul | **Her analiz/karar burada** |
+| **`AGENTS.md`** | Üç ajan girişi (Cursor · Claude · Codex) | Giriş akışı değişirse |
+| **`REFERANS-ANALIZ.md`** (bu dosya) | SSOT — lisans, F0–F9, §23 port brifi, kabul | **Her analiz/karar burada** |
 | `VENDOR-SOURCES.md` | Fiili vendor tablosu (port sonrası) | Vendor eklendiğinde |
-| `CURSOR-GOREV-ORIJINAL-KOD-ENTEGRASYONU.md` | Orijinal port brifi | Brif değişirse |
-| `CLAUDE.md` | LibRart Claude giriş → bu dosya | Giriş linki only |
+| `CLAUDE.md` | Claude Code kısa giriş → `AGENTS.md` | Giriş linki only |
 | `../README.md` | 91 depo envanter tablosu | Yeni klon satırı |
 | Stub'lar (aşağı) | → bu dosya | **İçerik ekleme yasak** |
 
 Stub: `../REFERANS-ANALIZI.md`, `../referanslar/ANALIZ.md`, `ENTEGRASYON-PLANI.md`,
-`CITATION-GRAPH-ENTEGRASYON.md`, `KALITE-REFERANSLARI.md`, `REFERANS-BEKLEYEN-OZELLIK.md`.
+`CURSOR-GOREV-ORIJINAL-KOD-ENTEGRASYONU.md`, `CITATION-GRAPH-ENTEGRASYON.md`,
+`KALITE-REFERANSLARI.md`, `REFERANS-BEKLEYEN-OZELLIK.md`.
 
 ---
 
 ## Değişiklik günlüğü
+
+### 2026-07-29 — Üç ajan ortak giriş
+
+`AGENTS.md` eklendi; port brifi §23'e taşındı; `CURSOR-GOREV-ORIJINAL-KOD-ENTEGRASYONU.md`
+stub. Kök `AGENTS.md`, `zotero-entegrasyon.mdc`, `kutuphane.mdc` güncellendi.
 
 ### 2026-07-29 — Claude Code: commit + P0 tamamlandı
 
