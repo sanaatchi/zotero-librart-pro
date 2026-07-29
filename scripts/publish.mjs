@@ -8,6 +8,7 @@
 // Prerequisites: `gh auth login`, DIST_REPO must exist (created once).
 
 import { execSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   readdirSync,
   writeFileSync,
@@ -53,8 +54,13 @@ function findXpi() {
  * - versioned XPI links in update.json
  * - update.json on the dist repo's default branch (raw.githubusercontent)
  */
-function writeUpdateFiles(xpiName) {
+function sha512File(filePath) {
+  return createHash("sha512").update(readFileSync(filePath)).digest("hex");
+}
+
+function writeUpdateFiles(xpiPath, xpiName) {
   const updateLink = `https://github.com/${DIST_REPO}/releases/download/${tag}/${xpiName}`;
+  const updateHash = `sha512:${sha512File(xpiPath)}`;
   const updateJson = {
     addons: {
       [addonID]: {
@@ -62,10 +68,13 @@ function writeUpdateFiles(xpiName) {
           {
             version,
             update_link: updateLink,
+            update_hash: updateHash,
             applications: {
               zotero: {
-                strict_min_version: "7.999",
-                strict_max_version: "10.999.999",
+                // Match plugins that successfully auto-update on Zotero 9
+                // (e.g. Translate for Zotero uses 7.9.9 … 10.9.9).
+                strict_min_version: "7.0",
+                strict_max_version: "10.9.9",
               },
             },
           },
@@ -77,6 +86,7 @@ function writeUpdateFiles(xpiName) {
   writeFileSync("update.json", body);
   writeFileSync("update-beta.json", body);
   console.log("Wrote update.json →", updateLink);
+  console.log("update_hash →", updateHash);
   return body;
 }
 
@@ -119,7 +129,7 @@ run("npm run build");
 
 const xpiPath = findXpi();
 const xpiName = xpiPath.replace(/\\/g, "/").split("/").pop();
-const updateBody = writeUpdateFiles(xpiName);
+const updateBody = writeUpdateFiles(xpiPath, xpiName);
 
 console.log(`\n=== Publishing ${tag} to ${DIST_REPO} ===`);
 try {
