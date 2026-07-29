@@ -188,8 +188,10 @@ npm test          # F0 sonrası zorunlu
 
 **Manuel (her faz):** Eklenti yüklenir · Harita açılır · Pref aç/kapa · `onShutdown` leak yok · locale eksiksiz.
 
-**Release kapısı:** F0 geçmeden `npm run gh-release` yok. Public release deposunda `update_hash` ve
-gerçek Zotero güncelleme testi zorunlu. Bilinen sorun: `scripts/publish.mjs` "update" tag — F0'da düzelt.
+**Release kapısı:** F0 + [`CURSOR-KATMAN-3-EKSIKLER-RAPORU.md`](CURSOR-KATMAN-3-EKSIKLER-RAPORU.md) P1
+geçmeden `npm run gh-release` yok. Public release deposunda `update_hash` ve gerçek Zotero
+güncelleme testi zorunlu. Kök `update.json` gitignored — SSOT `build/update.json`.
+Ayrıntı: [`OTOMATIK-GUNCELLEME.md`](OTOMATIK-GUNCELLEME.md).
 
 **Kabul ölçütleri:** ≤2 tıklama · idempotent işlemler · Fluent metinler · provenance satırı ·
 yıkıcı dosya işlemi varsayılan kapalı.
@@ -198,11 +200,12 @@ yıkıcı dosya işlemi varsayılan kapalı.
 
 ## 7. Sonraki adım
 
-**Şimdi:** F0–F9 özellik çekirdeği + stabilizasyon (v1.0.46): çoklu pencere
-`FeatureRegistry`, vendor-aware lint, atomik/kuyruklu JSON vektör yazımı, 10k smoke.
-Manuel Zotero: ikinci pencere / pref / shutdown doğrulaması.
+**Her oturum başı:** [`CURSOR-KATMAN-3-EKSIKLER-RAPORU.md`](CURSOR-KATMAN-3-EKSIKLER-RAPORU.md)
+oku → açık P1’leri düzelt → **ancak sonra** özellik/faz işi
+(rule: `katman3-eksik-raporu.mdc`).
 
-**Sonra:** tam BN workspace chrome; Citegeist sütun/pane (isteğe bağlı). F6 → Katman 2.
+**Sonra (rapor P1 kapalıyken):** P2/P3 veya `LIBRART-YAPILANDIRMA` özellikleri.
+F6 → Katman 2.
 
 Port gerektiren fazlarda önce [`LIBRART-REFERANS-PORT.md`](LIBRART-REFERANS-PORT.md) lisans
 kontrolü, sonra `LIBRART-VENDOR.md` satırı.

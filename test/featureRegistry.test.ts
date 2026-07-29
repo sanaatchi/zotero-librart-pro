@@ -162,6 +162,30 @@ describe("FeatureRegistry", () => {
     expect(processShutdown).toEqual(["menu.item"]);
   });
 
+  it("inits a startup-phase feature only once even if initPhase('startup') runs again (e.g. a second window's load sequence re-triggers plugin startup wiring)", async () => {
+    const registry = new FeatureRegistry();
+    const runs: number[] = [];
+    let n = 0;
+    registry.register({
+      id: "reading.flow",
+      phase: "startup",
+      init: () => {
+        runs.push(++n);
+      },
+    });
+    await registry.initPhase(
+      "startup",
+      { adapter: mockAdapter },
+      () => undefined,
+    );
+    await registry.initPhase(
+      "startup",
+      { adapter: mockAdapter },
+      () => undefined,
+    );
+    expect(runs).toEqual([1]);
+  });
+
   it("skips mainWindow init when window is missing", async () => {
     const registry = new FeatureRegistry();
     const init = vi.fn();

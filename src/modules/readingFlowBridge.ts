@@ -44,6 +44,7 @@ const DASHBOARD_ID = `${config.addonRef}-reading-dashboard`;
 
 let store: ReadingFlowStore | null = null;
 let tracker: ReadingTracker | null = null;
+let initialized = false;
 
 function getReadingFlowStore(): ReadingFlowStore {
   if (!store) store = new ReadingFlowStore();
@@ -55,11 +56,16 @@ function isReadingFlowEnabled(): boolean {
   return v === undefined || v === true;
 }
 
+/**
+ * Process-wide init — registers a single Zotero.Notifier observer and a
+ * single set of ItemTreeManager columns. Idempotent: a second call (e.g. a
+ * stray re-invocation from another window's lifecycle) is a no-op rather
+ * than silently replacing the existing tracker/observer reference.
+ */
 function initReadingFlow() {
   if (!isReadingFlowEnabled()) return;
-  if (getPref("reading.enabled") === undefined) {
-    // default handled by feature registry
-  }
+  if (initialized) return;
+  initialized = true;
   const flowStore = getReadingFlowStore();
   registerReadingFlowColumns(flowStore);
   void ensureReadingColumnsVisibleOnFirstRun();
@@ -68,6 +74,8 @@ function initReadingFlow() {
 }
 
 function shutdownReadingFlow() {
+  if (!initialized) return;
+  initialized = false;
   tracker?.unregister();
   tracker = null;
   unregisterReadingFlowColumns();

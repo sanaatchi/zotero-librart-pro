@@ -1,4 +1,4 @@
-<!-- @ajan: cursor · @etiket: plan, index, agents, librart-giris -->
+<!-- @ajan: cursor · @etiket: plan, index, agents, librart-giris, eksik-raporu -->
 
 # LibRart Pro — giriş (plan rehberi)
 
@@ -12,16 +12,17 @@ Katman 1 (Kütüphane + köprü) ve Katman 2 (PDF Manager) sonrası kullanılır
 
 **Buradan başla (LibRart planı):**
 
-| Ne yapıyorsun?                                                          | Dosya                                                    | İçerik                        |
-| ----------------------------------------------------------------------- | -------------------------------------------------------- | ----------------------------- |
-| **Eklentiyi yapılandırıyorum** — fazlar, tercihler, menü, test, release | [**LIBRART-YAPILANDIRMA.md**](LIBRART-YAPILANDIRMA.md)   | LibRart'ın kendi yol haritası |
-| **Referans eklentiden kod taşıyorum** — lisans, vendor, dosya eşlemesi  | [**LIBRART-REFERANS-PORT.md**](LIBRART-REFERANS-PORT.md) | `referanslar/` → `src/`       |
-| Port tamamlandı, kayıt                                                  | [**LIBRART-VENDOR.md**](LIBRART-VENDOR.md)               | Fiili vendor tablosu          |
-| Üç ajan kuralları                                                       | [**AGENTS.md**](AGENTS.md)                               | Okuma sırası, etiket          |
+| Sıra  | Ne                                                            | Dosya                                                                        |
+| ----- | ------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| **0** | **Önce eksikler** — oku → düzelt → sonra özellik              | [**CURSOR-KATMAN-3-EKSIKLER-RAPORU.md**](CURSOR-KATMAN-3-EKSIKLER-RAPORU.md) |
+| 1     | Eklentiyi yapılandır — fazlar, tercihler, menü, test, release | [**LIBRART-YAPILANDIRMA.md**](LIBRART-YAPILANDIRMA.md)                       |
+| 2     | Referans eklentiden kod taşı — lisans, vendor, dosya eşlemesi | [**LIBRART-REFERANS-PORT.md**](LIBRART-REFERANS-PORT.md)                     |
+| 3     | Port tamamlandı, kayıt                                        | [**LIBRART-VENDOR.md**](LIBRART-VENDOR.md)                                   |
+| 4     | Üç ajan kuralları                                             | [**AGENTS.md**](AGENTS.md)                                                   |
 
 ## Hızlı cevaplar
 
-- **Sıradaki iş ne?** → `LIBRART-YAPILANDIRMA.md` § Sonraki adım (çekirdek F0–F9 ✅; manuel Zotero doğrulama)
+- **Sıradaki iş ne?** → Önce `CURSOR-KATMAN-3-EKSIKLER-RAPORU.md` (P1→P3); kapandıktan sonra `LIBRART-YAPILANDIRMA.md` § Sonraki adım
 - **Bu depodan kod kopyalayabilir miyim?** → `LIBRART-REFERANS-PORT.md` § Lisans
 - **Hangi upstream dosya nereye?** → `LIBRART-REFERANS-PORT.md` § Modül eşlemesi
 - **91 klon envanteri** → `../README.md` (liste only; karar burada değil)
@@ -41,6 +42,7 @@ Katman 1 (Kütüphane + köprü) ve Katman 2 (PDF Manager) sonrası kullanılır
 
 | Değişiklik türü                     | Güncelle                                         |
 | ----------------------------------- | ------------------------------------------------ |
+| Eksik / kabul (oturum başı)         | `CURSOR-KATMAN-3-EKSIKLER-RAPORU.md`             |
 | Faz, pref, menü, UI, test, release  | `LIBRART-YAPILANDIRMA.md`                        |
 | Lisans, port kararı, modül eşlemesi | `LIBRART-REFERANS-PORT.md` + `LIBRART-VENDOR.md` |
 | Anlamlı oturum                      | `Kutuphane/Changes.md`                           |

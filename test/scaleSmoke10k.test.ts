@@ -25,7 +25,7 @@ function emb(i: number): number[] {
   return v.map((x) => x / norm);
 }
 
-describe("10k scale smoke", () => {
+describe("10k vector-helper smoke", () => {
   it("upserts and lists 10000 vector rows", () => {
     let store = emptyJsonVectorStore("smoke");
     const t0 = Date.now();

@@ -15,14 +15,15 @@
 
 ## Plan belgeleri (bu katman)
 
-| Belge                                                    | İçerik                          |
-| -------------------------------------------------------- | ------------------------------- |
-| [`LIBRART-GIRIS.md`](LIBRART-GIRIS.md)                   | Giriş, isim haritası            |
-| [`LIBRART-YAPILANDIRMA.md`](LIBRART-YAPILANDIRMA.md)     | **Faz F0–F9**, pref, menü, test |
-| [`LIBRART-REFERANS-PORT.md`](LIBRART-REFERANS-PORT.md)   | Referans eklenti port, lisans   |
-| [`LIBRART-VENDOR.md`](LIBRART-VENDOR.md)                 | Tamamlanan vendor               |
-| [`BAGLANTI-HARITASI-PLAN.md`](BAGLANTI-HARITASI-PLAN.md) | Tarihsel v1 uygulama kaydı      |
-| [`AGENTS.md`](AGENTS.md)                                 | Üç ajan kuralları               |
+| Belge                                                                      | İçerik                                |
+| -------------------------------------------------------------------------- | ------------------------------------- |
+| [`CURSOR-KATMAN-3-EKSIKLER-RAPORU.md`](CURSOR-KATMAN-3-EKSIKLER-RAPORU.md) | **Önce oku → düzelt → sonra özellik** |
+| [`LIBRART-GIRIS.md`](LIBRART-GIRIS.md)                                     | Giriş, isim haritası                  |
+| [`LIBRART-YAPILANDIRMA.md`](LIBRART-YAPILANDIRMA.md)                       | **Faz F0–F9**, pref, menü, test       |
+| [`LIBRART-REFERANS-PORT.md`](LIBRART-REFERANS-PORT.md)                     | Referans eklenti port, lisans         |
+| [`LIBRART-VENDOR.md`](LIBRART-VENDOR.md)                                   | Tamamlanan vendor                     |
+| [`BAGLANTI-HARITASI-PLAN.md`](BAGLANTI-HARITASI-PLAN.md)                   | Tarihsel v1 uygulama kaydı            |
+| [`AGENTS.md`](AGENTS.md)                                                   | Üç ajan kuralları                     |
 
 **Genel plan indeksi:** [`../../docs/PLAN-GIRIS.md`](../../docs/PLAN-GIRIS.md)
 
@@ -30,13 +31,13 @@
 
 ## Şu an: ne yapıyoruz?
 
+**Oturum başı sırası:** eksik raporu → P1 düzelt → özellik.
+
 **Katman 3 — LibRart Pro.** F0–**F9.2.3** özellik çekirdeği ✅ + stabilizasyon
-(v1.0.46: çoklu pencere registry, lint kapısı, atomik vektör yazımı, 10k smoke).
-Kalan: Zotero içinde manuel ikinci pencere / pref / shutdown.
+(v1.0.46). Açık kabul kapısı: `CURSOR-KATMAN-3-EKSIKLER-RAPORU.md`.
 
 ```bash
 cd zotero-eklentiler/kaynak
-npm run fetch:zotseek-assets && npm run build:worker   # gömülü embed
 npm test && npm run lint:check && npm run build
 ```
 

@@ -1,4 +1,4 @@
-// @ajan: cursor · @etiket: f9.2.3, zotseek, vector-runtime, atomic-io
+// @ajan: cursor · @etiket: f9.2.3, zotseek, vector-runtime, atomic-io, rmw
 // Disk-backed JSON vectors + optional EmbeddingPipeline for index/findSimilar.
 
 import { EmbeddingPipeline } from "./core/embedding-pipeline";
@@ -9,9 +9,8 @@ import {
   contentHashForText,
   emptyJsonVectorStore,
   listJsonVectorRows,
-  upsertJsonVectorRow,
 } from "./jsonVectorStore";
-import { createSerialQueue } from "./serialQueue";
+import { createVectorMutator } from "./vectorStoreMutate";
 import { topKSimilar } from "./vectorMath";
 
 export {
@@ -22,11 +21,19 @@ export {
 };
 
 const STORE_FILE = "librart-zotseek-vectors.json";
-const writeQueue = createSerialQueue();
 
 let pipeline: EmbeddingPipeline | null = null;
 let pipelineInitFailed = false;
 let memoryStore: JsonVectorStoreFile | null = null;
+
+const mutator = createVectorMutator({
+  getMemory: () => memoryStore,
+  setMemory: (s) => {
+    memoryStore = s;
+  },
+  load: loadStore,
+  persist: persistStoreUnlocked,
+});
 
 function storePath(): string {
   return PathUtils.join(Zotero.DataDirectory.dir, STORE_FILE);
@@ -55,28 +62,22 @@ async function loadStore(): Promise<JsonVectorStoreFile> {
   return memoryStore;
 }
 
-async function saveStore(store: JsonVectorStoreFile): Promise<void> {
-  memoryStore = store;
-  await writeQueue(async () => {
-    const path = storePath();
-    const tmp = storeTmpPath();
+/** Physical write — only called from the mutation queue. */
+async function persistStoreUnlocked(store: JsonVectorStoreFile): Promise<void> {
+  const path = storePath();
+  const tmp = storeTmpPath();
+  try {
+    await IOUtils.writeJSON(tmp, store);
+    await IOUtils.move(tmp, path);
+  } catch (e) {
     try {
-      await IOUtils.writeJSON(tmp, store);
-      if (await IOUtils.exists(path)) {
-        await IOUtils.move(tmp, path);
-      } else {
-        // move into place even if destination is missing
-        await IOUtils.move(tmp, path);
-      }
-    } catch (e) {
-      try {
-        if (await IOUtils.exists(tmp)) await IOUtils.remove(tmp);
-      } catch {
-        /* ignore cleanup */
-      }
-      ztoolkit.log("[LibRart:ZotSeek] vector store save failed", e);
+      if (await IOUtils.exists(tmp)) await IOUtils.remove(tmp);
+    } catch {
+      /* ignore cleanup */
     }
-  });
+    ztoolkit.log("[LibRart:ZotSeek] vector store save failed", e);
+    throw e;
+  }
 }
 
 function extractItemEmbedText(item: Zotero.Item): string {
@@ -114,28 +115,29 @@ async function indexItemEmbedding(itemId: number): Promise<boolean> {
 
   const modelId = getActiveModelId() || DEFAULT_MODEL_ID;
   const hash = contentHashForText(text);
-  let store = await loadStore();
-  const existing = store.rows[String(itemId)];
-  if (
-    existing &&
-    existing.contentHash === hash &&
-    existing.modelId === modelId
-  ) {
+
+  const peek = memoryStore?.rows[String(itemId)];
+  if (peek && peek.contentHash === hash && peek.modelId === modelId) {
     return true;
   }
 
+  // Embed outside the queue; only load→upsert→disk is serialized.
+  // Generation drops stale embeds if a newer index for the same item started.
+  const generation = mutator.beginGeneration(itemId);
   const result = await pipe.embedDocument(text);
-  store = upsertJsonVectorRow(store, {
-    itemId,
-    itemKey: item.key,
-    libraryId: item.libraryID,
-    modelId: result.modelId || modelId,
-    embedding: result.embedding,
-    indexedAt: new Date().toISOString(),
-    contentHash: hash,
-  });
-  await saveStore(store);
-  return true;
+  const committed = await mutator.commitRow(
+    {
+      itemId,
+      itemKey: item.key,
+      libraryId: item.libraryID,
+      modelId: result.modelId || modelId,
+      embedding: result.embedding,
+      indexedAt: new Date().toISOString(),
+      contentHash: hash,
+    },
+    generation,
+  );
+  return committed.applied || committed.reason === "unchanged";
 }
 
 async function findSimilarInStore(

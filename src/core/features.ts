@@ -97,7 +97,11 @@ function registerLibRartFeatures(registry: FeatureRegistry): void {
 
   registry.register({
     id: "reading.flow",
-    phase: "mainWindow",
+    // Process-wide state (Zotero.Notifier observer, ItemTreeManager columns,
+    // reading-flow store) — none of this is per-window. Must be "startup",
+    // not "mainWindow", or every new window re-registers a duplicate global
+    // observer/columns and overwrites the tracker reference of prior windows.
+    phase: "startup",
     prefKey: "reading.enabled",
     defaultEnabled: true,
     init: () => {

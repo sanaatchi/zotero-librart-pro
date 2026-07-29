@@ -1,6 +1,268 @@
-<!-- @ajan: codex · @etiket: katman-3, code-review, cursor, eksik-analizi -->
+<!-- @ajan: cursor · @etiket: katman-3, eksik-raporu, p1-close -->
 
 # Cursor için Katman 3 eksik analizi
+
+> **Çalışma kuralı:** Her yeni Katman 3 düzenlemesinde
+> **1)** bu raporu oku → **2)** açık maddeleri düzelt → **3)** ancak sonra özellik işi.
+> Rule: `.cursor/rules/katman3-eksik-raporu.mdc` · `kaynak/AGENTS.md`
+
+## Güncel durum — 2026-07-29 (P1 kod paketi)
+
+**Baseline (bu commit sonrası):** `main` — LibRart Pro `1.0.46`  
+**Doğrulama:** 94/94 test · Prettier ✅ · ESLint ✅ · TS ✅ · XPI build ✅
+
+| Madde                                 | Durum | Not                                    |
+| ------------------------------------- | ----- | -------------------------------------- |
+| Reading flow observer sızıntısı       | ✅    | `startup` + idempotans                 |
+| Vektör farklı-item RMW                | ✅    | `vectorStoreMutate` + test             |
+| Aynı-item stale embedding             | ✅    | generation token                       |
+| Kök `update.json` tracked             | ✅    | `git rm --cached` + gitignore          |
+| Prettier / lint kapısı                | ✅    |                                        |
+| Public release v1.0.46                | ❌    | `gh-release` + Zotero update henüz yok |
+| Manuel Zotero kabul matrisi           | ❌    | checklist kaydı yok                    |
+| Pref reconcile                        | ❌ P2 |                                        |
+| Vektör delete/prune                   | ❌ P2 |                                        |
+| Vendored `eval`                       | ❌ P2 |                                        |
+| 10k gerçek ölçek                      | ❌ P2 | helper smoke var                       |
+| Feature-composition (observer sayımı) | 🟡    | registry testi var                     |
+| it-IT / zh-CN locale                  | 🟡    | build uyarısı                          |
+
+**Sıradaki P1 kalanı:** public `v1.0.46` yayını + Zotero update doğrulaması + manuel kabul checklist.
+
+---
+
+## Önceki yeniden analiz (arşiv notu)
+
+Aşağıdaki bölüm Codex/Claude’un `6ac1c46` + WIP incelemesidir; üst matris günceldir.
+
+<details>
+<summary>Eski detay (genişlet)</summary>
+
+**İncelenen durum:** `6ac1c46` + Cursor’un commit edilmemiş stabilizasyon
+değişiklikleri
+
+**Paket:** LibRart Pro `1.0.46`
+**Karar:** İki kritik kod açığı düzeltilmiş durumda; fakat mevcut çalışma henüz temiz
+baseline değil. Release kanalı, gerçek Zotero kabulü ve aşağıdaki açık maddeler
+tamamlanmadan “yayına hazır” denmemeli.
+
+### Durum matrisi
+
+| Önceki madde                                  | Güncel durum       | Kanıt                                                              |
+| --------------------------------------------- | ------------------ | ------------------------------------------------------------------ |
+| Reading flow çoklu pencere observer sızıntısı | ✅ Kodda kapatıldı | `reading.flow` startup fazına taşındı; idempotans koruması eklendi |
+| Vektör farklı-item RMW yarışı                 | ✅ Kodda kapatıldı | `vectorStoreMutate.ts`; paralel iki satır testi                    |
+| Update manifest/release çelişkisi             | 🟡 Kısmi           | Belgeler düzeldi; tracked kök manifestler ve public v1.0.32 açık   |
+| 10k ölçek iddiası                             | ❌ Açık            | Test hâlâ sentetik 8 boyutlu bellek testi                          |
+| Canlı feature flag yaşam döngüsü              | ❌ Açık            | Pref observer/reconcile yok                                        |
+| Vektör delete/modify/prune                    | ❌ Açık            | `removeJsonVectorRow()` runtime’a bağlı değil                      |
+| Vendored `eval()`                             | ❌ Açık            | `views.ts:528`                                                     |
+| Feature composition testi                     | 🟡 Kısmi           | Registry testi genişledi; gerçek observer/sütun sayımı yok         |
+| Gerçek Zotero kabul matrisi                   | ❌ Açık            | Manuel kayıt yok                                                   |
+
+### Bağımsız kalite doğrulaması
+
+Cursor’un mevcut commit edilmemiş değişiklikleri üzerinde:
+
+| Kapı          | Sonuç                                                             |
+| ------------- | ----------------------------------------------------------------- |
+| Vitest        | ✅ 23 dosya, **93/93 test**                                       |
+| ESLint        | ✅                                                                |
+| TypeScript    | ✅                                                                |
+| XPI build     | ✅                                                                |
+| Prettier      | ❌ 5 dosya                                                        |
+| Çalışma ağacı | ⚠️ 10 değiştirilmiş + 2 yeni dosya                                |
+| Yerel dal     | ⚠️ `origin/main` önünde 1 commit + commit edilmemiş değişiklikler |
+
+Prettier’ın işaretlediği dosyalar:
+
+- `CURSOR-KATMAN-3-EKSIKLER-RAPORU.md`
+- `KATMAN-3-PLAN.md`
+- `LIBRART-GIRIS.md`
+- `OTOMATIK-GUNCELLEME.md`
+- `test/featureRegistry.test.ts`
+
+### Kapatılan 1 — reading flow süreç/pencere kapsamı
+
+Cursor’un düzeltmesi doğru yönde:
+
+- `src/core/features.ts`: `reading.flow`, `mainWindow` yerine `startup`.
+- `src/modules/readingFlowBridge.ts`: `initialized` koruması.
+- İkinci init yeni tracker/observer ve sütun oluşturmuyor.
+- Shutdown global tracker, sütun ve store’u tek kez kapatıyor.
+- Startup feature’ın tekrar başlamadığını doğrulayan test eklendi.
+
+**Kapanış kanıtı için kalan:** Feature-composition testinde
+`Zotero.Notifier.registerObserver` ve `ItemTreeManager.registerColumn` çağrı sayılarını
+ölç; ardından gerçek Zotero ikinci pencere testini yap.
+
+### Kapatılan 2 — farklı öğelerin paralel vektör RMW yarışı
+
+Yeni `src/vendor/zotseek/vectorStoreMutate.ts`, `current store → upsert → persist →
+memory publish` bölümünün tamamını tek kuyrukta çalıştırıyor.
+`test/vectorStoreRmw.test.ts`, iki farklı item paralel commit edildiğinde iki satırın
+da kaldığını doğruluyor.
+
+### P1 — mevcut düzeltme paketi henüz kalite kapısından geçmiyor
+
+Test, ESLint, TypeScript ve build yeşil; fakat Prettier beş dosyada başarısız. CI
+`lint:check` aşamasında kalır.
+
+**Cursor görevi**
+
+1. Beş dosyayı Prettier ile düzelt.
+2. `npm test && npm run lint:check && npm run build`.
+3. `git diff --check`.
+4. Dosya etiketleri ve `Changes.md` kaydını tamamla.
+5. Temiz commit/push sonrası bu rapordaki baseline SHA’yı güncelle.
+
+### P1 — release kanalı hâlâ v1.0.32
+
+2026-07-29 canlı GitHub API doğrulaması:
+
+```text
+v1.0.32 → update.json + zotero-librart-pro.xpi
+update  → yalnız update.json
+```
+
+Yerel paket `1.0.46`; çekirdek public kanala henüz yayınlanmış değil.
+
+`.gitignore` içine `/update.json` ve `/update-beta.json` eklemek de Git’in zaten
+izlediği iki eski v1.0.32 dosyasını kendiliğinden bırakmaz: `git ls-files` ikisini
+hâlâ gösteriyor.
+
+**Cursor görevi**
+
+- Kök manifestler build artığıysa Git indeksinden kontrollü biçimde çıkar; kullanıcı
+  çalışma kopyasını silme.
+- Public `v1.0.46` XPI ve kalıcı `update` manifestini yayınla.
+- `releases/latest` “update” release’ine çözülüyorsa indirme dokümanını sabit sürüm
+  veya uygun endpoint’e yönlendir.
+- Zotero içinden önceki sürüm → v1.0.46 güncellemesini doğrula.
+
+### P1 — gerçek Zotero kabul testi yok
+
+Zorunlu manuel matris:
+
+| Senaryo                | Beklenen                                                    |
+| ---------------------- | ----------------------------------------------------------- |
+| İkinci ana pencere     | Global observer/sütun tek; pencere menüsü iki pencerede var |
+| Bir pencereyi kapatma  | Diğer pencere çalışmaya devam eder                          |
+| Reader aç/kapat        | Tracker/timeout sızıntısı yok                               |
+| Eklenti disable/enable | Menü, observer ve sütunlar temiz kapanıp tekrar açılır      |
+| Pref aç/kapa           | Belgelenen davranışla uyumlu                                |
+| TR/EN locale           | Eksik anahtar veya ham Fluent ID yok                        |
+| Update denetimi        | v1.0.46 XPI + SHA-512 kabul edilir                          |
+
+Sonuçları tarih, Zotero sürümü, Windows sürümü ve log/ekran kanıtıyla kaydet.
+
+### P2 — aynı item stale embedding yarışı
+
+Yeni mutator “kuyruğa en son giren kazanır” politikasını test ediyor; embedding ise
+kuyruk dışında hesaplanıyor. Eski içerik için yavaş embedding, yeni içerik için hızlı
+embedding’den sonra tamamlanırsa eski hash en son commit edilip yeni sonucu ezebilir.
+
+**Cursor görevi**
+
+- Commit anında güncel content hash’i tekrar doğrula veya item başına generation kullan.
+- “Yeni içerik önce tamamlandı, eski embedding sonra geldi” testi ekle.
+
+### P2 — feature flag yaşam döngüsü
+
+Registry pref’i yalnız init sırasında değerlendiriyor. Örneğin `reading.enabled`
+sonradan kapatılırsa tracker ve sütunlar yaşamaya devam ediyor.
+
+**Cursor görevi:** UI’da “yeniden başlatma gerekir” sözleşmesi göster veya pref
+observer ile `enable/disable/reconcile` uygula. Reading kapatma/açma testi ekle.
+
+### P2 — vektör delete/modify/prune
+
+`removeJsonVectorRow()` runtime’a bağlı değil. Silinen/trash öğeler store’da kalıyor;
+başlık/özet değişikliği otomatik stale olmuyor; açılışta orphan prune yok.
+
+**Cursor görevi:** Item notifier ile delete/trash/modify politikası ve batch prune ekle.
+
+### P2 — vendored `eval()`
+
+`src/vendor/zotero-reference/views.ts:528`, PDF destination değerini string
+interpolation ile iframe `eval()` çağrısına veriyor.
+
+**Cursor görevi:** Doğrudan
+`PDFViewerApplication.pdfViewer.linkService.goToDestination(destination)` çağrısına
+geç; yerel vendor patch/provenance kaydı ve edge-case testi ekle.
+
+### P2 — 10k smoke gerçek ürün ölçeği değil
+
+Test yalnız 8 boyutlu sentetik vektörleri bellekte ölçüyor. Gerçek modeller 384/768
+boyutlu; disk I/O, Zotero `Items.getAll()`, UI event loop, iptal ve ilerleme yok.
+
+**Cursor görevi**
+
+- Test adını “10k vector-helper smoke” olarak daralt.
+- 384/768 boyut ve gerçekçi JSON/disk testi ekle.
+- Tam-kütüphane yollarına kapsam limiti, yield/progress ve performans bütçesi koy.
+
+### P2 — it-IT ve zh-CN locale kapsamı eksik
+
+EN anahtarlarıyla karşılaştırma:
+
+| Locale | `addon.ftl` eksik | `preferences.ftl` eksik |
+| ------ | ----------------: | ----------------------: |
+| tr-TR  |                 0 |                       0 |
+| it-IT  |               165 |                      10 |
+| zh-CN  |               164 |                      10 |
+
+Ya ürün kapsamını EN/TR ile sınırla ve kısmi locale’leri paketleme ya da anahtarları
+tamamlayıp CI’a locale parity testi ekle.
+
+### P3 — feature-composition testi
+
+Registry testi genişledi ama gerçek `registerLibRartFeatures()` bileşimini çalıştırıp
+observer/sütun/menü sayılarını ölçmüyor.
+
+İki pencere senaryosunda global observer/sütun = 1, pencere menüsü = pencere başına 1,
+shutdown sonrası kaynak = 0 beklentilerini doğrula.
+
+### P3 — tip borcu
+
+Vendor dışındaki `@ts-ignore TODO` noktaları:
+
+- `src/modules/menu.ts`
+- `src/modules/preferenceWindow.ts`
+- `src/utils/items.ts`
+
+Zotero 7–10 farklarını gizlememesi için dar type guard/adapter ile kapatılması önerilir.
+
+### Güncel Cursor uygulama sırası
+
+1. Prettier + temiz kalite zinciri + commit/push.
+2. Aynı-item stale embedding yarışını kapat.
+3. Public v1.0.46 release ve Zotero update doğrulaması.
+4. Gerçek Zotero çoklu pencere/shutdown kabul testi.
+5. Feature flag yaşam döngüsü.
+6. Vektör delete/modify/prune.
+7. Vendored `eval` kaldırma.
+8. Gerçekçi ölçek testi ve `Items.getAll()` bütçeleri.
+9. Locale kapsam kararı/parity testi.
+10. Feature-composition testi ve tip borcu.
+
+### Güncel tamamlanma kapısı
+
+```text
+npm test
+npm run lint:check
+npm run build
+git diff --check
+temiz ve origin ile senkron Git baseline
+aynı-item stale embedding regresyon testi
+iki pencere feature-composition testi
+gerçek Zotero manuel kabul checklist'i
+public v1.0.46 XPI + update URL + SHA-512 uçtan uca doğrulaması
+```
+
+---
+
+## Önceki analiz — `2840f74`
 
 **İncelenen baseline:** `2840f74` — LibRart Pro `1.0.46`  
 **Bağımsız doğrulama:** 90/90 test, Prettier, ESLint, TypeScript ve XPI build geçti.  
@@ -179,11 +441,12 @@ arıyordum — çakışmayı görünce kendi bulgularımı buraya ekliyorum, rap
 yazılmadı.
 
 **Spot-check ile doğrulandı:**
+
 - Madde 1 (`reading.flow` sızıntısı) — `readingFlowBridge.ts:58-67` okundu, iddia
   doğru: `tracker` modül-seviyesi değişken, `initReadingFlow()` var olan referansı
   kontrolsüz eziyor.
 - Madde 7 (`eval`) — `zotero-reference/views.ts` içinde `_window.secondViewIframeWindow
-  .eval(...)` satırı doğrulandı, string interpolation ile `href` geçiyor.
+.eval(...)` satırı doğrulandı, string interpolation ile `href` geçiyor.
 
 **Madde 3'e (release/update manifest çelişkisi) ek kanıt — canlı GitHub durumu:**
 
@@ -203,6 +466,7 @@ GitHub'da şu anda gerçekleşmiş durumda. Release script'i düzeltilip bir son
 `gh-release` çalıştırılana kadar bu böyle kalacak.
 
 **Ek, küçük bulgular (Codex'in listesinde yok):**
+
 - `src/adapters/` içinde yalnız `zoteroAdapter.ts` var — orijinal mimari notunda
   (`LIBRART-YAPILANDIRMA.md` §2, eski dosyalarda `HttpPort`/`PreferencePort`) planlanan
   ek portlar hiç yapılmadı. Şu an işlevi engellemiyor, ileride test edilebilirlik için.
@@ -211,14 +475,15 @@ GitHub'da şu anda gerçekleşmiş durumda. Release script'i düzeltilip bir son
 - 3 adet `// @ts-ignore TODO: update types` (menu.ts, preferenceWindow.ts, items.ts) —
   düşük öncelik, zotero-plugin-toolkit tip tanımları netleşince kapanır.
 
+</details>
+
 ## Tamamlanma kapısı
 
 ```text
-npm test
-npm run lint:check
-npm run build
-iki pencere feature-composition testi
-paralel vektör mutation testi
-gerçek Zotero manuel kabul checklist'i
-update URL + update_hash uçtan uca doğrulaması
+npm test && npm run lint:check && npm run build   ✅ (94 test)
+paralel vektör mutation + stale-generation testi  ✅
+kök update.json untrack                            ✅
+public v1.0.46 gh-release + Zotero update          ❌
+manuel Zotero kabul checklist                      ❌
+P2: pref reconcile, prune, eval, ölçek             ❌
 ```

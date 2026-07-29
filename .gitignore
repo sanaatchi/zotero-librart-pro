@@ -9,6 +9,11 @@ tsconfig.tsbuildinfo
 .DS_Store
 .env
 
+# Scaffold emits these on build — do not treat root copies as release SSOT.
+# Authoritative after `npm run build`: build/update.json + build/update-beta.json
+/update.json
+/update-beta.json
+
 # F9.2 ZotSeek binaries (npm run fetch:zotseek-assets / build:worker)
 addon/content/models/**/*.onnx
 addon/content/wasm/*.wasm
