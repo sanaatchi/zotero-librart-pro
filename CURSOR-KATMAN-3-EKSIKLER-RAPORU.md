@@ -1,33 +1,160 @@
-<!-- @ajan: cursor · @etiket: katman-3, eksik-raporu, p1-close -->
+<!-- @ajan: codex · @etiket: katman-3, derin-analiz, eksik-raporu -->
 
 # Cursor için Katman 3 eksik analizi
 
-> **Çalışma kuralı:** Her yeni Katman 3 düzenlemesinde
-> **1)** bu raporu oku → **2)** açık maddeleri düzelt → **3)** ancak sonra özellik işi.
-> Rule: `.cursor/rules/katman3-eksik-raporu.mdc` · `kaynak/AGENTS.md`
+> **Çalışma kuralı:** Her yeni Katman 3 düzenlemesinde  
+> **1)** bu raporu oku → **2)** açık maddeleri düzelt → **3)** ancak sonra özellik işi.  
+> Rule: `.cursor/rules/katman-eksik-raporu.mdc` (üç katman ortak) · `kaynak/AGENTS.md`
 
-## Güncel durum — 2026-07-29 (P1 kod paketi)
+## Derin yeniden analiz — 2026-07-29
 
-**Baseline (bu commit sonrası):** `main` — LibRart Pro `1.0.46`  
-**Doğrulama:** 94/94 test · Prettier ✅ · ESLint ✅ · TS ✅ · XPI build ✅
+**İncelenen taban:** `c85b705` + kullanıcı/Cursor `AGENTS.md` değişikliği,
+LibRart Pro `1.0.46`.
 
-| Madde                                 | Durum | Not                                    |
-| ------------------------------------- | ----- | -------------------------------------- |
-| Reading flow observer sızıntısı       | ✅    | `startup` + idempotans                 |
-| Vektör farklı-item RMW                | ✅    | `vectorStoreMutate` + test             |
-| Aynı-item stale embedding             | ✅    | generation token                       |
-| Kök `update.json` tracked             | ✅    | `git rm --cached` + gitignore          |
-| Prettier / lint kapısı                | ✅    |                                        |
-| Public release v1.0.46                | ❌    | `gh-release` + Zotero update henüz yok |
-| Manuel Zotero kabul matrisi           | ❌    | checklist kaydı yok                    |
-| Pref reconcile                        | ❌ P2 |                                        |
-| Vektör delete/prune                   | ❌ P2 |                                        |
-| Vendored `eval`                       | ❌ P2 |                                        |
-| 10k gerçek ölçek                      | ❌ P2 | helper smoke var                       |
-| Feature-composition (observer sayımı) | 🟡    | registry testi var                     |
-| it-IT / zh-CN locale                  | 🟡    | build uyarısı                          |
+**Bağımsız doğrulama:** 23 test dosyası, **94/94 test** ✅ · Prettier ✅ ·
+ESLint ✅ · TypeScript ✅. XPI build bu turda `npm` çalıştırıcısı ortamda
+bulunmadığı için yeniden koşturulamadı; son doğrulanmış build `c85b705`
+kaydında yeşil.
 
-**Sıradaki P1 kalanı:** public `v1.0.46` yayını + Zotero update doğrulaması + manuel kabul checklist.
+### Güncel öncelik matrisi (2026-07-29 P1 release sonrası)
+
+| Öncelik | Açık                                           | Sonuç                                   |
+| ------- | ---------------------------------------------- | --------------------------------------- |
+| P1      | Public `v1.0.46` + update kanalı               | ✅ yayında                              |
+| P1      | Manuel Zotero kabul checklist doldurma         | 🟡 şablon hazır                         |
+| P2      | Canlı feature-pref reconcile yok               | Ayar değişikliği restart ister          |
+| P2      | Vektör silme/prune yaşam döngüsüne bağlı değil | İndeks sınırsız bayatlar/büyür          |
+| P2      | Vendored `eval()` ve geniş lint ignore alanı   | Çalıştırılabilir içerik denetimsiz      |
+| P2      | Yapılandırılabilir HTTP hedefleri kısıtsız     | SSRF/yanlış host riski                  |
+| P2      | Locale eşitliği yok                            | it-IT/zh-CN işlev metinleri eksik       |
+| P2      | CI/repo metadata upstream kalıntılı            | Yanlış sahiplik ve zayıf release kapısı |
+| P3      | Gerçek 10k ölçek smoke                         | helper smoke var; gerçek yok            |
+
+> Ayrıntılı durum tablosu: [§ Güncel durum — P1 release](#güncel-durum--2026-07-29-p1-release)
+
+### P1 — Public `1.0.46` release — KAPANDI ✅
+
+**2026-07-29:** `npm run gh-release` →
+[releases/v1.0.46](https://github.com/sanaatchi/zotero-librart-pro-releases/releases/tag/v1.0.46);
+canlı update kanalı `1.0.46`. Manuel Zotero içi update kabulü için
+[`ZOTERO-KABUL-CHECKLIST.md`](ZOTERO-KABUL-CHECKLIST.md) senaryo #9.
+
+### P1 — Release otomasyonu geri alınamaz ve iki ayrı modele bölünmüş
+
+`.github/workflows/release.yml`, `npm install -f` + yalnız build +
+`npm run release` çalıştırıyor; test/lint yok ve `GitHub_TOKEN`/`GITHUB_TOKEN`
+adları tutarsız. Yerel `scripts/publish.mjs` ise mevcut public release’i ve
+`update` tag’ini silip yeniden yaratıyor, kaynak tag’ini `git tag -f` ve
+`git push -f` ile değiştiriyor. Bekleme kodu PowerShell’e bağlı; release notu
+yalnız çift tırnak kaçırılarak shell komutuna ekleniyor. Shell metakarakterleri
+komut enjeksiyonu veya yanlış yayın üretebilir.
+
+**Cursor görevi**
+
+- Tek yayın hattı seç; temiz çalışma ağacı + exact commit + test/lint/build
+  kapısı kullan.
+- Release/tag silme ve force-push yerine immutable version tag/asset kullan.
+- `execFile`/arg array ile shell birleştirmesini kaldır; platform-bağımsız
+  bekleme kullan.
+- Public indirme sonrası XPI hash/addonID/version kontrolünü zorunlu yap.
+- Workflow action’larını commit SHA’ya sabitle ve `npm ci` kullan.
+
+### P1 — Program-startup action reddi pencere özelliklerini başlatmayabilir
+
+`src/hooks.ts:62-69`, `dispatchActionByEvent(...).then(...)` zincirini
+`await` etmiyor ve `.catch` eklemiyor. Kullanıcı action’larından biri reject
+ederse unhandled rejection oluşur ve zincirdeki `onMainWindowLoad(window)`
+çalışmaz. Startup tamamlanmış görünürken main-window özellikleri eksik kalabilir.
+
+**Cursor görevi:** pencere init’ini kullanıcı script başarısından ayır;
+dispatch hatasını yakala/logla, `finally` veya bağımsız awaited init kullan.
+Reject eden program-startup action entegrasyon testi ekle.
+
+### P2 — Feature flag’ler canlı reconcile edilmiyor
+
+`FeatureRegistry.isEnabled()` yalnız faz init edilirken pref okuyor.
+`onPrefsEvent` yalnız preference penceresini yüklüyor; pref observer veya
+`reconcileFeature(id)` yok. Özellik kapatıldığında observer/kolon/kaynak
+shutdown edilmez, açıldığında restart olmadan init edilmez.
+
+**Kabul:** her feature için off→on→off testinde init/shutdown birer kez; iki
+pencerede window-scope teardown doğru; shutdown sonrası pref observer kalmaz.
+
+### P2 — Vektör delete/prune ve bozuk-dosya kurtarması eksik
+
+Atomik temp→move ve RMW kuyruğu mevcut. Ancak
+`jsonVectorStore.removeJsonVectorRow()` runtime mutation API’sine bağlı değil;
+Zotero öğesi silindiğinde veya model/content sözleşmesi değiştiğinde eski satır
+kalıyor. Store yükleme hatasının kurtarma/karantina ve şema migrasyonu kabulü
+de görünür değil.
+
+**Cursor görevi:** serialized `remove/prune/rebuild`; item-delete notifier;
+model/schema/version invalidation; bozuk store’u `.corrupt-*` olarak koruyan
+kurtarma ve disk-dolu/move-failure testleri.
+
+### P2 — Dış servis URL’leri yerel sınırı aşabiliyor
+
+Semantic URL kullanıcı tercihi olarak doğrudan `Zotero.HTTP.request` hedefi
+oluyor. Anki host’u da şema/host/port sınırı olmadan endpoint’e ekleniyor.
+Opt-in olmak riski azaltır fakat yanlış ayar veya içe aktarılan pref, eklentiyi
+özel ağ/metadata servislerine istek atan bir SSRF aracına çevirebilir.
+
+**Cursor görevi:** varsayılan olarak yalnız loopback (`127.0.0.1`,
+`localhost`, `[::1]`) ve beklenen portlar; uzak host için açık risk onayı;
+yalnız `http/https`, kullanıcı bilgisi/fragment reddi; redirect sonrası hedef
+doğrulaması ve URL test matrisi.
+
+### P2 — Locale ve repository kimliği hâlâ upstream kalıntılı
+
+Locale anahtar sayıları: en-US/tr-TR `286 + 66`; it-IT `121 + 56`; zh-CN
+`122 + 56`. `.github/FUNDING.yml`, issue/discussion şablonları ve stale
+workflow’u hâlâ upstream `windingwind`/Actions & Tags ürününü tanıtıyor.
+Kullanıcıları yanlış finansman, tartışma ve destek kanalına yönlendirir.
+
+**Cursor görevi:** locale eşitlik testini CI’a ekle; fallback kullanılan
+anahtarları belgeli istisna yap. Upstream repository metadata’sını LibRart
+kimliğiyle değiştir veya gereksiz dosyaları ayrı açık onayla kaldır.
+
+### P2 — Vendored çalıştırılabilir kod denetimi zayıf
+
+`src/vendor/zotero-reference/**` tümüyle ESLint dışında ve
+`views.ts:528` dinamik `eval()` içeriyor. Güvenli import doğrulaması bu başka
+çalıştırma yolunu kapsamıyor.
+
+**Cursor görevi:** `eval` yolunu AST/izinli operation dispatcher ile değiştir;
+vendor için ayrı dar lint/semgrep kapısı ve çalıştırılabilir payload negatif
+testleri ekle.
+
+### Cursor için güncel uygulama sırası
+
+1. ~~Public `1.0.46` yayın + update kanalı~~ ✅
+2. Manuel Zotero kabul checklist doldur (`ZOTERO-KABUL-CHECKLIST.md`)
+3. Pref reconcile ve vektör remove/prune/kurtarma (P2)
+4. Loopback URL politikası ve vendored `eval` kaldırma (P2)
+5. Locale/repository metadata temizliği (P2)
+6. Gerçekçi 10k + feature-composition testleri (P2/P3)
+
+## Güncel durum — 2026-07-29 (P1 release)
+
+**Baseline:** `c85b705` + public **v1.0.46** · **Doğrulama:** 94 test · lint ✅ · update kanalı 1.0.46
+
+| Madde                                 | Durum | Not                                                                                                                     |
+| ------------------------------------- | ----- | ----------------------------------------------------------------------------------------------------------------------- |
+| Reading flow observer sızıntısı       | ✅    | `startup` + idempotans                                                                                                  |
+| Vektör farklı-item RMW                | ✅    | `vectorStoreMutate` + test                                                                                              |
+| Aynı-item stale embedding             | ✅    | generation token                                                                                                        |
+| Kök `update.json` tracked             | ✅    | untrack + gitignore                                                                                                     |
+| Prettier / lint kapısı                | ✅    |                                                                                                                         |
+| Public release v1.0.46                | ✅    | [releases/v1.0.46](https://github.com/sanaatchi/zotero-librart-pro-releases/releases/tag/v1.0.46) · update kanalı canlı |
+| Manuel Zotero kabul matrisi           | 🟡    | Şablon: [`ZOTERO-KABUL-CHECKLIST.md`](ZOTERO-KABUL-CHECKLIST.md) — doldurulması gerekir                                 |
+| Pref reconcile                        | ❌ P2 |                                                                                                                         |
+| Vektör delete/prune                   | ❌ P2 |                                                                                                                         |
+| Vendored `eval`                       | ❌ P2 |                                                                                                                         |
+| 10k gerçek ölçek                      | ❌ P2 | helper smoke var                                                                                                        |
+| Feature-composition (observer sayımı) | 🟡    | registry testi var                                                                                                      |
+| it-IT / zh-CN locale                  | 🟡    | build uyarısı                                                                                                           |
+
+**Sıradaki:** Zotero’da checklist doldur (özellikle #2 ikinci pencere + #9 update). Sonra P2.
 
 ---
 
@@ -483,7 +610,7 @@ GitHub'da şu anda gerçekleşmiş durumda. Release script'i düzeltilip bir son
 npm test && npm run lint:check && npm run build   ✅ (94 test)
 paralel vektör mutation + stale-generation testi  ✅
 kök update.json untrack                            ✅
-public v1.0.46 gh-release + Zotero update          ❌
-manuel Zotero kabul checklist                      ❌
+public v1.0.46 gh-release + update kanalı          ✅
+manuel Zotero kabul checklist şablonu              ✅ (doldurma açık)
 P2: pref reconcile, prune, eval, ölçek             ❌
 ```

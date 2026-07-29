@@ -1,6 +1,9 @@
-<!-- @ajan: cursor · @etiket: katman-3, librart, stabilizasyon, f9.2.3 -->
+<!-- @ajan: cursor · @etiket: katman-3, librart, stabilizasyon, eksik-raporu -->
 
 # Katman 3 — LibRart Pro planı (**aktif geliştirme**)
+
+> **Oturum başı:** [`CURSOR-KATMAN-3-EKSIKLER-RAPORU.md`](CURSOR-KATMAN-3-EKSIKLER-RAPORU.md) oku → düzelt → görev.  
+> Rule: `katman-eksik-raporu.mdc`
 
 **Strateji:** [`../../docs/uc-katman-stratejisi.md`](../../docs/uc-katman-stratejisi.md)
 
@@ -18,6 +21,7 @@
 | Belge                                                                      | İçerik                                |
 | -------------------------------------------------------------------------- | ------------------------------------- |
 | [`CURSOR-KATMAN-3-EKSIKLER-RAPORU.md`](CURSOR-KATMAN-3-EKSIKLER-RAPORU.md) | **Önce oku → düzelt → sonra özellik** |
+| [`ZOTERO-KABUL-CHECKLIST.md`](ZOTERO-KABUL-CHECKLIST.md)                   | Manuel Zotero kabul (P1)              |
 | [`LIBRART-GIRIS.md`](LIBRART-GIRIS.md)                                     | Giriş, isim haritası                  |
 | [`LIBRART-YAPILANDIRMA.md`](LIBRART-YAPILANDIRMA.md)                       | **Faz F0–F9**, pref, menü, test       |
 | [`LIBRART-REFERANS-PORT.md`](LIBRART-REFERANS-PORT.md)                     | Referans eklenti port, lisans         |
