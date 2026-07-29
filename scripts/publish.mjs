@@ -80,6 +80,35 @@ function writeUpdateFiles(xpiPath, xpiName) {
   writeFileSync("update-beta.json", body);
   console.log("Wrote update.json →", updateLink);
   console.log("update_hash →", updateHash);
+
+  const sourceCommit = execSync("git rev-parse HEAD", {
+    encoding: "utf8",
+    shell: true,
+  }).trim();
+  const ciRunId = process.env.GH_CI_RUN_ID || process.env.GITHUB_RUN_ID;
+  const ciRunUrl =
+    process.env.GH_CI_RUN_URL ||
+    (ciRunId
+      ? `https://github.com/${SOURCE_REPO}/actions/runs/${ciRunId}`
+      : undefined);
+  const provenance = {
+    addonID,
+    version,
+    tag,
+    sourceRepo: SOURCE_REPO,
+    sourceCommit,
+    sourceVisibility: process.env.GH_SOURCE_VISIBILITY || "public",
+    distRepo: DIST_REPO,
+    xpi: xpiName,
+    update_hash: updateHash,
+    update_link: updateLink,
+    builtAt: new Date().toISOString(),
+  };
+  if (ciRunId) provenance.ciRunId = String(ciRunId);
+  if (ciRunUrl) provenance.ciRunUrl = ciRunUrl;
+  writeFileSync("provenance.json", JSON.stringify(provenance, null, 2) + "\n");
+  console.log("Wrote provenance.json →", sourceCommit);
+  if (ciRunUrl) console.log("ciRunUrl →", ciRunUrl);
   return body;
 }
 
@@ -205,7 +234,7 @@ try {
 
 const notesEscaped = notes.replace(/"/g, '\\"');
 run(
-  `gh release create ${tag} "${xpiPath}" update.json ` +
+  `gh release create ${tag} "${xpiPath}" update.json provenance.json ` +
     `--repo ${DIST_REPO} --title "${tag}" --notes "${notesEscaped}"`,
 );
 
