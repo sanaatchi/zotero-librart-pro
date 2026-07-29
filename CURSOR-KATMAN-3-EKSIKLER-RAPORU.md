@@ -2,7 +2,7 @@
 
 # Cursor için Katman 3 eksik analizi
 
-**Tarih:** 2026-07-30 · **Sürüm:** v1.0.47 (+ P2 kod; patch release ayrı)  
+**Tarih:** 2026-07-30 · **Sürüm:** v1.0.48 (+ P2 kod; patch release ayrı)  
 **Durum:** P1 ✅. P2 kısmen kapandı. Checklist manuel. Pref live-reconcile açık.
 
 | Madde                         | Durum | Not                                              |
@@ -13,4 +13,4 @@
 | Vektör delete on trash/delete | ✅    | `removeItemEmbedding` + notify                   |
 | Vendored `eval()`             | 🟡    | Belgelendi; vendor lint-ignore; postMessage TODO |
 | Pref live reconcile           | ❌ P2 | Restart hâlâ gerekebilir                         |
-| Zotero checklist              | 🟡    | Şablon v1.0.47                                   |
+| Zotero checklist              | 🟡    | Şablon v1.0.48                                   |

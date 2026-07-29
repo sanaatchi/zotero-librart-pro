@@ -1,9 +1,9 @@
-<!-- @ajan: cursor · @etiket: katman-3, kabul, checklist, zotero, v1.0.47 -->
+<!-- @ajan: cursor · @etiket: katman-3, kabul, checklist, zotero, v1.0.48 -->
 
 # LibRart Pro — Zotero manuel kabul checklist
 
-**Sürüm:** 1.0.47 · **Kaynak:** `fd6847b` · [CI](https://github.com/sanaatchi/zotero-librart-pro/actions/runs/30496596733)  
-**XPI:** https://github.com/sanaatchi/zotero-librart-pro-releases/releases/tag/v1.0.47
+**Sürüm:** 1.0.48 · **Kaynak:** `b9173b2` · [CI](https://github.com/sanaatchi/zotero-librart-pro/actions/runs/30496596733)  
+**XPI:** https://github.com/sanaatchi/zotero-librart-pro-releases/releases/tag/v1.0.48
 
 | Alan   | Değer          |
 | ------ | -------------- |
@@ -21,7 +21,7 @@
 | 6   | Locale it/zh           | Ham ID yok (parity)    |       |       |
 | 7   | Semantic URL non-local | Reddedilir / loopback  |       |       |
 | 8   | Item sil → vektör      | Store satırı kalkar    |       |       |
-| 9   | Güncelleme             | v1.0.47                |       |       |
+| 9   | Güncelleme             | v1.0.48                |       |       |
 | 10  | Bağlantı Haritası      | Yüklenir               |       |       |
 
 - [ ] Manuel matris tamam → rapor checklist `✅`
