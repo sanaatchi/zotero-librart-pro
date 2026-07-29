@@ -31,6 +31,29 @@ type HighlightSnippet = {
   text: string;
 };
 
+/** BN/Zotero encode annotation & citation attrs with encodeURIComponent. */
+function tryDecodeAttrJson(raw: string): any | null {
+  if (!raw) return null;
+  let s = raw
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, "&")
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+  try {
+    if (/%[0-9A-Fa-f]{2}/.test(s)) {
+      s = decodeURIComponent(s);
+    }
+  } catch {
+    // keep entity-decoded string
+  }
+  try {
+    return JSON.parse(s);
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Parse native Zotero note citation spans.
  * Attribute order varies — find spans that carry data-citation and a citation class.
@@ -48,15 +71,9 @@ function extractCitationSpansFromNote(
     if (!/\bclass\s*=\s*"[^"]*\bcitation\b/i.test(attrs)) continue;
     const dataMatch = attrs.match(/\bdata-citation\s*=\s*"([^"]*)"/i);
     if (!dataMatch) continue;
-    let json = dataMatch[1];
     try {
-      json = json
-        .replace(/&quot;/g, '"')
-        .replace(/&amp;/g, "&")
-        .replace(/&#39;/g, "'")
-        .replace(/&lt;/g, "<")
-        .replace(/&gt;/g, ">");
-      const data = JSON.parse(json);
+      const data = tryDecodeAttrJson(dataMatch[1]);
+      if (!data) continue;
       const items = Array.isArray(data?.citationItems)
         ? data.citationItems
         : Array.isArray(data)
@@ -184,9 +201,15 @@ function extractSelectItemLinksFromNote(
 }
 
 function resolveNoteLink(href: string): Zotero.Item | null {
-  // Forms: zotero://note/u/KEY, zotero://note/g/GROUPID/KEY, …
+  // BN forms:
+  //   zotero://note/u/KEY/
+  //   zotero://note/g/GROUPID/KEY/   (legacy / docs)
+  //   zotero://note/{libraryId}/KEY/ (Better Notes actual group writer)
+  // Optional ?line= / ?section= / #selection
   try {
-    const m = href.match(/^zotero:\/\/note\/(?:u|g\/\d+)\/([A-Z0-9]+)/i);
+    const m = href.match(
+      /^zotero:\/\/note\/(?:u|g\/\d+|\d+)\/([A-Z0-9]+)/i,
+    );
     if (!m) return null;
     const key = m[1];
     const userLib = Zotero.Libraries.userLibraryID;

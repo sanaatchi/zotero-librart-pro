@@ -61,6 +61,8 @@ type ZotSeekApi = {
       itemId?: number;
       itemKey?: string;
       libraryId?: number;
+      libraryKey?: string;
+      itemPk?: number;
       similarity: number;
       title?: string;
     }>
@@ -98,6 +100,29 @@ function isZotSeekReady(): boolean {
   return isZotSeekAvailable();
 }
 
+function libraryIdFromZotSeekHit(
+  hit: { libraryId?: number; libraryKey?: string },
+  fallback: number,
+): number {
+  if (typeof hit.libraryId === "number" && hit.libraryId > 0) {
+    return hit.libraryId;
+  }
+  const key = hit.libraryKey;
+  if (key === "user") return Zotero.Libraries.userLibraryID;
+  const m = key?.match(/^group:(\d+)$/);
+  if (m) {
+    const gid = Number(m[1]);
+    // Prefer matching Zotero group library if present.
+    for (const lib of Zotero.Libraries.getAll()) {
+      if ((lib as any).groupID === gid || lib.libraryID === gid) {
+        return lib.libraryID;
+      }
+    }
+    return gid;
+  }
+  return fallback;
+}
+
 /**
  * Free-text semantic search via ZotSeek (highlight / draft proposal).
  */
@@ -116,8 +141,7 @@ async function searchByText(
   const cleaned = query.trim().replace(/\s+/g, " ");
   if (!cleaned) return [];
   // Long pasted paragraphs: embed the head — better recall, less noise.
-  const q =
-    cleaned.length > 900 ? cleaned.slice(0, 900) : cleaned;
+  const q = cleaned.length > 900 ? cleaned.slice(0, 900) : cleaned;
 
   const api = getZotSeekApi();
   if (!api?.search) {
@@ -143,12 +167,13 @@ async function searchByText(
     const seen = new Set<number>();
 
     for (const r of raw || []) {
-      let itemId: number | null = r.itemId ?? null;
+      // itemPk is ZotSeek-internal — never treat as Zotero id.
+      // itemId:-1 is a cache sentinel — treat as missing.
+      let itemId: number | null =
+        typeof r.itemId === "number" && r.itemId > 0 ? r.itemId : null;
       if (!itemId && r.itemKey) {
-        const got = Zotero.Items.getByLibraryAndKey(
-          r.libraryId ?? fallbackLibraryID,
-          r.itemKey,
-        );
+        const libId = libraryIdFromZotSeekHit(r, fallbackLibraryID);
+        const got = Zotero.Items.getByLibraryAndKey(libId, r.itemKey);
         if (got) {
           if (got.isRegularItem()) {
             itemId = got.id;
@@ -183,16 +208,23 @@ async function searchByText(
 }
 
 function resolveHitItemId(
-  hit: { itemId?: number; itemKey?: string; libraryId?: number },
+  hit: {
+    itemId?: number;
+    itemKey?: string;
+    libraryId?: number;
+    libraryKey?: string;
+  },
   fallbackLibraryID: number,
   nodeIDSet: Set<number>,
   keyToID: Map<string, number>,
 ): number | null {
-  if (hit.itemId && nodeIDSet.has(hit.itemId)) return hit.itemId;
+  if (hit.itemId && hit.itemId > 0 && nodeIDSet.has(hit.itemId)) {
+    return hit.itemId;
+  }
   if (hit.itemKey) {
     const fromMap = keyToID.get(hit.itemKey);
     if (fromMap && nodeIDSet.has(fromMap)) return fromMap;
-    const lib = hit.libraryId ?? fallbackLibraryID;
+    const lib = libraryIdFromZotSeekHit(hit, fallbackLibraryID);
     const item = Zotero.Items.getByLibraryAndKey(lib, hit.itemKey);
     if (item && item.isRegularItem() && nodeIDSet.has(item.id)) {
       return item.id;
