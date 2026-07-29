@@ -9,9 +9,6 @@ import {
   initItemMenu,
   initReaderAnnotationMenu,
   initReaderMenu,
-  initTagDashboardMenu,
-  initConnectionMapMenu,
-  initRatingMenu,
 } from "./modules/menu";
 import { registerRatingColumn } from "./utils/rating";
 import { editAction } from "./modules/edit";
@@ -71,9 +68,6 @@ async function onStartup() {
 
 async function onMainWindowLoad(win: Window): Promise<void> {
   initItemMenu(win);
-  initTagDashboardMenu();
-  initConnectionMapMenu();
-  initRatingMenu();
   await addon.api.actionManager.dispatchActionByEvent(
     ActionEventTypes.mainWindowLoad,
     {

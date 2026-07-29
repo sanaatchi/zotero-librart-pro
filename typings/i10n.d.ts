@@ -90,6 +90,7 @@ export type FluentMessageId =
   | 'menu-connection-map'
   | 'menu-rating'
   | 'menu-rating-clear'
+  | 'menu-root'
   | 'menu-sort'
   | 'menu-sort-menuLabel'
   | 'menu-sort-name'

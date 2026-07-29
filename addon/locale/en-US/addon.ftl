@@ -1,5 +1,6 @@
 prefs-title = Eylemler ve Etiketler
 
+menu-root = Eylemler ve Etiketler
 menu-rating = Puanla
 menu-rating-clear = Puanı Temizle
 

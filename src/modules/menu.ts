@@ -7,21 +7,28 @@ import { getCurrentItems, getItemIDsByKey } from "../utils/items";
 import { getIcon } from "../utils/icon";
 import { setRating, ratingStars } from "../utils/rating";
 
-export {
-  initItemMenu,
-  initReaderMenu,
-  initReaderAnnotationMenu,
-  buildItemMenu,
-  initTagDashboardMenu,
-  initConnectionMapMenu,
-  initRatingMenu,
-};
+export { initItemMenu, initReaderMenu, initReaderAnnotationMenu, buildItemMenu };
 
-function initRatingMenu() {
-  const menuId = `${config.addonRef}-rating-menu`;
-  if (ztoolkit.getGlobal("document")?.getElementById(menuId)) {
-    return;
-  }
+/** "Eylem Tetikle" nested submenu — dynamic, populated by buildItemMenu() on popupshowing. */
+function actionsMenuChild(target: "item" | "collection" | "tools") {
+  return {
+    tag: "menu" as const,
+    popupId: `${config.addonRef}-${target}-popup`,
+    label: getString("menupopup-label"),
+    icon: `chrome://${config.addonRef}/content/icons/favicon.png`,
+    onpopupshowing: `Zotero.${config.addonInstance}.hooks.onMenuEvent("showing", { window, target: "${target}" })`,
+    children: [
+      {
+        tag: "menuitem" as const,
+        label: getString("menupopup-placeholder"),
+        disabled: true,
+      },
+    ],
+  };
+}
+
+/** "Puanla" nested submenu — 5 stars + clear, item-scoped. */
+function ratingMenuChild() {
   const starItems = [1, 2, 3, 4, 5].map((n) => ({
     tag: "menuitem" as const,
     label: ratingStars(n),
@@ -33,15 +40,14 @@ function initRatingMenu() {
       for (const item of items) await setRating(item, n);
     },
   }));
-  ztoolkit.Menu.register("item", {
-    tag: "menu",
-    id: menuId,
+  return {
+    tag: "menu" as const,
     label: getString("menu-rating"),
     icon: `chrome://${config.addonRef}/content/icons/favicon.png`,
     children: [
       ...starItems,
       {
-        tag: "menuitem",
+        tag: "menuitem" as const,
         label: getString("menu-rating-clear"),
         commandListener: async () => {
           const items = Zotero.getActiveZoteroPane()
@@ -52,84 +58,57 @@ function initRatingMenu() {
         },
       },
     ],
-  });
+  };
 }
 
-function initTagDashboardMenu() {
-  const menuId = `${config.addonRef}-tag-dashboard-menu`;
-  if (ztoolkit.getGlobal("document")?.getElementById(menuId)) {
-    return;
-  }
-  ztoolkit.Menu.register("menuTools", {
-    tag: "menuitem",
-    id: menuId,
+function tagDashboardMenuChild() {
+  return {
+    tag: "menuitem" as const,
     label: getString("menu-tag-dashboard"),
-    icon: `chrome://${config.addonRef}/content/icons/favicon.png`,
     commandListener: () => {
       addon.hooks.onOpenTagDashboard();
     },
-  });
+  };
 }
 
-function initConnectionMapMenu() {
-  const menuId = `${config.addonRef}-connection-map-menu`;
-  if (ztoolkit.getGlobal("document")?.getElementById(menuId)) {
-    return;
-  }
-  ztoolkit.Menu.register("menuTools", {
-    tag: "menuitem",
-    id: menuId,
+function connectionMapMenuChild() {
+  return {
+    tag: "menuitem" as const,
     label: getString("menu-connection-map"),
-    icon: `chrome://${config.addonRef}/content/icons/favicon.png`,
     commandListener: () => {
       addon.hooks.onOpenConnectionMap();
     },
-  });
+  };
 }
 
+/**
+ * One consolidated "Eylemler ve Etiketler" entry per context (item
+ * right-click, Tools menu) instead of scattering each feature as its own
+ * top-level menu item — everything the plugin can do lives under a single
+ * parent, with room for future features (v3+) to slot in as new children.
+ */
 function initItemMenu(win: Window) {
+  const rootIcon = `chrome://${config.addonRef}/content/icons/favicon.png`;
+
   ztoolkit.Menu.register("item", {
     tag: "menu",
-    popupId: `${config.addonRef}-item-popup`,
-    label: getString("menupopup-label"),
-    icon: `chrome://${config.addonRef}/content/icons/favicon.png`,
-    onpopupshowing: `Zotero.${config.addonInstance}.hooks.onMenuEvent("showing", { window, target: "item" })`,
-    children: [
-      {
-        tag: "menuitem",
-        label: getString("menupopup-placeholder"),
-        disabled: true,
-      },
-    ],
+    id: `${config.addonRef}-root-item-menu`,
+    label: getString("menu-root"),
+    icon: rootIcon,
+    children: [actionsMenuChild("item"), ratingMenuChild()],
   });
 
-  ztoolkit.Menu.register("collection", {
-    tag: "menu",
-    popupId: `${config.addonRef}-collection-popup`,
-    label: getString("menupopup-label"),
-    icon: `chrome://${config.addonRef}/content/icons/favicon.png`,
-    onpopupshowing: `Zotero.${config.addonInstance}.hooks.onMenuEvent("showing", { window, target: "collection" })`,
-    children: [
-      {
-        tag: "menuitem",
-        label: getString("menupopup-placeholder"),
-        disabled: true,
-      },
-    ],
-  });
+  ztoolkit.Menu.register("collection", actionsMenuChild("collection"));
 
   ztoolkit.Menu.register("menuTools", {
     tag: "menu",
-    popupId: `${config.addonRef}-tools-popup`,
-    label: getString("menupopup-label"),
-    icon: `chrome://${config.addonRef}/content/icons/favicon.png`,
-    onpopupshowing: `Zotero.${config.addonInstance}.hooks.onMenuEvent("showing", { window, target: "tools" })`,
+    id: `${config.addonRef}-root-tools-menu`,
+    label: getString("menu-root"),
+    icon: rootIcon,
     children: [
-      {
-        tag: "menuitem",
-        label: getString("menupopup-placeholder"),
-        disabled: true,
-      },
+      actionsMenuChild("tools"),
+      tagDashboardMenuChild(),
+      connectionMapMenuChild(),
     ],
   });
 }
