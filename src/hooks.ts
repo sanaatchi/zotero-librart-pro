@@ -40,6 +40,10 @@ async function onStartup() {
 
   initLocale();
 
+  if (Zotero.Prefs.get(`${config.prefsPrefix}.inciteful.enabled`, true) === undefined) {
+    Zotero.Prefs.set(`${config.prefsPrefix}.inciteful.enabled`, true, true);
+  }
+
   initActions();
 
   initNotifierObserver();

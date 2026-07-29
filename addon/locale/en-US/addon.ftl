@@ -59,6 +59,13 @@ message-save-action-warning = Bu betik `ZoteroPane.getSelectedItems` kullanıyor
 menu-tag-dashboard = Etiket Analizi
 menu-connection-map = Bağlantı Haritası
 
+inciteful-menu-root = Inciteful Tools
+inciteful-menu-search = Graph Search (Inciteful)
+inciteful-menu-connector = Connect Papers (Inciteful)
+inciteful-menu-collection-search = Graph Search using Inciteful
+inciteful-error-no-item = Seçili öğelerde DOI veya URL bulunamadı.
+inciteful-error-too-many = Connect Papers için en fazla iki öğe seçin.
+
 connection-map-title = Bağlantı Haritası
 connection-map-subtitle = { $library } · { $items } yayın · { $edges } bağlantı
 connection-map-loading = Bağlantılar hesaplanıyor…

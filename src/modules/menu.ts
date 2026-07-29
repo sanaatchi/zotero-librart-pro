@@ -6,6 +6,7 @@ import { ActionData, ActionShowInMenu } from "../utils/actions";
 import { getCurrentItems, getItemIDsByKey } from "../utils/items";
 import { getIcon } from "../utils/icon";
 import { setRating, ratingStars } from "../utils/rating";
+import { initIncitefulMenus } from "./incitefulBridge";
 
 export { initItemMenu, initReaderMenu, initReaderAnnotationMenu, buildItemMenu };
 
@@ -111,6 +112,8 @@ function initItemMenu(win: Window) {
       connectionMapMenuChild(),
     ],
   });
+
+  initIncitefulMenus();
 }
 
 async function initReaderMenu() {
