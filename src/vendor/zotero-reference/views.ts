@@ -1529,7 +1529,9 @@ export default class Views {
                     clearNode.style.display = "none";
                   }
                   //   let text = (event.target as any).value
-                  const keywords = keyword.split(/[ ,，]/).filter((e: any) => e);
+                  const keywords = keyword
+                    .split(/[ ,，]/)
+                    .filter((e: any) => e);
                   ztoolkit.log(keywords);
                   node
                     .querySelectorAll("#related-grid *")

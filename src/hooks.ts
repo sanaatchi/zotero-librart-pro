@@ -1,4 +1,4 @@
-// @ajan: cursor · @etiket: f1, hooks, feature-registry
+// @ajan: cursor · @etiket: f1, hooks, feature-registry, multi-window
 import { config, homepage } from "../package.json";
 import { getString, initLocale } from "./utils/locale";
 import { initPrefPane } from "./modules/preferenceWindow";
@@ -75,6 +75,7 @@ async function onMainWindowLoad(win: Window): Promise<void> {
 }
 
 async function onMainWindowUnload(win: Window): Promise<void> {
+  getFeatureRegistry().unloadWindow(win);
   await addon.api.actionManager.dispatchActionByEvent(
     ActionEventTypes.mainWindowUnload,
     { window: win },

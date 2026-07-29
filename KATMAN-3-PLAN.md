@@ -1,4 +1,4 @@
-<!-- @ajan: cursor · @etiket: katman-3, librart, aktif, f5.2 -->
+<!-- @ajan: cursor · @etiket: katman-3, librart, stabilizasyon, f9.2.3 -->
 
 # Katman 3 — LibRart Pro planı (**aktif geliştirme**)
 
@@ -7,7 +7,7 @@
 | Alan    | Değer                                                        |
 | ------- | ------------------------------------------------------------ |
 | addonID | `librartpro@euclpts.com`                                     |
-| Sürüm   | 1.0.45                                                       |
+| Sürüm   | 1.0.46                                                       |
 | Girdi   | Katman 2’den temiz Zotero kayıtları + PDF ekleri             |
 | Amaç    | Makale yazarken: harita, etiket, atıf, okuma, bağlantı kurma |
 
@@ -30,13 +30,14 @@
 
 ## Şu an: ne yapıyoruz?
 
-**Katman 3 — LibRart Pro.** F0–**F9.2.3** + F8 + F5.2b + Citegeist ✅.
-İsteğe bağlı: **Katman 1** köprü.
+**Katman 3 — LibRart Pro.** F0–**F9.2.3** özellik çekirdeği ✅ + stabilizasyon
+(v1.0.46: çoklu pencere registry, lint kapısı, atomik vektör yazımı, 10k smoke).
+Kalan: Zotero içinde manuel ikinci pencere / pref / shutdown.
 
 ```bash
 cd zotero-eklentiler/kaynak
 npm run fetch:zotseek-assets && npm run build:worker   # gömülü embed
-npm test && npm run build
+npm test && npm run lint:check && npm run build
 ```
 
 ---

@@ -21,7 +21,7 @@ Katman 1 (Kütüphane + köprü) ve Katman 2 (PDF Manager) sonrası kullanılır
 
 ## Hızlı cevaplar
 
-- **Sıradaki iş ne?** → `LIBRART-YAPILANDIRMA.md` § Sonraki adım (şu an **F7**)
+- **Sıradaki iş ne?** → `LIBRART-YAPILANDIRMA.md` § Sonraki adım (çekirdek F0–F9 ✅; manuel Zotero doğrulama)
 - **Bu depodan kod kopyalayabilir miyim?** → `LIBRART-REFERANS-PORT.md` § Lisans
 - **Hangi upstream dosya nereye?** → `LIBRART-REFERANS-PORT.md` § Modül eşlemesi
 - **91 klon envanteri** → `../README.md` (liste only; karar burada değil)

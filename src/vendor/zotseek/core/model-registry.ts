@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-nocheck — upstream ZotSeek model registry (chrome:// asset paths)
 /**
  * Model registry: selectable local embedding models (ZotSeek MIT, remapped).
  * @ajan: cursor · @etiket: f9.2.2, zotseek, model-registry

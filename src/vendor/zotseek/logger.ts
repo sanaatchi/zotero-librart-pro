@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-nocheck — upstream ZotSeek logger adapted for LibRart
 // @ajan: cursor · @etiket: f9.2.2, zotseek, logger
 // Adapted from ZotSeek (MIT) src/utils/logger.ts — LibRart prefix + BasicTool import.
 

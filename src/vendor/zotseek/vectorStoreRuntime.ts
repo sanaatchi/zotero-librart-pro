@@ -1,4 +1,4 @@
-// @ajan: cursor · @etiket: f9.2.3, zotseek, vector-runtime
+// @ajan: cursor · @etiket: f9.2.3, zotseek, vector-runtime, atomic-io
 // Disk-backed JSON vectors + optional EmbeddingPipeline for index/findSimilar.
 
 import { EmbeddingPipeline } from "./core/embedding-pipeline";
@@ -11,6 +11,7 @@ import {
   listJsonVectorRows,
   upsertJsonVectorRow,
 } from "./jsonVectorStore";
+import { createSerialQueue } from "./serialQueue";
 import { topKSimilar } from "./vectorMath";
 
 export {
@@ -21,6 +22,7 @@ export {
 };
 
 const STORE_FILE = "librart-zotseek-vectors.json";
+const writeQueue = createSerialQueue();
 
 let pipeline: EmbeddingPipeline | null = null;
 let pipelineInitFailed = false;
@@ -28,6 +30,10 @@ let memoryStore: JsonVectorStoreFile | null = null;
 
 function storePath(): string {
   return PathUtils.join(Zotero.DataDirectory.dir, STORE_FILE);
+}
+
+function storeTmpPath(): string {
+  return `${storePath()}.tmp`;
 }
 
 async function loadStore(): Promise<JsonVectorStoreFile> {
@@ -51,11 +57,26 @@ async function loadStore(): Promise<JsonVectorStoreFile> {
 
 async function saveStore(store: JsonVectorStoreFile): Promise<void> {
   memoryStore = store;
-  try {
-    await IOUtils.writeJSON(storePath(), store);
-  } catch (e) {
-    ztoolkit.log("[LibRart:ZotSeek] vector store save failed", e);
-  }
+  await writeQueue(async () => {
+    const path = storePath();
+    const tmp = storeTmpPath();
+    try {
+      await IOUtils.writeJSON(tmp, store);
+      if (await IOUtils.exists(path)) {
+        await IOUtils.move(tmp, path);
+      } else {
+        // move into place even if destination is missing
+        await IOUtils.move(tmp, path);
+      }
+    } catch (e) {
+      try {
+        if (await IOUtils.exists(tmp)) await IOUtils.remove(tmp);
+      } catch {
+        /* ignore cleanup */
+      }
+      ztoolkit.log("[LibRart:ZotSeek] vector store save failed", e);
+    }
+  });
 }
 
 function extractItemEmbedText(item: Zotero.Item): string {

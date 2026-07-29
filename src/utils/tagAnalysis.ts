@@ -1,3 +1,4 @@
+// @ajan: cursor · @etiket: tags, fold, lint
 export type TagCategory = "concept" | "person" | "place" | "system";
 
 export type TagStat = {
@@ -106,16 +107,15 @@ export { similarity };
 
 export function foldTag(s: string): string {
   let out = (s || "").normalize("NFKC").toLocaleLowerCase("tr").trim();
-  const map: Record<string, string> = {
-    ı: "i",
-    i̇: "i",
-    ş: "s",
-    ğ: "g",
-    ü: "u",
-    ö: "o",
-    ç: "c",
-  };
-  out = out.replace(/[ıi̇şğüöç]/g, (ch) => map[ch] || ch);
+  // Avoid combined chars in a character class (eslint no-misleading-character-class).
+  out = out
+    .replace(/\u0131/g, "i")
+    .replace(/i\u0307/g, "i")
+    .replace(/ş/g, "s")
+    .replace(/ğ/g, "g")
+    .replace(/ü/g, "u")
+    .replace(/ö/g, "o")
+    .replace(/ç/g, "c");
   out = out.replace(/[\s_\-–—/]+/g, " ");
   return out.replace(/\s+/g, " ").trim();
 }

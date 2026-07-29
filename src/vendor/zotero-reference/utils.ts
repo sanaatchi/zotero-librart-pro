@@ -106,7 +106,9 @@ class Utils {
         authorInfo = authorInfo.split("et al.")[0] + "et al.";
       }
       const currentYear = new Date().getFullYear();
-      const res = text.match(/[^\d]\d{4}[^\d-]/g)?.map((s) => s.match(/\d+/)![0]);
+      const res = text
+        .match(/[^\d]\d{4}[^\d-]/g)
+        ?.map((s) => s.match(/\d+/)![0]);
       const year = res?.find((s) => {
         return Number(s) <= Number(currentYear) + 1;
       })!;

@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-nocheck — upstream ZotSeek embedding pipeline (ChromeWorker + ONNX)
 // Adapted from ZotSeek (MIT) src/core/embedding-pipeline.ts
 import { Logger } from "../logger";
 import {
@@ -37,7 +37,10 @@ export class EmbeddingPipeline {
   private workerReady = false;
   private pendingJobs = new Map<
     string,
-    { resolve: Function; reject: Function }
+    {
+      resolve: (value: EmbeddingResult) => void;
+      reject: (reason?: unknown) => void;
+    }
   >();
   private ready = false;
   // In-flight init() promise so N concurrent cold-start callers share a single

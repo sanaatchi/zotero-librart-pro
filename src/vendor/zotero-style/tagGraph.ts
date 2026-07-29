@@ -21,7 +21,7 @@ export function getTagCooccurrencePairs(
   items.forEach((item) => {
     const values = getArr(item);
     values.forEach((value: string) => {
-      if (!sharedValues.hasOwnProperty(value)) {
+      if (!Object.prototype.hasOwnProperty.call(sharedValues, value)) {
         sharedValues[value] = { items: new Set() };
       }
       sharedValues[value].items.add(item);

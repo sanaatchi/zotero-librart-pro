@@ -18,7 +18,7 @@ Giriş: [`LIBRART-GIRIS.md`](LIBRART-GIRIS.md) · Koordinasyon: [`AGENTS.md`](AG
 | addonID      | `librartpro@euclpts.com`                     |
 | Kaynak repo  | `sanaatchi/zotero-librart-pro` (= bu klasör) |
 | Release repo | `sanaatchi/zotero-librart-pro-releases`      |
-| Sürüm        | 1.0.40                                       |
+| Sürüm        | 1.0.46                                       |
 | Lisans       | AGPL-3.0-or-later                            |
 
 | Klasör / dosya            | Rol                                         |
@@ -31,14 +31,14 @@ Giriş: [`LIBRART-GIRIS.md`](LIBRART-GIRIS.md) · Koordinasyon: [`AGENTS.md`](AG
 
 ### Mevcut özellik durumu
 
-| Alan                            | Durum                                                                                  |
-| ------------------------------- | -------------------------------------------------------------------------------------- |
-| Bağlantı Haritası katmanları    | `tag` ✅ · `manual` ✅ · `semantic` kısmi · `note` kısmi · `citation` kısmi (Crossref) |
-| Inciteful, PDF kaynakça çıkarma | ✅                                                                                     |
-| Test (`npm test`)               | ✅ Vitest — F0 (12 test)                                                               |
-| Planlanmış modüller             | `readingTracker`, `markdbBridge`, `openAlexCitationLayer`, …                           |
-| Güvenli import (F2)             | ✅                                                                                     |
-| DOCX cited (F3)                 | ✅                                                                                     |
+| Alan                            | Durum                                                                                                       |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Bağlantı Haritası katmanları    | `tag` ✅ · `manual` ✅ · `semantic` ✅ (JSON indeks) · `note` ✅ · `citation` ✅ (Crossref + OpenAlex + OC) |
+| Inciteful, PDF kaynakça çıkarma | ✅                                                                                                          |
+| Test (`npm test`)               | ✅ Vitest — **90 test** (F0 + ölçek smoke)                                                                  |
+| Tamamlanan modüller             | reading flow, markdb, Anki, OpenAlex/OC, ZotSeek JSON vektör, Citegeist                                     |
+| Güvenli import (F2)             | ✅                                                                                                          |
+| DOCX cited (F3)                 | ✅                                                                                                          |
 
 ---
 
@@ -198,10 +198,11 @@ yıkıcı dosya işlemi varsayılan kapalı.
 
 ## 7. Sonraki adım
 
-**Şimdi:** çekirdek F0–F9 kapandı; isteğe bağlı **Katman 1** köprü veya Citegeist genişletme.
-F8.2.2 ilgili notlar tamam (v1.0.40).
+**Şimdi:** F0–F9 özellik çekirdeği + stabilizasyon (v1.0.46): çoklu pencere
+`FeatureRegistry`, vendor-aware lint, atomik/kuyruklu JSON vektör yazımı, 10k smoke.
+Manuel Zotero: ikinci pencere / pref / shutdown doğrulaması.
 
-**Sonra:** tam BN workspace chrome. F6 → Katman 2 PDF Manager.
+**Sonra:** tam BN workspace chrome; Citegeist sütun/pane (isteğe bağlı). F6 → Katman 2.
 
 Port gerektiren fazlarda önce [`LIBRART-REFERANS-PORT.md`](LIBRART-REFERANS-PORT.md) lisans
 kontrolü, sonra `LIBRART-VENDOR.md` satırı.
@@ -238,6 +239,7 @@ hattında kalır (`_scan_disk_pdfs.py`, pipeline, KP).
 
 | Tarih      | Ajan   | Özet                                                           |
 | ---------- | ------ | -------------------------------------------------------------- |
+| 2026-07-29 | cursor | Stabilizasyon: multi-window registry, lint, atomic vector, 10k |
 | 2026-07-29 | cursor | F9.2.3 JSON vector index + map semantic path                   |
 | 2026-07-29 | cursor | F9.2.2 ZotSeek chrome remap + asset probe + fetch/build:worker |
 | 2026-07-29 | cursor | F5.2b OC disk cache + Citegeist thin summary                   |
