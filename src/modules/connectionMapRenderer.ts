@@ -1287,12 +1287,13 @@ function stepForces(st: RendererState) {
     return;
   }
 
-  // Soft, elastic layout: weak springs + light damping so nodes drift together slowly.
-  const repulsion = 1600;
+  // Soft, elastic layout: weak springs + mild repulsion (capped so collisions don't fling).
+  const repulsion = 450;
   const spring = 0.012;
   const springLen = 150;
   const centering = 0.003;
   const damp = 0.93;
+  const maxRepulse = 2.5;
 
   let cx = 0;
   let cy = 0;
@@ -1316,7 +1317,9 @@ function stepForces(st: RendererState) {
         dist2 = dx * dx + dy * dy;
       }
       const dist = Math.sqrt(dist2);
-      const force = repulsion / dist2;
+      // Soften close-range spikes: clamp 1/r² so overlaps nudge instead of fling.
+      let force = repulsion / dist2;
+      if (force > maxRepulse) force = maxRepulse;
       const fx = (dx / dist) * force;
       const fy = (dy / dist) * force;
       a.vx += fx;
