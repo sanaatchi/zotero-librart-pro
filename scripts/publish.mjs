@@ -160,9 +160,16 @@ try {
         `--title "update manifest" --notes "Stable Zotero auto-update manifest."`,
     );
   }
-  run(
-    `gh release upload update update.json --repo ${DIST_REPO} --clobber`,
-  );
+  // delete+reupload beats GitHub's clobber CDN cache on same-named assets
+  try {
+    execSync(
+      `gh release delete-asset update update.json --repo ${DIST_REPO} --yes`,
+      { stdio: "ignore" },
+    );
+  } catch {
+    /* first upload */
+  }
+  run(`gh release upload update update.json --repo ${DIST_REPO}`);
 } catch (e) {
   console.warn("Dedicated update release sync skipped:", e.message || e);
 }
