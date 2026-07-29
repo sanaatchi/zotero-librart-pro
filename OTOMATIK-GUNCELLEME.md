@@ -1,11 +1,20 @@
-# Otomatik güncelleme
+# Güncelleme (elle tetikleme)
 
-Elle XPI yeniden kurmaya gerek yok. Zotero, eklenti içindeki `update_url` üzerinden yeni sürümü bulur.
+Kaynak **private**; Zotero güncellemesi için yalnızca `.xpi` + `update.json` **public** release reposunda tutulur.
 
 | Repo | Görünürlük | İçerik |
 |---|---|---|
 | `sanaatchi/zotero-librart-pro` | Private | Kaynak |
-| `sanaatchi/zotero-librart-pro-releases` | **Public** | `.xpi` + `update.json` |
+| `sanaatchi/zotero-librart-pro-releases` | **Public** | `.xpi` + `update.json` (kaynak kod yok) |
+
+## Elle güncelleme (Zotero içinden)
+
+1. Yayın: `npm run gh-release` (aşağıya bakın).
+2. Zotero → **Araçlar → Eklentiler** → ⚙ → **Güncellemeleri denetle**.
+
+Otomatik arka plan kontrolünü kapatmak için (isteğe bağlı): `about:config` →  
+`extensions.update.enabled` = **false**  
+Böylece yalnızca sen ⚙ menüsünden denediğinde güncelleme aranır.
 
 ## Kanal
 
