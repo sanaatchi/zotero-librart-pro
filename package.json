@@ -1,6 +1,6 @@
 {
   "name": "zotero-actions-tags",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "description": "Eylem tetikle, etiketle, düzenle. Etiket Analizi ve Bağlantı Haritası dahil.",
   "config": {
     "addonName": "Eylemler ve Etiketler",
@@ -9,7 +9,7 @@
     "addonInstance": "ActionsTags",
     "prefsPrefix": "extensions.actionsTags",
     "releasePage": "https://github.com/sanaatchi/eylemler-ve-etiketler-releases/releases",
-    "updateJSON": "https://raw.githubusercontent.com/sanaatchi/eylemler-ve-etiketler-releases/main/update.json"
+    "updateJSON": "https://cdn.jsdelivr.net/gh/sanaatchi/eylemler-ve-etiketler-releases@main/update.json"
   },
   "main": "src/index.ts",
   "scripts": {

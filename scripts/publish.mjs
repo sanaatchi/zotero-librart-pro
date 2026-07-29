@@ -148,6 +148,15 @@ run(
 
 publishUpdateJsonToBranch(updateBody);
 
+// Bust jsDelivr CDN so update_url clients see the new manifest immediately.
+try {
+  run(
+    `curl -s "https://purge.jsdelivr.net/gh/sanaatchi/eylemler-ve-etiketler-releases@main/update.json"`,
+  );
+} catch (e) {
+  console.warn("jsDelivr purge skipped:", e.message || e);
+}
+
 // Also clobber update.json on the previous release asset name path used by
 // older installs that still point at /releases/latest/download/update.json.
 // Uploading a matching file onto the Latest release is already done above;
