@@ -1,3 +1,4 @@
+// @ajan: cursor · @etiket: connection-semantic, f9, kutuphane, f9.2.3
 import {
   GraphEdge,
   GraphNode,
@@ -9,10 +10,13 @@ import {
   isKutuphaneSemanticReady,
   searchKutuphaneSemantic,
   buildKpIndex,
+  isZotSeekSemanticEnabled,
+  mapHitsToItemIds,
 } from "./kutuphaneSemanticBridge";
 import {
   isVendoredZotSeekConfigured,
   isVendoredZotSeekReady,
+  vendoredFindSimilar,
 } from "../vendor/zotseek/vendoredSemantic";
 
 export {
@@ -33,6 +37,7 @@ async function isSemanticLayerReady(): Promise<boolean> {
   if (isKutuphaneSemanticConfigured() && (await isKutuphaneSemanticReady())) {
     return true;
   }
+  if (!isZotSeekSemanticEnabled()) return false;
   if (isVendoredZotSeekConfigured() && (await isVendoredZotSeekReady())) {
     return true;
   }
@@ -97,6 +102,7 @@ type ZotSeekApi = {
 };
 
 function getZotSeekApi(): ZotSeekApi | null {
+  if (!isZotSeekSemanticEnabled()) return null;
   // Soft dependency — ZotSeek attaches itself to the Zotero global.
   try {
     const zotseek = (Zotero as any).ZotSeek;
@@ -182,18 +188,11 @@ async function searchTextViaKutuphane(
     candidateIDs = new Set(allItems.map((i) => i.id));
   }
   const kpIndex = buildKpIndex(candidateIDs);
-  const excluded = new Set(options.excludeItemIds || []);
-
-  const seen = new Set<number>();
-  const out: Array<{ itemId: number; similarity: number; title?: string }> =
-    [];
-  for (const hit of hits) {
-    const itemID = kpIndex.get(hit.kpId.toUpperCase());
-    if (!itemID || seen.has(itemID) || excluded.has(itemID)) continue;
-    seen.add(itemID);
-    out.push({ itemId: itemID, similarity: hit.score, title: hit.text });
-  }
-  return out;
+  const excluded = options.excludeItemIds || [];
+  return mapHitsToItemIds(hits, kpIndex, {
+    excludeItemIds: excluded,
+    minScore: options.minSimilarity,
+  });
 }
 
 /**
@@ -220,9 +219,10 @@ async function searchByText(
   if (isKutuphaneSemanticConfigured() && (await isKutuphaneSemanticReady())) {
     const kutuphaneHits = await searchTextViaKutuphane(q, options);
     if (kutuphaneHits.length) return kutuphaneHits;
-    // Empty result: fall through to ZotSeek rather than reporting "no match"
-    // when Kutuphane simply has no coverage for this query.
+    // Empty: fall through to ZotSeek only when explicitly enabled.
   }
+
+  if (!isZotSeekSemanticEnabled()) return [];
 
   const api = getZotSeekApi();
   if (!api?.search) {
@@ -425,8 +425,7 @@ async function computeSemanticSuggestionsViaKutuphane(
 }
 
 /**
- * Approximation: suggest edge(A,B) if B ∈ findSimilar(A) OR A ∈ findSimilar(B)
- * (asymmetric union). No pairwise-similarity primitive exists on ZotSeek.
+ * Prefer Kutuphane → vendored ZotSeek JSON index → external ZotSeek plugin.
  */
 async function computeSemanticSuggestions(
   nodes: Map<number, GraphNode>,
@@ -436,6 +435,10 @@ async function computeSemanticSuggestions(
     return computeSemanticSuggestionsViaKutuphane(nodes, options);
   }
 
+  if (isZotSeekSemanticEnabled() && (await isVendoredZotSeekReady())) {
+    return computeSemanticSuggestionsViaVendored(nodes, options);
+  }
+
   if (!isZotSeekReady()) {
     return { available: false, edges: [] };
   }
@@ -443,7 +446,110 @@ async function computeSemanticSuggestions(
   if (!api?.findSimilar) {
     return { available: false, edges: [] };
   }
+  return computeSemanticSuggestionsViaExternal(nodes, options, api);
+}
 
+async function computeSemanticSuggestionsViaVendored(
+  nodes: Map<number, GraphNode>,
+  options: ComputeSemanticOptions,
+): Promise<SemanticSuggestionResult> {
+  const {
+    topK = 5,
+    minSimilarity = 0.45,
+    maxQueries = 80,
+    seedItemIDs,
+    cache,
+    dismissedIds,
+    relatedPairs,
+    onProgress,
+  } = options;
+
+  let queryIDs = seedItemIDs?.length
+    ? seedItemIDs.filter((id) => nodes.has(id))
+    : [...nodes.keys()];
+  if (queryIDs.length > maxQueries) {
+    queryIDs = queryIDs
+      .map((id) => ({ id, tagCount: nodes.get(id)?.tagCount ?? 0 }))
+      .sort((a, b) => b.tagCount - a.tagCount)
+      .slice(0, maxQueries)
+      .map((x) => x.id);
+  }
+
+  const candidates = [...nodes.keys()];
+  const pairBest = new Map<string, { a: number; b: number; score: number }>();
+
+  for (let i = 0; i < queryIDs.length; i++) {
+    const itemID = queryIDs[i];
+    onProgress?.(i, queryIDs.length);
+
+    let results: SemanticCacheEntry[] | undefined = cache?.get(itemID);
+    if (!results) {
+      try {
+        const raw = await vendoredFindSimilar(itemID, {
+          topK,
+          minSimilarity,
+          excludeItemIds: [itemID],
+          candidateItemIds: candidates,
+        });
+        results = raw.map((r) => ({
+          itemId: r.itemId,
+          similarity: r.similarity,
+        }));
+        cache?.set(itemID, results);
+      } catch (e) {
+        ztoolkit.log("Vendored findSimilar failed", itemID, e);
+        results = [];
+        cache?.set(itemID, results);
+      }
+    }
+
+    for (const hit of results) {
+      if (!hit.itemId || hit.itemId === itemID) continue;
+      if (hit.similarity < minSimilarity) continue;
+      if (!nodes.has(hit.itemId)) continue;
+
+      const a = Math.min(itemID, hit.itemId);
+      const b = Math.max(itemID, hit.itemId);
+      const pk = pairKey(a, b);
+      if (relatedPairs?.has(pk)) continue;
+      const edgeId = makeEdgeId("semantic", a, b, "");
+      if (dismissedIds?.has(edgeId)) continue;
+      const prev = pairBest.get(pk);
+      if (!prev || hit.similarity > prev.score) {
+        pairBest.set(pk, { a, b, score: hit.similarity });
+      }
+    }
+    if (i % 5 === 4) await Zotero.Promise.delay(0);
+  }
+  onProgress?.(queryIDs.length, queryIDs.length);
+
+  const edges: GraphEdge[] = [];
+  for (const pair of pairBest.values()) {
+    const sourceNode = nodes.get(pair.a);
+    const targetNode = nodes.get(pair.b);
+    if (!sourceNode || !targetNode) continue;
+    edges.push({
+      id: makeEdgeId("semantic", pair.a, pair.b, ""),
+      source: pair.a,
+      target: pair.b,
+      layer: "semantic",
+      state: "suggested",
+      confidence: Math.max(0, Math.min(1, pair.score)),
+      crossDiscipline: isCrossDiscipline(sourceNode, targetNode),
+    });
+  }
+  return { available: true, edges };
+}
+
+/**
+ * Approximation: suggest edge(A,B) if B ∈ findSimilar(A) OR A ∈ findSimilar(B)
+ * (asymmetric union). External ZotSeek plugin path.
+ */
+async function computeSemanticSuggestionsViaExternal(
+  nodes: Map<number, GraphNode>,
+  options: ComputeSemanticOptions,
+  api: NonNullable<ReturnType<typeof getZotSeekApi>>,
+): Promise<SemanticSuggestionResult> {
   const {
     topK = 5,
     minSimilarity = 0.45,
@@ -484,7 +590,13 @@ async function computeSemanticSuggestions(
     let results: SemanticCacheEntry[] | undefined = cache?.get(itemID);
     if (!results) {
       try {
-        const raw = await api.findSimilar(itemID, {
+        const findSimilar = api.findSimilar;
+        if (!findSimilar) {
+          results = [];
+          cache?.set(itemID, results);
+          continue;
+        }
+        const raw = await findSimilar(itemID, {
           topK,
           minSimilarity,
           excludeItemIds: [itemID],

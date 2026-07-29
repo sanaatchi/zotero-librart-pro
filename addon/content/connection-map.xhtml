@@ -1,3 +1,4 @@
+<!-- @ajan: cursor · @etiket: connection-map, f5.2, opencitations -->
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
@@ -295,7 +296,15 @@
           </label>
           <label class="layer" for="librartpro-layer-citation">
             <input type="checkbox" id="librartpro-layer-citation" checked="checked" />
-            <span>Atıf</span>
+            <span>Crossref</span>
+          </label>
+          <label class="layer" for="librartpro-layer-openalex">
+            <input type="checkbox" id="librartpro-layer-openalex" checked="checked" />
+            <span>OpenAlex</span>
+          </label>
+          <label class="layer" for="librartpro-layer-opencitations">
+            <input type="checkbox" id="librartpro-layer-opencitations" checked="checked" />
+            <span>OpenCitations</span>
           </label>
         </div>
 
@@ -309,6 +318,13 @@
           <option value="0">Tüm zaman</option>
           <option value="30">Son 30 gün</option>
           <option value="90">Son 90 gün</option>
+        </select>
+
+        <select id="librartpro-connection-map-reading">
+          <option value="all">Tüm okuma</option>
+          <option value="unread">Okunmamış</option>
+          <option value="reading">Okunuyor</option>
+          <option value="read">Okundu</option>
         </select>
 
         <button

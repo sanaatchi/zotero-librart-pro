@@ -1,6 +1,6 @@
-<!-- @ajan: cursor · @etiket: yonlendirme, tek-kaynak -->
+<!-- @ajan: cursor · @etiket: yonlendirme, stub -->
 # Taşındı
 
-Entegrasyon fazları (F0–F9) ve faz detayları **`REFERANS-ANALIZ.md`** §10–§11 içinde.
+→ [LIBRART-YAPILANDIRMA.md](LIBRART-YAPILANDIRMA.md) (faz sırası)
 
-Tek güncel kaynak: [REFERANS-ANALIZ.md](REFERANS-ANALIZ.md)
+Atıf port: [LIBRART-REFERANS-PORT.md](LIBRART-REFERANS-PORT.md)

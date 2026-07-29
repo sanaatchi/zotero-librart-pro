@@ -92,3 +92,46 @@ tag-dashboard-fuzzy-caution = attenzione
 tag-dashboard-fuzzy-note = Mantieni separati coppie intenzionali come art ↔ art education.
 tag-dashboard-none = Nessuno
 tag-dashboard-recommendation = Suggerimento: unisci prima le coppie case-fold ad alta confidenza, poi pulisci i singoli rumorosi. Non collassare concetti padre/figlio intenzionali.
+
+menu-anki-send = Invia ad Anki
+anki-disabled = Ponte Anki disattivato. Abilitalo nelle preferenze di LibRart Pro (serve Anki desktop + AnkiConnect).
+anki-error-no-item = Seleziona almeno un elemento da inviare ad Anki.
+anki-error-unreachable = Impossibile raggiungere AnkiConnect: { $message }
+anki-progress = Invio ad Anki ({ $count } elementi)…
+anki-done = Anki: { $created } creati, { $updated } aggiornati, { $failed } errori
+
+menu-markdb-scan = Scansiona vault (MarkDB)
+markdb-disabled = MarkDB disattivato. Abilitalo nelle preferenze e imposta il percorso del vault.
+markdb-error-no-path = Percorso vault Obsidian / MarkDB vuoto.
+markdb-error-scan = Scansione vault non riuscita: { $message }
+markdb-scan-done = MarkDB: { $total } note, { $matched } con chiave primaria
+
+menu-semantic-status = Stato semantic
+semantic-disabled = Semantic disattivato. Abilita Kutuphane 8756 e/o ZotSeek nelle preferenze.
+semantic-error-no-url = URL semantic vuoto.
+semantic-error-unreachable = Ponte semantic non raggiungibile.
+semantic-status = Kutuphane: { $ready } · { $chunks } chunk · { $model } { $error }
+semantic-kutuphane-line-off = Kutuphane: disattivato
+zotseek-probe-disabled = ZotSeek: disattivato (preferenze)
+zotseek-probe-external-ready = ZotSeek: plugin esterno pronto (search={ $search }, similar={ $similar })
+zotseek-probe-external-cold = ZotSeek: plugin esterno caricato, modello non ancora pronto
+zotseek-probe-missing = ZotSeek: plugin assente — installa ZotSeek o usa Kutuphane 8756 (WASM non incluso)
+zotseek-probe-vendored-stub = ZotSeek: WASM incorporato assente (stub) — usa plugin esterno o 8756
+zotseek-probe-vendored-ready = ZotSeek: pipeline incorporata pronta
+
+menu-note-link-insert = Inserisci collegamento nota
+menu-note-workspace = Note
+menu-note-related = Note correlate
+note-workspace-disabled = Collegamenti nota disattivati. Abilitali nelle preferenze.
+note-workspace-error-no-source = Nessuna nota sorgente — seleziona una nota o un elemento con note.
+note-workspace-error-no-target = Nessuna nota di destinazione.
+note-workspace-error-same = Sorgente e destinazione non possono coincidere.
+note-workspace-error-link = Impossibile creare il collegamento.
+note-workspace-error-insert = Inserimento non riuscito: { $message }
+note-workspace-done = Collegamento nota inserito.
+note-related-title = Note correlate
+note-related-prompt = Scegli una nota da aprire:
+note-related-empty = Nessuna nota correlata.
+note-related-kind-sibling = Sibling
+note-related-kind-outbound = Link
+note-related-opened = Nota aperta: { $title }

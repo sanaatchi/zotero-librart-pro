@@ -1,3 +1,4 @@
+<!-- @ajan: cursor · @etiket: f5.2, citegeist, f7, f8, f9, preferences -->
 <vbox
   id="__addonRef__-container"
   onload="Zotero.__addonInstance__.hooks.onPrefsEvent('load', {window})"
@@ -105,8 +106,168 @@
       data-l10n-id="local-book-db-hint"
       style="opacity:0.7; font-size:11px;"
     ></html:label>
+  </groupbox>
+  <groupbox style="width: -moz-available">
+    <label><html:h2 data-l10n-id="openalex"></html:h2></label>
     <hbox align="center">
-      <label data-l10n-id="kutuphane-semantic-url"></label>
+      <checkbox
+        preference="__prefsPrefix__.citation.layers.openalex"
+        native="true"
+        data-l10n-id="openalex-enabled"
+      ></checkbox>
+    </hbox>
+    <hbox align="center">
+      <checkbox
+        preference="__prefsPrefix__.citation.layers.crossref"
+        native="true"
+        data-l10n-id="crossref-enabled"
+      ></checkbox>
+    </hbox>
+    <hbox align="center">
+      <checkbox
+        preference="__prefsPrefix__.citation.layers.openCitations"
+        native="true"
+        data-l10n-id="opencitations-enabled"
+      ></checkbox>
+    </hbox>
+    <hbox align="center">
+      <label data-l10n-id="openalex-mailto"></label>
+      <html:input
+        preference="__prefsPrefix__.openalex.mailto"
+        type="email"
+        style="flex:1; min-width: 220px;"
+        placeholder="you@example.com"
+      />
+    </hbox>
+    <html:label
+      data-l10n-id="openalex-mailto-hint"
+      style="opacity:0.7; font-size:11px;"
+    ></html:label>
+    <hbox align="center">
+      <label data-l10n-id="openalex-cache-days"></label>
+      <html:input
+        preference="__prefsPrefix__.openalex.cacheDays"
+        type="number"
+        min="1"
+        max="365"
+        style="width: 80px;"
+      />
+    </hbox>
+  </groupbox>
+  <groupbox style="width: -moz-available">
+    <label><html:h2 data-l10n-id="citegeist"></html:h2></label>
+    <hbox align="center">
+      <checkbox
+        preference="__prefsPrefix__.citegeist.enabled"
+        native="true"
+        data-l10n-id="citegeist-enabled"
+      ></checkbox>
+    </hbox>
+    <html:label
+      data-l10n-id="citegeist-hint"
+      style="opacity:0.7; font-size:11px;"
+    ></html:label>
+  </groupbox>
+  <groupbox style="width: -moz-available">
+    <label><html:h2 data-l10n-id="anki"></html:h2></label>
+    <hbox align="center">
+      <checkbox
+        preference="__prefsPrefix__.anki.enabled"
+        native="true"
+        data-l10n-id="anki-enabled"
+      ></checkbox>
+    </hbox>
+    <hbox align="center">
+      <label data-l10n-id="anki-deck"></label>
+      <html:input
+        preference="__prefsPrefix__.anki.deckName"
+        type="text"
+        style="flex:1; min-width: 160px;"
+      />
+    </hbox>
+    <hbox align="center">
+      <label data-l10n-id="anki-model"></label>
+      <html:input
+        preference="__prefsPrefix__.anki.modelName"
+        type="text"
+        style="flex:1; min-width: 160px;"
+      />
+    </hbox>
+    <hbox align="center">
+      <label data-l10n-id="anki-host"></label>
+      <html:input
+        preference="__prefsPrefix__.anki.host"
+        type="text"
+        style="flex:1; min-width: 160px;"
+      />
+    </hbox>
+    <hbox align="center">
+      <label data-l10n-id="anki-port"></label>
+      <html:input
+        preference="__prefsPrefix__.anki.port"
+        type="number"
+        min="1"
+        max="65535"
+        style="width: 80px;"
+      />
+    </hbox>
+    <html:label
+      data-l10n-id="anki-hint"
+      style="opacity:0.7; font-size:11px;"
+    ></html:label>
+  </groupbox>
+  <groupbox style="width: -moz-available">
+    <label><html:h2 data-l10n-id="markdb"></html:h2></label>
+    <hbox align="center">
+      <checkbox
+        preference="__prefsPrefix__.note.markdb.enabled"
+        native="true"
+        data-l10n-id="markdb-enabled"
+      ></checkbox>
+    </hbox>
+    <hbox align="center">
+      <label data-l10n-id="markdb-vault"></label>
+      <html:input
+        preference="__prefsPrefix__.note.markdb.vaultPath"
+        type="text"
+        style="flex:1; min-width: 220px;"
+        placeholder="C:\Notes\ObsidianVault"
+      />
+    </hbox>
+    <hbox align="center">
+      <label data-l10n-id="markdb-strategy"></label>
+      <menulist
+        preference="__prefsPrefix__.note.markdb.matchStrategy"
+        native="true"
+      >
+        <menupopup>
+          <menuitem
+            data-l10n-id="markdb-strategy-citekey"
+            value="citekeyyaml"
+          ></menuitem>
+          <menuitem
+            data-l10n-id="markdb-strategy-itemkey"
+            value="zotitemkey"
+          ></menuitem>
+        </menupopup>
+      </menulist>
+    </hbox>
+    <html:label
+      data-l10n-id="markdb-hint"
+      style="opacity:0.7; font-size:11px;"
+    ></html:label>
+  </groupbox>
+  <groupbox style="width: -moz-available">
+    <label><html:h2 data-l10n-id="semantic"></html:h2></label>
+    <hbox align="center">
+      <checkbox
+        preference="__prefsPrefix__.semantic.kutuphane.enabled"
+        native="true"
+        data-l10n-id="semantic-kutuphane-enabled"
+      ></checkbox>
+    </hbox>
+    <hbox align="center">
+      <label data-l10n-id="semantic-kutuphane-url"></label>
       <html:input
         id="__addonRef__-kutuphane-semantic-url"
         type="text"
@@ -114,8 +275,29 @@
         placeholder="http://127.0.0.1:8756"
       />
     </hbox>
+    <hbox align="center">
+      <checkbox
+        preference="__prefsPrefix__.semantic.zotseek.enabled"
+        native="true"
+        data-l10n-id="semantic-zotseek-enabled"
+      ></checkbox>
+    </hbox>
     <html:label
-      data-l10n-id="kutuphane-semantic-hint"
+      data-l10n-id="semantic-hint"
+      style="opacity:0.7; font-size:11px;"
+    ></html:label>
+  </groupbox>
+  <groupbox style="width: -moz-available">
+    <label><html:h2 data-l10n-id="note-workspace"></html:h2></label>
+    <hbox align="center">
+      <checkbox
+        preference="__prefsPrefix__.note.workspace.enabled"
+        native="true"
+        data-l10n-id="note-workspace-enabled"
+      ></checkbox>
+    </hbox>
+    <html:label
+      data-l10n-id="note-workspace-hint"
       style="opacity:0.7; font-size:11px;"
     ></html:label>
   </groupbox>

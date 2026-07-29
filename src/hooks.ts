@@ -1,17 +1,15 @@
+// @ajan: cursor · @etiket: f1, hooks, feature-registry
 import { config, homepage } from "../package.json";
 import { getString, initLocale } from "./utils/locale";
 import { initPrefPane } from "./modules/preferenceWindow";
-import { ActionEventTypes, initActions } from "./utils/actions";
-import { initNotifierObserver } from "./modules/notify";
-import { initShortcuts } from "./modules/shortcuts";
+import { ActionEventTypes } from "./utils/actions";
+import { getPref } from "./utils/prefs";
 import {
   buildItemMenu,
   initItemMenu,
   initReaderAnnotationMenu,
   initReaderMenu,
 } from "./modules/menu";
-import { registerRatingColumn } from "./utils/rating";
-import { editAction } from "./modules/edit";
 import { exportToFile, importFromFile } from "./modules/backup";
 import {
   initTagDashboardWindow,
@@ -21,32 +19,39 @@ import {
   initConnectionMapWindow,
   openConnectionMap,
 } from "./modules/connectionMap";
-import { initReferenceReader } from "./modules/referenceReader";
-import { initNoteWorkspace } from "./modules/noteWorkspace";
+import {
+  initReadingDashboardWindow,
+  openReadingDashboard,
+} from "./modules/readingFlowBridge";
+import { editAction } from "./modules/edit";
+import { getZoteroAdapter } from "./adapters/zoteroAdapter";
+import { getFeatureRegistry } from "./core/featureRegistry";
+import { registerLibRartFeatures } from "./core/features";
+
+let featuresRegistered = false;
+
+function ensureFeaturesRegistered() {
+  if (featuresRegistered) return;
+  registerLibRartFeatures(getFeatureRegistry());
+  featuresRegistered = true;
+}
 
 async function onStartup() {
-  await Promise.all([
-    Zotero.initializationPromise,
-    Zotero.unlockPromise,
-    Zotero.uiReadyPromise,
-  ]);
+  ensureFeaturesRegistered();
 
-  // TODO: Remove this after zotero#3387 is merged
+  const adapter = getZoteroAdapter();
+  await adapter.waitForReady();
+
   if (__env__ === "development") {
-    // Keep in sync with the scripts/startup.mjs
     const loadDevToolWhen = `Plugin ${config.addonID} startup`;
     ztoolkit.log(loadDevToolWhen);
   }
 
   initLocale();
 
-  if (Zotero.Prefs.get(`${config.prefsPrefix}.inciteful.enabled`, true) === undefined) {
-    Zotero.Prefs.set(`${config.prefsPrefix}.inciteful.enabled`, true, true);
-  }
-
-  initActions();
-
-  initNotifierObserver();
+  const registry = getFeatureRegistry();
+  const ctx = { adapter };
+  await registry.initPhase("startup", ctx, getPref);
 
   Zotero.PreferencePanes.register({
     pluginID: config.addonID,
@@ -56,15 +61,6 @@ async function onStartup() {
     image: rootURI + "content/icons/favicon.png",
   });
 
-  initShortcuts();
-
-  initReaderMenu();
-
-  initReaderAnnotationMenu();
-
-  registerRatingColumn();
-
-  // Trigger startup event without waiting so that the init is not blocked.
   addon.api.actionManager
     .dispatchActionByEvent(ActionEventTypes.programStartup, {})
     .then(async () => {
@@ -73,40 +69,26 @@ async function onStartup() {
 }
 
 async function onMainWindowLoad(win: Window): Promise<void> {
-  initItemMenu(win);
-  await initReferenceReader();
-  await initNoteWorkspace();
-  await addon.api.actionManager.dispatchActionByEvent(
-    ActionEventTypes.mainWindowLoad,
-    {
-      window: win,
-    },
-  );
+  const registry = getFeatureRegistry();
+  const ctx = { adapter: getZoteroAdapter() };
+  await registry.initPhase("mainWindow", ctx, getPref, win);
 }
 
 async function onMainWindowUnload(win: Window): Promise<void> {
   await addon.api.actionManager.dispatchActionByEvent(
     ActionEventTypes.mainWindowUnload,
-    {
-      window: win,
-    },
+    { window: win },
   );
 }
 
 function onShutdown(): void {
+  getFeatureRegistry().shutdownAll();
   ztoolkit.unregisterAll();
-  // Remove addon object
   addon.data.alive = false;
   // @ts-ignore - plugin instance
   delete Zotero[config.addonInstance];
 }
 
-/**
- * This function is just an example of dispatcher for Preference UI events.
- * Any operations should be placed in a function to keep this funcion clear.
- * @param type event type
- * @param data event data
- */
 async function onPrefsEvent(type: string, data: { [key: string]: any }) {
   switch (type) {
     case "load":
@@ -127,10 +109,6 @@ async function onMenuEvent(type: "showing", data: { [key: string]: any }) {
   }
 }
 
-// Add your hooks here. For element click, etc.
-// Keep in mind hooks only do dispatch. Don't add code that does real jobs in hooks.
-// Otherwise the code would be hard to read and maintian.
-
 export default {
   onStartup,
   onShutdown,
@@ -145,4 +123,6 @@ export default {
   onTagDashboardLoad: initTagDashboardWindow,
   onOpenConnectionMap: openConnectionMap,
   onConnectionMapLoad: initConnectionMapWindow,
+  onOpenReadingDashboard: openReadingDashboard,
+  onReadingDashboardLoad: initReadingDashboardWindow,
 };

@@ -8,3 +8,9 @@ zotero-cmd.json
 tsconfig.tsbuildinfo
 .DS_Store
 .env
+
+# F9.2 ZotSeek binaries (npm run fetch:zotseek-assets / build:worker)
+addon/content/models/**/*.onnx
+addon/content/wasm/*.wasm
+addon/content/wasm/*.mjs
+addon/content/scripts/embedding-worker.js

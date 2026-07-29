@@ -54,3 +54,61 @@ action-delete-message-ignore =
 tag-dashboard = Etiket Analizi
 tag-dashboard-open =
     .label = Etiket Analizi panelini aç
+
+openalex = Atıf katmanları (OpenAlex / Crossref / OpenCitations)
+openalex-enabled =
+    .label = OpenAlex atıf kenarları
+crossref-enabled =
+    .label = Crossref atıf kenarları
+opencitations-enabled =
+    .label = OpenCitations atıf kenarları (varsayılan kapalı)
+openalex-mailto =
+    .value = OpenAlex mailto (polite pool)
+openalex-mailto-hint = Boş bırakılabilir; doldurursanız OpenAlex polite pool kullanır.
+openalex-cache-days =
+    .value = Önbellek (gün)
+
+citegeist = Citegeist (OpenAlex özet — deneysel)
+citegeist-enabled =
+    .label = Atıf özeti menüsünü etkinleştir
+citegeist-hint = Seçili öğeler için OpenAlex atıf/kaynak sayısı. Tam Citegeist sütun/pane yok (GPL tam port yok).
+
+anki = Anki (AnkiConnect)
+anki-enabled =
+    .label = Anki köprüsünü etkinleştir
+anki-deck =
+    .value = Destek (deck)
+anki-model =
+    .value = Not tipi (model)
+anki-host =
+    .value = AnkiConnect host
+anki-port =
+    .value = Port
+anki-hint = Anki masaüstü açık ve AnkiConnect eklentisi yüklü olmalı (varsayılan 127.0.0.1:8765).
+
+markdb = Obsidian / MarkDB
+markdb-enabled =
+    .label = MarkDB vault taramasını etkinleştir
+markdb-vault =
+    .value = Vault yolu
+markdb-strategy =
+    .value = Eşleştirme
+markdb-strategy-citekey =
+    .label = Citekey (YAML / @dosyaadı)
+markdb-strategy-itemkey =
+    .label = Zotero itemKey
+markdb-hint = Notlar @citekey.md olmalı; gövde [[@citekey]] veya itemKey referansları Bağlantı Haritası not kenarları üretir.
+
+semantic = Anlamsal (Kutuphane / ZotSeek)
+semantic-kutuphane-enabled =
+    .label = Kutuphane semantic köprüsünü etkinleştir (8756)
+semantic-kutuphane-url =
+    .value = Köprü URL
+semantic-zotseek-enabled =
+    .label = ZotSeek yedek — harici eklenti (WASM paket değil; varsayılan kapalı)
+semantic-hint = Önce zotero_semantic_baslat.bat (8756). ZotSeek için ayrı eklenti gerekir; LibRart WASM gömmez. Öğelerde Citation Key: KPxxxxxx.
+
+note-workspace = Not bağlantıları (Better Notes uyumlu)
+note-workspace-enabled =
+    .label = Not bağlantısı eklemeyi etkinleştir
+note-workspace-hint = Seçili nota zotero://note/… wikilink ekler; Bağlantı Haritası not katmanı okur. Tam BN workspace sonra.

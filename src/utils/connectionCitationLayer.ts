@@ -1,3 +1,4 @@
+// @ajan: cursor · @etiket: f5, citation, crossref
 // Adapted from zotero-reference (AGPL-3.0) api.ts Crossref reference parsing.
 
 import {
@@ -7,9 +8,15 @@ import {
   makeEdgeId,
 } from "./connectionGraph";
 import { normalizeDoi } from "./doiResolver";
+import { getPref } from "./prefs";
 import { getReferenceAPI } from "../vendor/zotero-reference";
 
-export { computeCitationSuggestions };
+export { computeCitationSuggestions, isCrossrefCitationEnabled };
+
+function isCrossrefCitationEnabled(): boolean {
+  const v = getPref("citation.layers.crossref");
+  return v === undefined || v === true;
+}
 
 /**
  * Citation suggestions via zotero-reference's Crossref CSL JSON resolver
@@ -19,6 +26,7 @@ async function computeCitationSuggestions(
   nodes: Map<number, GraphNode>,
   options: { maxQueries?: number } = {},
 ): Promise<GraphEdge[]> {
+  if (!isCrossrefCitationEnabled()) return [];
   const maxQueries = options.maxQueries ?? 40;
   const api = getReferenceAPI();
 
@@ -47,7 +55,7 @@ async function computeCitationSuggestions(
         if (!targetID || targetID === itemID) continue;
         const a = Math.min(itemID, targetID);
         const b = Math.max(itemID, targetID);
-        const id = makeEdgeId("citation", a, b, "");
+        const id = makeEdgeId("citation", a, b, "crossref");
         if (seen.has(id)) continue;
         seen.add(id);
 
@@ -61,6 +69,7 @@ async function computeCitationSuggestions(
           layer: "citation",
           state: "suggested",
           confidence: 0.9,
+          citationSource: "crossref",
           crossDiscipline: isCrossDiscipline(sourceNode, targetNode),
         });
       }

@@ -1,3 +1,4 @@
+// @ajan: cursor · @etiket: menu, f5.2, f7, f8, f9, citegeist
 import { TagElementProps } from "zotero-plugin-toolkit";
 import { config } from "../../package.json";
 import { getString } from "../utils/locale";
@@ -6,8 +7,16 @@ import { ActionData, ActionShowInMenu } from "../utils/actions";
 import { getCurrentItems, getItemIDsByKey } from "../utils/items";
 import { getIcon } from "../utils/icon";
 import { setRating, ratingStars } from "../utils/rating";
-import { initIncitefulMenus } from "./incitefulBridge";
+import { getZoteroAdapter } from "../adapters/zoteroAdapter";
 import { referenceExtractorMenuChild } from "./referenceExtractor";
+import { safeImportMenuChild } from "./safeImportBridge";
+import { docxCitedMenuChild } from "./docxCitedBridge";
+import { readingFlowMenuChild, readingStatusMenuChild, isReadingFlowEnabled } from "./readingFlowBridge";
+import { ankiMenuChild } from "./ankiBridge";
+import { markdbMenuChild } from "./markdbBridge";
+import { semanticMenuChild } from "./semanticBridge";
+import { noteWorkspaceMenuChild } from "./noteWorkspace";
+import { citegeistMenuChild } from "./citegeistBridge";
 
 export { initItemMenu, initReaderMenu, initReaderAnnotationMenu, buildItemMenu };
 
@@ -35,7 +44,8 @@ function ratingMenuChild() {
     tag: "menuitem" as const,
     label: ratingStars(n),
     commandListener: async () => {
-      const items = Zotero.getActiveZoteroPane()
+      const items = getZoteroAdapter()
+        .getActivePane()
         ?.getSelectedItems()
         ?.filter((i) => i.isRegularItem());
       if (!items?.length) return;
@@ -52,7 +62,8 @@ function ratingMenuChild() {
         tag: "menuitem" as const,
         label: getString("menu-rating-clear"),
         commandListener: async () => {
-          const items = Zotero.getActiveZoteroPane()
+          const items = getZoteroAdapter()
+            .getActivePane()
             ?.getSelectedItems()
             ?.filter((i) => i.isRegularItem());
           if (!items?.length) return;
@@ -97,7 +108,14 @@ function initItemMenu(win: Window) {
     id: `${config.addonRef}-root-item-menu`,
     label: getString("menu-root"),
     icon: rootIcon,
-    children: [actionsMenuChild("item"), ratingMenuChild()],
+    children: [
+      actionsMenuChild("item"),
+      ratingMenuChild(),
+      ...(isReadingFlowEnabled() ? [readingStatusMenuChild()] : []),
+      ankiMenuChild(),
+      citegeistMenuChild(),
+      noteWorkspaceMenuChild(),
+    ],
   });
 
   ztoolkit.Menu.register("collection", actionsMenuChild("collection"));
@@ -110,12 +128,18 @@ function initItemMenu(win: Window) {
     children: [
       actionsMenuChild("tools"),
       tagDashboardMenuChild(),
+      readingFlowMenuChild(),
       connectionMapMenuChild(),
+      safeImportMenuChild(),
+      docxCitedMenuChild(),
+      ankiMenuChild(),
+      citegeistMenuChild(),
+      markdbMenuChild(),
+      semanticMenuChild(),
+      noteWorkspaceMenuChild(),
       referenceExtractorMenuChild(),
     ],
   });
-
-  initIncitefulMenus();
 }
 
 async function initReaderMenu() {
@@ -352,7 +376,7 @@ async function triggerMenuCommand(
   const itemIDs = await getItemIDs();
   let collection: Zotero.Collection | undefined = undefined;
   if (withCollection) {
-    collection = Zotero.getActiveZoteroPane().getSelectedCollection();
+    collection = getZoteroAdapter().getActivePane()?.getSelectedCollection();
   }
 
   // Trigger action for all items

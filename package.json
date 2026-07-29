@@ -1,6 +1,6 @@
 {
   "name": "zotero-librart-pro",
-  "version": "1.0.32",
+  "version": "1.0.45",
   "description": "LibRart Pro — etiketler, eylemler, Bağlantı Haritası ve referans araçları.",
   "config": {
     "addonName": "LibRart Pro",
@@ -18,7 +18,11 @@
     "release": "zotero-plugin release",
     "gh-release": "node scripts/publish.mjs",
     "lint": "prettier --write . && eslint . --fix",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint:check": "prettier --check . && eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "fetch:zotseek-assets": "node scripts/fetch-zotseek-assets.mjs",
+    "build:worker": "node scripts/build-embedding-worker.mjs",
     "update-deps": "npm update --save"
   },
   "repository": {
@@ -47,6 +51,7 @@
     "eslint-config-prettier": "^9.1.2",
     "prettier": "^3.6.2",
     "typescript": "^5.9.3",
+    "vitest": "^3.2.4",
     "zotero-plugin-scaffold": "^0.8.0",
     "zotero-types": "^4.1.0-beta.3"
   },

@@ -19,6 +19,27 @@ declare namespace _ZoteroTypes {
       "openLibraryDbPath": string;
       "kitaplarDbPath": string;
       "kutuphaneSemanticUrl": string;
+      "citation.layers.crossref": boolean;
+      "citation.layers.openalex": boolean;
+      "citation.layers.openCitations": boolean;
+      "openalex.mailto": string;
+      "openalex.cacheDays": number;
+      "anki.enabled": boolean;
+      "anki.host": string;
+      "anki.port": number;
+      "anki.key": string;
+      "anki.deckName": string;
+      "anki.modelName": string;
+      "note.markdb.enabled": boolean;
+      "note.markdb.vaultPath": string;
+      "note.markdb.matchStrategy": string;
+      "semantic.kutuphane.enabled": boolean;
+      "semantic.kutuphaneUrl": string;
+      "semantic.zotseek.enabled": boolean;
+      "note.workspace.enabled": boolean;
+      "citegeist.enabled": boolean;
+      "vendoredZotSeek": boolean;
+      "embeddingModel": string;
     };
   }
 }

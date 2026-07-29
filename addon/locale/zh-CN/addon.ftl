@@ -90,3 +90,46 @@ tag-dashboard-fuzzy-caution = 注意
 tag-dashboard-fuzzy-note = 请有意保留 art ↔ art education 这类上下位对。
 tag-dashboard-none = 无
 tag-dashboard-recommendation = 建议：先合并高置信大小写对，再清理噪声单次标签。不要折叠有意的上下位概念。
+
+menu-anki-send = 发送到 Anki
+anki-disabled = Anki 桥接未启用。请在 LibRart Pro 首选项中开启（需要 Anki 桌面版 + AnkiConnect）。
+anki-error-no-item = 请至少选择一条条目发送到 Anki。
+anki-error-unreachable = 无法连接 AnkiConnect：{ $message }
+anki-progress = 正在发送到 Anki（{ $count } 条）…
+anki-done = Anki：新建 { $created }，更新 { $updated }，失败 { $failed }
+
+menu-markdb-scan = 扫描仓库 (MarkDB)
+markdb-disabled = MarkDB 未启用。请在首选项中开启并设置 vault 路径。
+markdb-error-no-path = Obsidian / MarkDB vault 路径为空。
+markdb-error-scan = 仓库扫描失败：{ $message }
+markdb-scan-done = MarkDB：{ $total } 个笔记，{ $matched } 个匹配主键
+
+menu-semantic-status = Semantic 状态
+semantic-disabled = Semantic 未启用。请在首选项中开启 Kutuphane 8756 和/或 ZotSeek。
+semantic-error-no-url = Semantic URL 为空。
+semantic-error-unreachable = 无法连接 semantic 桥接。
+semantic-status = Kutuphane：{ $ready } · { $chunks } chunk · { $model } { $error }
+semantic-kutuphane-line-off = Kutuphane：关闭
+zotseek-probe-disabled = ZotSeek：关闭（首选项）
+zotseek-probe-external-ready = ZotSeek：外部插件就绪（search={ $search }, similar={ $similar })
+zotseek-probe-external-cold = ZotSeek：外部插件已加载，模型尚未就绪
+zotseek-probe-missing = ZotSeek：未找到插件 — 请安装 ZotSeek 或使用 Kutuphane 8756（未打包 WASM）
+zotseek-probe-vendored-stub = ZotSeek：未附带嵌入 WASM（stub）— 请用外部插件或 8756
+zotseek-probe-vendored-ready = ZotSeek：嵌入管线就绪
+
+menu-note-link-insert = 插入笔记链接
+menu-note-workspace = 笔记
+menu-note-related = 相关笔记
+note-workspace-disabled = 笔记链接未启用。请在首选项中开启。
+note-workspace-error-no-source = 无源笔记 — 请选择笔记或带笔记的条目。
+note-workspace-error-no-target = 未选择目标笔记。
+note-workspace-error-same = 源与目标不能是同一笔记。
+note-workspace-error-link = 无法创建笔记链接。
+note-workspace-error-insert = 插入失败：{ $message }
+note-workspace-done = 已插入笔记链接。
+note-related-title = 相关笔记
+note-related-prompt = 选择要打开的笔记：
+note-related-empty = 无相关笔记。
+note-related-kind-sibling = 同级
+note-related-kind-outbound = 链接
+note-related-opened = 已打开：{ $title }

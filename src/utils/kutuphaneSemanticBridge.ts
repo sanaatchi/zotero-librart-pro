@@ -1,45 +1,97 @@
-import { getPref } from "./prefs";
+// @ajan: cursor · @etiket: f9, semantic, kutuphane, bridge, f9.2
+// Kutuphane anlamsal köprü (8756) — HTTP + KP eşleştirme.
+
+import { getPref, setPref } from "./prefs";
 import { getCitationKeyFromExtra } from "./citationKey";
+import {
+  buildKpIndexFromEntries,
+  mapHitsToItemIds,
+  normalizeSemanticBaseUrl,
+  parseSearchPayload,
+  parseStatusPayload,
+  SemanticSearchHit,
+  SemanticStatusPayload,
+} from "./kutuphaneSemanticParse";
 
 export {
+  isKutuphaneSemanticEnabled,
   isKutuphaneSemanticConfigured,
   isKutuphaneSemanticReady,
+  getKutuphaneSemanticStatus,
   searchKutuphaneSemantic,
   buildKpIndex,
+  ensureSemanticPrefDefaults,
+  isZotSeekSemanticEnabled,
+  resolveKutuphaneSemanticUrl,
 };
 
-export type KutuphaneHit = {
-  kpId: string;
-  category: string;
-  text: string;
-  sourceFile: string;
-  pageNum: number;
-  score: number;
-};
+export type KutuphaneHit = SemanticSearchHit;
+
+const DEFAULT_URL = "http://127.0.0.1:8756";
+
+function ensureSemanticPrefDefaults(): void {
+  const legacy = getPref("kutuphaneSemanticUrl");
+  const legacyUrl =
+    typeof legacy === "string" && legacy.trim() ? legacy.trim() : "";
+
+  if (getPref("semantic.kutuphaneUrl") === undefined) {
+    setPref("semantic.kutuphaneUrl", legacyUrl || DEFAULT_URL);
+  }
+  if (getPref("semantic.kutuphane.enabled") === undefined) {
+    // Preserve prior behavior: non-empty legacy URL meant "on".
+    setPref("semantic.kutuphane.enabled", Boolean(legacyUrl));
+  }
+  if (getPref("semantic.zotseek.enabled") === undefined) {
+    setPref("semantic.zotseek.enabled", false);
+  }
+}
+
+function isKutuphaneSemanticEnabled(): boolean {
+  return getPref("semantic.kutuphane.enabled") === true;
+}
+
+function isZotSeekSemanticEnabled(): boolean {
+  return getPref("semantic.zotseek.enabled") === true;
+}
+
+function resolveKutuphaneSemanticUrl(): string | null {
+  const modern = normalizeSemanticBaseUrl(getPref("semantic.kutuphaneUrl"));
+  if (modern) return modern;
+  return normalizeSemanticBaseUrl(getPref("kutuphaneSemanticUrl"));
+}
 
 function baseUrl(): string | null {
-  const url = String(getPref("kutuphaneSemanticUrl") || "").trim();
-  return url ? url.replace(/\/+$/, "") : null;
+  if (!isKutuphaneSemanticEnabled()) return null;
+  return resolveKutuphaneSemanticUrl();
 }
 
 function isKutuphaneSemanticConfigured(): boolean {
   return !!baseUrl();
 }
 
-/** Live readiness check — Ollama reachable + chunks indexed, per /status. */
-async function isKutuphaneSemanticReady(): Promise<boolean> {
+async function getKutuphaneSemanticStatus(): Promise<SemanticStatusPayload | null> {
   const url = baseUrl();
-  if (!url) return false;
+  if (!url) return null;
   try {
     const xhr = await Zotero.HTTP.request("GET", `${url}/status`, {
       timeout: 3000,
+      responseType: "text",
     });
-    const data = JSON.parse(xhr.responseText);
-    return !!data?.ready;
+    const raw = JSON.parse(String(xhr.responseText ?? ""));
+    return parseStatusPayload(raw);
   } catch (e) {
     ztoolkit.log("Kutuphane semantic status check failed", e);
-    return false;
+    return {
+      ready: false,
+      error: e instanceof Error ? e.message : String(e),
+    };
   }
+}
+
+/** Live readiness check — Ollama reachable + chunks indexed, per /status. */
+async function isKutuphaneSemanticReady(): Promise<boolean> {
+  const status = await getKutuphaneSemanticStatus();
+  return !!status?.ready;
 }
 
 async function searchKutuphaneSemantic(
@@ -59,9 +111,10 @@ async function searchKutuphaneSemantic(
         minSimilarity: options.minSimilarity ?? 0.5,
       }),
       timeout: 20000,
+      responseType: "text",
     });
-    const data = JSON.parse(xhr.responseText);
-    return Array.isArray(data?.results) ? data.results : [];
+    const raw = JSON.parse(String(xhr.responseText ?? ""));
+    return parseSearchPayload(raw);
   } catch (e) {
     ztoolkit.log("Kutuphane semantic search failed", e);
     return [];
@@ -69,21 +122,19 @@ async function searchKutuphaneSemantic(
 }
 
 /**
- * Build a "KPxxxxxx" -> itemID map from a set of items' Citation Key
- * (citationKey.ts's Extra-field convention — the same KP reuse wired in
- * localBookDb.ts's OpenLibrary bridge). Fast, in-memory, no search calls.
- * Callers resolve each search hit's kpId against this map; hits with no
- * match (Kutuphane content not yet linked to a Zotero item) are dropped.
+ * Build a "KPxxxxxx" -> itemID map from items' Citation Key Extra lines.
  */
 function buildKpIndex(itemIDs: Iterable<number>): Map<string, number> {
-  const map = new Map<string, number>();
+  const entries: Array<{ itemId: number; citationKey: string | null }> = [];
   for (const id of itemIDs) {
     const item = Zotero.Items.get(id);
     if (!item) continue;
-    const key = getCitationKeyFromExtra(item);
-    if (key && /^KP\d+$/i.test(key)) {
-      map.set(key.toUpperCase(), id);
-    }
+    entries.push({
+      itemId: id,
+      citationKey: getCitationKeyFromExtra(item),
+    });
   }
-  return map;
+  return buildKpIndexFromEntries(entries);
 }
+
+export { mapHitsToItemIds };

@@ -1,3 +1,4 @@
+// @ajan: cursor · @etiket: connection-map, renderer, f5.2
 import { config } from "../../package.json";
 import { getString } from "../utils/locale";
 import {
@@ -18,7 +19,13 @@ import {
   getNodeDisciplineKey,
   isCrossDiscipline,
 } from "../utils/connectionGraph";
-import { filterEdgesByTimelineDays } from "../utils/connectionTimeline";
+import {
+  filterEdgesForMapView,
+  itemMatchesReadingFilter,
+  itemReadSince,
+  ReadingMapFilter,
+} from "../utils/readingFlowMapFilter";
+import { buildReadingIndexForGraph } from "./readingFlowBridge";
 import {
   exportConnectionMapPng,
   exportConnectionMapSvg,
@@ -34,6 +41,8 @@ export type ConnectionMapLayerState = {
   semantic: boolean;
   note: boolean;
   citation: boolean;
+  openalex: boolean;
+  opencitations: boolean;
 };
 
 export type RenderCallbacks = {
@@ -219,7 +228,15 @@ function wireChrome(
     };
   }
 
-  for (const layer of ["tag", "manual", "semantic", "note", "citation"] as const) {
+  for (const layer of [
+    "tag",
+    "manual",
+    "semantic",
+    "note",
+    "citation",
+    "openalex",
+    "opencitations",
+  ] as const) {
     const el = doc.getElementById(
       `${config.addonRef}-layer-${layer}`,
     ) as HTMLInputElement | null;
@@ -254,6 +271,23 @@ function wireChrome(
     if (opt1) opt1.text = getString("connection-map-timeline-30");
     if (opt2) opt2.text = getString("connection-map-timeline-90");
     timeline.onchange = () => refilterFromCache(win);
+  }
+
+  const readingFilter = doc.getElementById(
+    `${config.addonRef}-connection-map-reading`,
+  ) as HTMLSelectElement | null;
+  if (readingFilter) {
+    const opts = [
+      ["all", "connection-map-reading-all"],
+      ["unread", "connection-map-reading-unread"],
+      ["reading", "connection-map-reading-in-progress"],
+      ["read", "connection-map-reading-read"],
+    ] as const;
+    for (let i = 0; i < opts.length; i++) {
+      const opt = readingFilter.options[i];
+      if (opt) opt.text = getString(opts[i][1]);
+    }
+    readingFilter.onchange = () => refilterFromCache(win);
   }
 
   const exportSvgBtn = doc.getElementById(
@@ -416,6 +450,8 @@ function refilterFromCache(win: Window) {
     semantic: checked(`${config.addonRef}-layer-semantic`, true),
     note: checked(`${config.addonRef}-layer-note`, true),
     citation: checked(`${config.addonRef}-layer-citation`, true),
+    openalex: checked(`${config.addonRef}-layer-openalex`, true),
+    opencitations: checked(`${config.addonRef}-layer-opencitations`, true),
   });
 }
 
@@ -509,16 +545,28 @@ function visibleEdges(
   graph: ConnectionGraph,
   layerState: ConnectionMapLayerState,
   timelineDays = 0,
+  readingFilter: ReadingMapFilter = "all",
 ): GraphEdge[] {
   const layered = graph.edges.filter((e) => {
     if (e.layer === "tag" && !layerState.tag) return false;
     if (e.layer === "manual" && !layerState.manual) return false;
     if (e.layer === "semantic" && !layerState.semantic) return false;
     if (e.layer === "note" && !layerState.note) return false;
-    if (e.layer === "citation" && !layerState.citation) return false;
+    if (e.layer === "citation") {
+      const src = e.citationSource || "crossref";
+      if (src === "openalex") return layerState.openalex;
+      if (src === "opencitations") return layerState.opencitations;
+      return layerState.citation;
+    }
     return true;
   });
-  return filterEdgesByTimelineDays(layered, timelineDays);
+  const readingIndex = buildReadingIndexForGraph([...graph.nodes.keys()]);
+  return filterEdgesForMapView(
+    layered,
+    timelineDays,
+    readingIndex,
+    readingFilter,
+  );
 }
 
 function buildSimulation(
@@ -541,17 +589,27 @@ function buildSimulation(
     `${config.addonRef}-connection-map-timeline`,
   ) as HTMLSelectElement | null;
   const timelineDays = Number(timelineEl?.value || "0") || 0;
+  const readingEl = doc.getElementById(
+    `${config.addonRef}-connection-map-reading`,
+  ) as HTMLSelectElement | null;
+  const readingFilter = (readingEl?.value || "all") as ReadingMapFilter;
+  const readingIndex = buildReadingIndexForGraph([...graph.nodes.keys()]);
 
-  const edges = visibleEdges(graph, layerState, timelineDays);
+  const edges = visibleEdges(graph, layerState, timelineDays, readingFilter);
   const nodeIDs = new Set<number>();
   for (const e of edges) {
     nodeIDs.add(e.source);
     nodeIDs.add(e.target);
   }
 
+  if (timelineDays > 0 && readingIndex) {
+    const since = Date.now() - timelineDays * 86400000;
+    for (const id of graph.nodes.keys()) {
+      if (itemReadSince(readingIndex, id, since)) nodeIDs.add(id);
+    }
+  }
+
   const MAX_ISOLATE_NODES = 200;
-  // Always show isolates when the graph would otherwise be empty/sparse —
-  // otherwise a library with few co-occurrence edges looks "broken".
   const needIsolates = nodeIDs.size < 8 || edges.length === 0;
   if (filter) {
     for (const [id, node] of graph.nodes) {
@@ -565,10 +623,25 @@ function buildSimulation(
     let added = 0;
     for (const id of graph.nodes.keys()) {
       if (nodeIDs.has(id)) continue;
+      if (
+        readingFilter !== "all" &&
+        readingIndex &&
+        !itemMatchesReadingFilter(readingIndex, id, readingFilter)
+      ) {
+        continue;
+      }
       nodeIDs.add(id);
       added++;
       if (nodeIDs.size >= MAX_ISOLATE_NODES) break;
       if (added >= MAX_ISOLATE_NODES) break;
+    }
+  }
+
+  if (readingFilter !== "all" && readingIndex) {
+    for (const id of [...nodeIDs]) {
+      if (!itemMatchesReadingFilter(readingIndex, id, readingFilter)) {
+        nodeIDs.delete(id);
+      }
     }
   }
 

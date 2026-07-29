@@ -52,6 +52,12 @@ class Addon {
       dismissedSemanticIds?: Set<string>;
       lastGraph?: ConnectionGraph;
     };
+    safeImport: {
+      window?: Window;
+    };
+    readingDashboard: {
+      window?: Window;
+    };
   };
   // Lifecycle hooks
   public hooks: typeof hooks;
@@ -80,6 +86,8 @@ class Addon {
       },
       tagDashboard: {},
       connectionMap: {},
+      safeImport: {},
+      readingDashboard: {},
     };
     this.hooks = hooks;
     this.api = api;

@@ -51,6 +51,64 @@ script-warning-ignore =
 action-delete-message-ignore =
     .label = Eylem silerken onay isteme
 
-tag-dashboard = Etiket Analizi
+tag-dashboard = Tag Analysis
 tag-dashboard-open =
-    .label = Etiket Analizi panelini aç
+    .label = Open Tag Analysis panel
+
+openalex = Citation layers (OpenAlex / Crossref / OpenCitations)
+openalex-enabled =
+    .label = OpenAlex citation edges
+crossref-enabled =
+    .label = Crossref citation edges
+opencitations-enabled =
+    .label = OpenCitations citation edges (off by default)
+openalex-mailto =
+    .value = OpenAlex mailto (polite pool)
+openalex-mailto-hint = Optional; when set, OpenAlex polite pool is used.
+openalex-cache-days =
+    .value = Cache (days)
+
+citegeist = Citegeist (OpenAlex summary — experimental)
+citegeist-enabled =
+    .label = Enable citation summary menu
+citegeist-hint = OpenAlex citation/reference counts for selected items. Full Citegeist columns/pane not ported (no full GPL UI).
+
+anki = Anki (AnkiConnect)
+anki-enabled =
+    .label = Enable Anki bridge
+anki-deck =
+    .value = Deck name
+anki-model =
+    .value = Note type (model)
+anki-host =
+    .value = AnkiConnect host
+anki-port =
+    .value = Port
+anki-hint = Anki desktop must be running with the AnkiConnect add-on (default 127.0.0.1:8765).
+
+markdb = Obsidian / MarkDB
+markdb-enabled =
+    .label = Enable MarkDB vault scan
+markdb-vault =
+    .value = Vault path
+markdb-strategy =
+    .value = Match strategy
+markdb-strategy-citekey =
+    .label = Citekey (YAML / @filename)
+markdb-strategy-itemkey =
+    .label = Zotero itemKey
+markdb-hint = Notes should be @citekey.md; body [[@citekey]] or itemKey refs become Connection Map note edges.
+
+semantic = Semantic (Kutuphane / ZotSeek)
+semantic-kutuphane-enabled =
+    .label = Enable Kutuphane semantic bridge (8756)
+semantic-kutuphane-url =
+    .value = Bridge URL
+semantic-zotseek-enabled =
+    .label = ZotSeek fallback — external plugin (WASM not bundled; off by default)
+semantic-hint = Start zotero_semantic_baslat.bat (8756) first. ZotSeek needs a separate plugin; LibRart does not ship WASM. Items need Citation Key: KPxxxxxx.
+
+note-workspace = Note links (Better Notes compatible)
+note-workspace-enabled =
+    .label = Enable note-link insert
+note-workspace-hint = Inserts zotero://note/… wikilinks into the selected note; Connection Map note layer reads them. Full BN workspace later.

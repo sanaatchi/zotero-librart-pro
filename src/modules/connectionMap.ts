@@ -1,3 +1,4 @@
+// @ajan: cursor · @etiket: connection-map, f8, markdb, f5.2
 import { config } from "../../package.json";
 import { getString } from "../utils/locale";
 import { isWindowAlive } from "../utils/window";
@@ -22,7 +23,12 @@ import {
   unregisterConnectionMapNoteObserver,
 } from "../utils/connectionNotify";
 import { findBlindSpots } from "../utils/connectionBlindSpot";
+import { findUnreadHubs } from "../utils/readingFlowMapFilter";
+import { buildReadingIndexForGraph } from "./readingFlowBridge";
 import { computeCitationSuggestions } from "../utils/connectionCitationLayer";
+import { computeOpenAlexCitationSuggestions } from "../utils/openAlexCitationLayer";
+import { computeOpenCitationsCitationSuggestions } from "../utils/openCitationsCitationLayer";
+import { computeMarkdbNoteEdges } from "./markdbBridge";
 import {
   renderConnectionMap,
   updateConnectionMapGraph,
@@ -222,10 +228,54 @@ async function loadOptionalLayers(
   }
 
   try {
+    onStatus(getString("connection-map-loading") + " (MarkDB…)");
+    const markdbEdges = await computeMarkdbNoteEdges(base.nodes);
+    extra.push(...markdbEdges);
+  } catch (e) {
+    ztoolkit.log("Connection Map MarkDB layer failed (soft)", e);
+  }
+
+  try {
     const citationEdges = await computeCitationSuggestions(base.nodes);
     extra.push(...citationEdges);
   } catch (e) {
     ztoolkit.log("Connection Map citation layer failed (soft)", e);
+  }
+
+  try {
+    onStatus(getString("connection-map-loading") + " (OpenAlex…)");
+    const openAlexEdges = await computeOpenAlexCitationSuggestions(base.nodes, {
+      onProgress: (done, total) => {
+        if (total > 0 && done % 10 === 0) {
+          onStatus(
+            getString("connection-map-openalex-progress", {
+              args: { done, total },
+            }),
+          );
+        }
+      },
+    });
+    extra.push(...openAlexEdges);
+  } catch (e) {
+    ztoolkit.log("Connection Map OpenAlex layer failed (soft)", e);
+  }
+
+  try {
+    onStatus(getString("connection-map-loading") + " (OpenCitations…)");
+    const ocEdges = await computeOpenCitationsCitationSuggestions(base.nodes, {
+      onProgress: (done, total) => {
+        if (total > 0 && done % 5 === 0) {
+          onStatus(
+            getString("connection-map-opencitations-progress", {
+              args: { done, total },
+            }),
+          );
+        }
+      },
+    });
+    extra.push(...ocEdges);
+  } catch (e) {
+    ztoolkit.log("Connection Map OpenCitations layer failed (soft)", e);
   }
 
   try {
@@ -292,6 +342,8 @@ function readLayerState(doc: Document): ConnectionMapLayerState {
     semantic: checked(`${config.addonRef}-layer-semantic`, true),
     note: checked(`${config.addonRef}-layer-note`, true),
     citation: checked(`${config.addonRef}-layer-citation`, true),
+    openalex: checked(`${config.addonRef}-layer-openalex`, true),
+    opencitations: checked(`${config.addonRef}-layer-opencitations`, true),
   };
 }
 
@@ -317,6 +369,23 @@ function updateBlindSpotBanner(win: Window, graph: ConnectionGraph) {
     `${config.addonRef}-connection-map-blind`,
   );
   if (!el) return;
+
+  const readingIndex = buildReadingIndexForGraph([...graph.nodes.keys()]);
+  const unreadHubs = readingIndex
+    ? findUnreadHubs(graph.nodes, graph.edges, readingIndex)
+    : [];
+  if (unreadHubs.length) {
+    const top = unreadHubs[0];
+    el.textContent = getString("connection-map-unread-hub", {
+      args: { title: top.title, degree: top.degree },
+    });
+    el.classList.add("open");
+    el.onclick = () => {
+      Zotero.getActiveZoteroPane()?.selectItem(top.itemID);
+    };
+    return;
+  }
+
   const spots = findBlindSpots(graph);
   if (!spots.length) {
     el.textContent = "";

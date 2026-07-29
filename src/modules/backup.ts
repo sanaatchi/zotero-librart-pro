@@ -1,5 +1,10 @@
+// @ajan: cursor · @etiket: f0, backup, yaml-import
 import * as yaml from "js-yaml";
 import { ActionData } from "../utils/actions";
+import {
+  parseActionImportYaml,
+  validateActionImportPayload,
+} from "../utils/actionImportValidate";
 import { version } from "../../package.json";
 import { updateHint } from "../utils/hint";
 
@@ -62,21 +67,12 @@ async function importFromFile(options: { win: Window }) {
   if (!importStr || typeof importStr !== "string") {
     return false;
   }
-  const importObj = yaml.load(importStr) as any;
-  if (!importObj || typeof importObj !== "object") {
-    return false;
-  }
-  ztoolkit.log("Import Actions", importObj);
-  if (
-    !importObj.actions ||
-    typeof importObj.actions !== "object" ||
-    (importObj.type !== "LibRartProBackup" &&
-      importObj.type !== "ActionsTagsBackup") ||
-    !Object.keys(importObj.actions).length
-  ) {
+  const importObj = parseActionImportYaml(importStr);
+  if (!validateActionImportPayload(importObj)) {
     updateHint(`${path} is not a valid actions file`);
     return false;
   }
+  ztoolkit.log("Import Actions", importObj);
   const conflictKeys = Object.keys(importObj.actions).filter((key) =>
     addon.api.actionManager.getActions(key),
   );

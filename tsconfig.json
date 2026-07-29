@@ -4,8 +4,6 @@
   "exclude": [
     "build",
     "addon",
-    "src/vendor/zotseek/core/embedding-pipeline.ts",
-    "src/vendor/zotseek/core/model-registry.ts",
-    "src/vendor/zotseek/logger.ts"
+    "src/vendor/zotseek/worker/embedding-worker.ts"
   ]
 }

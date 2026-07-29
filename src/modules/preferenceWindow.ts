@@ -1,3 +1,4 @@
+// @ajan: cursor · @etiket: preferences, f9, semantic
 import { config } from "../../package.json";
 import { getString } from "../utils/locale";
 import {
@@ -9,6 +10,7 @@ import {
 } from "../utils/actions";
 import { isWindowAlive } from "../utils/window";
 import { setPref, getPref } from "../utils/prefs";
+import { ensureSemanticPrefDefaults } from "./semanticBridge";
 
 export async function initPrefPane(_window: Window) {
   addon.data.prefs.window = _window;
@@ -19,17 +21,29 @@ export async function initPrefPane(_window: Window) {
 
 /** Plain text inputs have no native `preference` binding — wire manually. */
 function initLocalBookDbInputs() {
+  ensureSemanticPrefDefaults();
   const doc = addon.data.prefs.window?.document;
   if (!doc) return;
   const bind = (id: string, prefKey: string) => {
     const el = doc.getElementById(id) as HTMLInputElement | null;
     if (!el) return;
     el.value = String(getPref(prefKey) || "");
-    el.addEventListener("change", () => setPref(prefKey, el.value.trim()));
+    el.addEventListener("change", () => {
+      const value = el.value.trim();
+      setPref(prefKey, value);
+      // Keep legacy key in sync for older builds / notes.
+      if (prefKey === "semantic.kutuphaneUrl") {
+        setPref("kutuphaneSemanticUrl", value);
+      }
+    });
   };
   bind(`${config.addonRef}-openlibrary-path`, "openLibraryDbPath");
   bind(`${config.addonRef}-kitaplar-path`, "kitaplarDbPath");
-  bind(`${config.addonRef}-kutuphane-semantic-url`, "kutuphaneSemanticUrl");
+  const urlPref =
+    getPref("semantic.kutuphaneUrl") !== undefined
+      ? "semantic.kutuphaneUrl"
+      : "kutuphaneSemanticUrl";
+  bind(`${config.addonRef}-kutuphane-semantic-url`, urlPref);
 }
 
 function getColumnsWithSortIndicator() {

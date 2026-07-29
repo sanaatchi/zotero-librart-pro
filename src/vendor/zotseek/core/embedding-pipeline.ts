@@ -2,7 +2,7 @@
 // Adapted from ZotSeek (MIT) src/core/embedding-pipeline.ts
 import { Logger } from '../logger';
 import { getActiveModel, getModel, ModelConfig, modelBasePath, setActiveModelId } from './model-registry';
-import { config } from '../../../package.json';
+import { config } from '../../../../package.json';
 
 declare const ChromeWorker: any;
 

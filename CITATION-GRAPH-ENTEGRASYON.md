@@ -1,6 +1,4 @@
-<!-- @ajan: cursor · @etiket: yonlendirme, tek-kaynak -->
+<!-- @ajan: cursor · @etiket: yonlendirme, stub -->
 # Taşındı
 
-Atıf yığını faz planı: **`REFERANS-ANALIZ.md`** §5, §10–§11 (F4–F6, F8–F9).
-
-Tek güncel kaynak: [REFERANS-ANALIZ.md](REFERANS-ANALIZ.md)
+Atıf katmanı: [LIBRART-REFERANS-PORT.md](LIBRART-REFERANS-PORT.md) · faz F5: [LIBRART-YAPILANDIRMA.md](LIBRART-YAPILANDIRMA.md)

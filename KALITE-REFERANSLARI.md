@@ -1,6 +1,6 @@
-<!-- @ajan: cursor · @etiket: yonlendirme, tek-kaynak -->
+<!-- @ajan: cursor · @etiket: yonlendirme, stub -->
 # Taşındı
 
-Kalite, test ve CI referansları: **`REFERANS-ANALIZ.md`** §4 ve §18 (F0).
+Test/CI referansları: [LIBRART-YAPILANDIRMA.md](LIBRART-YAPILANDIRMA.md) §3 F0 · [LIBRART-REFERANS-PORT.md](LIBRART-REFERANS-PORT.md) §7
 
-Tek güncel kaynak: [REFERANS-ANALIZ.md](REFERANS-ANALIZ.md)
+Arşiv detay: [LIBRART-ARSIV.md](LIBRART-ARSIV.md) §4

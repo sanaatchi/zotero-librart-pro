@@ -1,3 +1,4 @@
+// @ajan: cursor · @etiket: connection-graph, f8, markdb
 import { computeTagLayerEdges } from "./connectionTagLayer";
 import { attachDisciplineProfile } from "./connectionDiscipline";
 import { annotateBridgeScores } from "./connectionBridgeScore";
@@ -28,6 +29,8 @@ export type GraphNode = {
   bridgeScore?: number;
 };
 
+export type CitationSource = "crossref" | "openalex" | "opencitations";
+
 export type GraphEdge = {
   id: string;
   source: number;
@@ -40,7 +43,10 @@ export type GraphEdge = {
   viaNoteSource?:
     | "citation-span"
     | "better-notes-wikilink"
-    | "highlight-semantic";
+    | "highlight-semantic"
+    | "markdb-vault";
+  /** F5 — which citation API produced this edge (citation layer only). */
+  citationSource?: CitationSource;
   crossDiscipline: boolean;
   createdAt?: string;
 };

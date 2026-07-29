@@ -1,6 +1,4 @@
-<!-- @ajan: cursor · @etiket: yonlendirme, tek-kaynak -->
+<!-- @ajan: cursor · @etiket: yonlendirme, stub -->
 # Taşındı
 
-Bekleyen özellikler ve klon durumu: **`REFERANS-ANALIZ.md`** §2 ve §8.
-
-Tek güncel kaynak: [REFERANS-ANALIZ.md](REFERANS-ANALIZ.md)
+→ [LIBRART-REFERANS-PORT.md](LIBRART-REFERANS-PORT.md) §4 (modül özeti) · [LIBRART-YAPILANDIRMA.md](LIBRART-YAPILANDIRMA.md) (fazlar)

@@ -5,6 +5,8 @@ import {
 } from "./modules/dispatch";
 import { ExtraFieldTool, ClipboardHelper } from "zotero-plugin-toolkit";
 import { getActions, updateAction, deleteAction } from "./utils/actions";
+import { getZoteroAdapter } from "./adapters/zoteroAdapter";
+import { getFeatureRegistry } from "./core/featureRegistry";
 
 const actionManager = {
   dispatchActionByEvent,
@@ -23,4 +25,6 @@ const utils = {
 export default {
   actionManager,
   utils,
+  zotero: getZoteroAdapter,
+  features: getFeatureRegistry,
 };

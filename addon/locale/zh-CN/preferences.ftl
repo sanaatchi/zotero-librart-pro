@@ -54,3 +54,43 @@ action-delete-message-ignore =
 tag-dashboard = 标签分析
 tag-dashboard-open =
     .label = 打开标签分析面板
+
+anki = Anki (AnkiConnect)
+anki-enabled =
+    .label = 启用 Anki 桥接
+anki-deck =
+    .value = 牌组 (deck)
+anki-model =
+    .value = 笔记类型 (model)
+anki-host =
+    .value = AnkiConnect 主机
+anki-port =
+    .value = 端口
+anki-hint = 需运行 Anki 桌面版并安装 AnkiConnect 插件（默认 127.0.0.1:8765）。
+
+markdb = Obsidian / MarkDB
+markdb-enabled =
+    .label = 启用 MarkDB 仓库扫描
+markdb-vault =
+    .value = Vault 路径
+markdb-strategy =
+    .value = 匹配策略
+markdb-strategy-citekey =
+    .label = Citekey（YAML / @文件名）
+markdb-strategy-itemkey =
+    .label = Zotero itemKey
+markdb-hint = 笔记应为 @citekey.md；正文 [[@citekey]] 或 itemKey 会生成连接地图笔记边。
+
+semantic = Semantic（Kutuphane / ZotSeek）
+semantic-kutuphane-enabled =
+    .label = 启用 Kutuphane semantic 桥接（8756）
+semantic-kutuphane-url =
+    .value = 桥接 URL
+semantic-zotseek-enabled =
+    .label = ZotSeek 回退 — 外部插件（未打包 WASM；默认关闭）
+semantic-hint = 请先运行 zotero_semantic_baslat.bat（8756）。ZotSeek 需单独插件；LibRart 不附带 WASM。条目需 Citation Key: KPxxxxxx。
+
+note-workspace = 笔记链接（兼容 Better Notes）
+note-workspace-enabled =
+    .label = 启用插入笔记链接
+note-workspace-hint = 向所选笔记插入 zotero://note/… 维基链接；连接地图笔记层可读。完整 BN 工作区稍后。

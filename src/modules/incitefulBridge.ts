@@ -3,6 +3,7 @@
 import { config } from "../../package.json";
 import { getString } from "../utils/locale";
 import { getPref } from "../utils/prefs";
+import { getZoteroAdapter } from "../adapters/zoteroAdapter";
 import {
   getIDsFromItems,
   openIncitefulConnector,
@@ -22,16 +23,14 @@ function alertDialog(message: string) {
 
 function onSearchItems() {
   if (!isIncitefulEnabled()) return;
-  const pane = Zotero.getActiveZoteroPane();
-  const selectedItems = pane?.getSelectedItems() ?? [];
+  const selectedItems = getZoteroAdapter().getActivePane()?.getSelectedItems() ?? [];
   const ids = getIDsFromItems(selectedItems);
   openIncitefulSearch(ids);
 }
 
 function onConnectItems() {
   if (!isIncitefulEnabled()) return;
-  const pane = Zotero.getActiveZoteroPane();
-  const selectedItems = pane?.getSelectedItems() ?? [];
+  const selectedItems = getZoteroAdapter().getActivePane()?.getSelectedItems() ?? [];
   if (selectedItems.length > 2) {
     alertDialog(getString("inciteful-error-too-many"));
     return;
@@ -46,8 +45,7 @@ function onConnectItems() {
 
 function onSearchCollection() {
   if (!isIncitefulEnabled()) return;
-  const pane = Zotero.getActiveZoteroPane();
-  const collection = pane?.getSelectedCollection();
+  const collection = getZoteroAdapter().getActivePane()?.getSelectedCollection();
   if (!collection) return;
   const ids = getIDsFromItems(collection.getChildItems());
   openIncitefulSearch(ids);

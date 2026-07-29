@@ -1,3 +1,4 @@
+// @ajan: cursor · @etiket: f0, build, updater
 import { defineConfig } from "zotero-plugin-scaffold";
 import pkg from "./package.json";
 
@@ -40,7 +41,7 @@ export default defineConfig({
       },
     ],
     makeUpdateJson: {
-      hash: false,
+      hash: true,
     },
   },
 });
