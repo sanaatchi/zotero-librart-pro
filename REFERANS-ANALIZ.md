@@ -1,13 +1,38 @@
 <!-- @ajan: cursor · @etiket: referans-analiz, entegrasyon-plani, tek-kaynak -->
 # LibRart Pro — referans envanteri, lisans, kalite ve entegrasyon yol haritası
 
-**Tek kaynak belge.** Referans seçimi, lisans, entegrasyon fazları (F0–F9, F10+), mimari kurallar
-ve kabul ölçütleri yalnız burada güncellenir.
+**Tek kaynak belge (SSOT).** Yeni referans analizi, lisans kararı, faz önceliği, entegrasyon
+kapsamı veya mimari kural değişikliği **yalnız bu dosyada** yapılır.
 
-**Ayrı kalır:** `VENDOR-SOURCES.md`, `CURSOR-GOREV-ORIJINAL-KOD-ENTEGRASYONU.md`,
-`BAGLANTI-HARITASI-PLAN.md`, `../README.md` (klasör haritası).
+**Tarih:** 2026-07-29 (son birleştirme) · **Kapsam:** `referanslar/` — **91 depo**
+(92 klon, `zotero-citation-network` malware silindi).
 
-**Tarih:** 2026-07-29 · **Kapsam:** `referanslar/` — **91 depo** (92 klon, `zotero-citation-network` silindi).
+---
+
+## Bakım kuralı (Cursor · Claude · Codex)
+
+| Ne olursa | Nereye yazılır | Yapılmaz |
+|---|---|---|
+| Yeni referans / lisans / faz kararı | **Bu dosya** — ilgili § güncelle + alttaki değişiklik günlüğü | Paralel analiz MD oluşturma |
+| Vendor portu tamamlandı | §0 durum + `VENDOR-SOURCES.md` (fiili tablo only) | `ENTEGRASYON-PLANI.md` vb. genişletme |
+| Klasör envanteri (hangi repo klonlandı) | `../README.md` tablo satırı | README'de faz/lisans kararı |
+| Stub dosyalar | Yalnız yönlendirme satırı; içerik ekleme **yasak** | Stub'a analiz kopyalama |
+| Kutuphane `Changes.md` | Ana repo'da anlamlı oturum kaydı | Zotero analiz tekrarı |
+
+**Stub listesi (dokunma — yönlendirme yeterli):** `../REFERANS-ANALIZI.md`,
+`../referanslar/ANALIZ.md`, `ENTEGRASYON-PLANI.md`, `CITATION-GRAPH-ENTEGRASYON.md`,
+`KALITE-REFERANSLARI.md`, `REFERANS-BEKLEYEN-OZELLIK.md`.
+
+**Ayrı kalır (bu dosyayı tekrarlamaz):** `VENDOR-SOURCES.md`, `CURSOR-GOREV-ORIJINAL-KOD-ENTEGRASYONU.md`,
+`BAGLANTI-HARITASI-PLAN.md`, `../README.md`.
+
+### Değişiklik günlüğü (bu belge)
+
+| Tarih | Ajan | Özet |
+|---|---|---|
+| 2026-07-29 | cursor | Belgeler birleştirildi; SSOT ilan edildi; §18–22 eklendi; stub'lar yönlendirildi |
+| 2026-07-29 | claude+cursor | Lisans §1a (13 lisanssız), scite port yasağı §7, citation-network silindi §6 |
+| 2026-07-29 | cursor+codex | 91 depo envanteri; F0–F9 + F10+ faz planı |
 
 ---
 
@@ -21,8 +46,10 @@ ve kabul ölçütleri yalnız burada güncellenir.
 | addonID / addonRef | `librartpro@euclpts.com` / `librartpro` |
 | Sürüm | 1.0.32 |
 | Lisans | AGPL-3.0-or-later — AGPL/MIT kaynaklardan doğrudan kod kullanımına izin verir (birleşik eser AGPL kalmalı) |
-| Bağlantı Haritası katmanları | `tag` ✅ · `manual` ✅ · `semantic` kısmi (ZotSeek vendor yarım) · `note` kısmi · `citation` kısmi (yalnız Crossref) |
-| Inciteful menü | ✅ entegre (`incitefulBridge.ts`) |
+| Vendor (`src/vendor/`) | `inciteful/` ✅ · `zotero-reference/` ✅ · `zotero-style/` ✅ · `zotseek/` kısmi · `zotero-better-notes/` boş |
+| Modül (`src/modules/` inciteful) | `incitefulBridge.ts` ✅ |
+| Bağlantı Haritası katmanları | `tag` ✅ · `manual` ✅ · `semantic` kısmi · `note` kısmi · `citation` kısmi (Crossref) |
+| Planlanmış, kod yok | `markdbBridge`, `openAlexCitationLayer`, `offlineCitationLayer`, `pdfCitationLayer`, `citegeistBridge`, `readingTracker` |
 | Test | **yok** (`npm test` stub) |
 
 ---
@@ -169,7 +196,7 @@ Port gerektirmez; ihtiyaç anında desen kaynağı.
 
 ---
 
-## 5. Atıf-yığını faz planı (citation graph — en kalabalık kategori)
+## 5. Atıf-yığını teknik seçenekleri (aktif faz sırası değildir)
 
 ```mermaid
 flowchart LR
@@ -196,12 +223,16 @@ flowchart LR
   INC -.->|menü| L
 ```
 
-1. **Faz 1 (düşük risk):** inciteful ✅ tamamlandı.
-2. **Faz 2:** offline (Thrillcrazyer) — vendor `plugin-core.js`+`graph/*`+cytoscape, `offlineCitationLayer.ts`.
-3. **Faz 3 (MIT öncelik):** OpenAlex — birincil `ZoteroCitationMaps` (düz JS), ikincil `zotero-openalex` (sadece store).
-4. **Faz 4:** PDF kaynakça — `citation_map` mantığını TS'e port et (kod kopyası değil, lisanssız kaynak).
-5. **Faz 5:** citegeist — snowball/metrik, isteğe bağlı tam port.
-6. **Faz 6:** Kutuphane köprüsü — `citation-graph-openalex-cli` → `pip install -e` → `zotero_citation_graph_bridge.py` (kökte, gitignore dışı).
+1. Inciteful ✅ tamamlandı.
+2. OpenAlex: birincil `ZoteroCitationMaps` (MIT), ikincil
+   `zotero-openalex` (yalnız lisanslı store/cache parçaları).
+3. OpenCitations: lisanslı açık-veri atıf ilişkisi.
+4. Citegeist: snowball/metrik, çekirdek yol haritasından sonra isteğe bağlı.
+5. Kutuphane citation köprüsü: yalnız F0 kalite kapıları ve temel ürün fazları
+   tamamlandıktan sonra deneysel.
+6. `Zotero-Citation-Graph`, `citation_map` ve `Local-Citation-Graph` lisanssızdır;
+   vendor/port/çeviri-port yapılmaz. Yalnız gereksinim çıkarımı ve temiz oda
+   uygulama mümkündür.
 
 **Pref taslağı:** `citation.layers.{crossref,offline,openalex,pdf}`, `inciteful.enabled`, `openalex.mailto`, `kutuphane.citationBridge.enabled`.
 
@@ -286,15 +317,17 @@ export type GraphEdge = {
 | `inciteful.enabled` | F1 ✅ | true |
 | `citation.layers.crossref` | F1 ✅ | true |
 | `citation.layers.openalex` | F4 | true |
-| `citation.layers.offline` | F5 | true |
-| `citation.layers.pdf` | F6 | false |
-| `openalex.mailto` / `openalex.cacheDays` | F4 | "" / 30 |
-| `note.markdb.enabled` / `note.markdb.vaultPath` | F2 | false / "" |
-| `reading.enabled` | F3 | true |
-| `semantic.zotseek.enabled` | F7 | false |
+| `citation.layers.openalex` | F5 | true |
+| `citation.layers.openCitations` | F5 | false |
+| `openalex.mailto` / `openalex.cacheDays` | F5 | "" / 30 |
+| `reading.enabled` | F4 | true |
+| `watchFolder.enabled` | F6 | false |
+| `anki.enabled` | F7 | false |
+| `note.markdb.enabled` / `note.markdb.vaultPath` | F8 | false / "" |
+| `semantic.zotseek.enabled` | F9 | false |
 | `semantic.kutuphaneUrl` | ✅ | `http://127.0.0.1:8756` |
-| `citegeist.enabled` | F8 | false |
-| `kutuphane.citationBridge.enabled` | F9 | false |
+| `citegeist.enabled` | deneysel | false |
+| `kutuphane.citationBridge.enabled` | deneysel | false |
 
 ---
 
@@ -598,9 +631,14 @@ Release: `npm run gh-release` → `sanaatchi/zotero-librart-pro-releases`
 reading-flow veri modeli (2 gün). Hafta 2 → F4 OpenAlex CitationMaps motoru (4-5 gün) →
 `VENDOR-SOURCES.md` güncelle → v1.0.36 release adayı.
 
-## 17. Sonraki adım (hemen)
+## 17. Sonraki adım
 
-F0 (test/scaffold) → F2 (markdb) veya F2+F3 paralel. Kod portu öncesi `npm run build` geçmeli.
+**Sıradaki faz:** F0 (scaffold 0.8.8 + `zotero-plugin test` smoke) → F2 markdb veya F2+F3 paralel.
+
+**Kod portu öncesi:** `npm run build` geçmeli; yeni vendor `VENDOR-SOURCES.md` satırı eklenmeli.
+
+**Bu belgeyi güncelle:** Faz başlangıç/bitiş, lisans teyidi veya yeni referans kararında yalnız §0,
+ilgili faz (§10–§11 / §21) ve üstteki değişiklik günlüğü.
 
 ---
 
@@ -704,12 +742,41 @@ F0–F9 (Bağlantı Haritası + semantic) tamamlandıktan sonra:
 
 ## Belge haritası
 
-| Dosya | Rol |
-|---|---|
-| **`REFERANS-ANALIZ.md`** (bu dosya) | Tek güncel kaynak — lisans, F0–F9, F10+, mimari |
-| `VENDOR-SOURCES.md` | Fiili vendor listesi |
-| `CURSOR-GOREV-ORIJINAL-KOD-ENTEGRASYONU.md` | Port brifi |
-| `CLAUDE.md` | LibRart Claude Code girişi |
-| `../README.md` | `zotero-eklentiler/` klasör envanteri (91 depo) |
-| `../REFERANS-ANALIZI.md`, `../referanslar/ANALIZ.md` | Stub → bu dosya |
-| `ENTEGRASYON-PLANI.md`, `CITATION-GRAPH-ENTEGRASYON.md`, `KALITE-REFERANSLARI.md`, `REFERANS-BEKLEYEN-OZELLIK.md` | Stub → bu dosya |
+| Dosya | Rol | Güncelleme |
+|---|---|---|
+| **`REFERANS-ANALIZ.md`** (bu dosya) | SSOT — lisans, F0–F9, F10+, mimari, kabul | **Her analiz/karar burada** |
+| `VENDOR-SOURCES.md` | Fiili vendor tablosu (port sonrası) | Vendor eklendiğinde |
+| `CURSOR-GOREV-ORIJINAL-KOD-ENTEGRASYONU.md` | Orijinal port brifi | Brif değişirse |
+| `CLAUDE.md` | LibRart Claude giriş → bu dosya | Giriş linki only |
+| `../README.md` | 91 depo envanter tablosu | Yeni klon satırı |
+| Stub'lar (aşağı) | → bu dosya | **İçerik ekleme yasak** |
+
+Stub: `../REFERANS-ANALIZI.md`, `../referanslar/ANALIZ.md`, `ENTEGRASYON-PLANI.md`,
+`CITATION-GRAPH-ENTEGRASYON.md`, `KALITE-REFERANSLARI.md`, `REFERANS-BEKLEYEN-OZELLIK.md`.
+
+---
+
+## Değişiklik günlüğü
+
+### 2026-07-29 — Claude Code: commit + P0 tamamlandı
+
+Kullanıcı onayıyla `kaynak/` reposunda commit attım (daha önce `hooks.ts`/`menu.ts`
+commit edilmemiş durumda kalmıştı, artık temiz):
+
+1. **`accd75f`** — Inciteful entegrasyonu (Cursor'ın çalışması) commit edildi.
+2. **`2a0bdbd`** — Bu dosyanın 4 dosyadan konsolidasyonu (CITATION-GRAPH-ENTEGRASYON.md,
+   KALITE-REFERANSLARI.md, REFERANS-BEKLEYEN-OZELLIK.md, ENTEGRASYON-PLANI.md → stub) +
+   VENDOR-SOURCES.md/CURSOR-GOREV güncellemeleri commit edildi.
+3. **`6a470bc`** — **P0 tamamlandı:** `referenceExtractor.ts`'teki `extractReferencesFromPdf()`
+   daha önce hiçbir menüye bağlı değildi (bu belgenin ilk taslağından beri açık kalan tek görev).
+   Yeni `onExtractReferences()` → aktif PDF okuyucudan kaynakçayı çıkarır, ebeveyn öğeye not
+   olarak ekler, Araçlar menüsüne "Kaynakçayı çıkar" eklendi, tr-TR/en-US Fluent anahtarları
+   eklendi. Ayrıca `scite-zotero-plugin` VENDOR-SOURCES.md'ye eklendi (§1a/§7 ile tutarlı
+   "vendor/port yasak" — daha önce sadece bu dosyada vardı, tabloda eksikti).
+
+`npm run build` üç commit'ten sonra da temiz geçti (yalnızca önceden var olan it-IT/zh-CN
+locale eksikliği uyarıları, benim eklediğim hiçbir şeyden kaynaklı değil).
+
+**Cursor/Codex için not:** `git log` artık 5 commit (`6a470bc` HEAD). Yeni çalışmaya bu commit'in
+üzerinden devam edebilirsiniz — `hooks.ts`/`menu.ts` artık temiz, çakışma riski yok. Manuel
+Zotero testi (F0 sonrası `npm test` dahil) hâlâ kullanıcı tarafında yapılmadı.

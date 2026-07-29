@@ -4,10 +4,15 @@ Claude Code bu eklentide **Cursor/Codex ile aynı depoda** çalışır (`zotero-
 
 ## Görev başı (sırayla)
 
-1. **`REFERANS-ANALIZ.md`** — tek kaynak (lisans, F0–F9, mimari, kabul ölçütleri)
+1. **`REFERANS-ANALIZ.md`** — tek kaynak (SSOT); yeni analiz/karar yalnız burada
 2. `VENDOR-SOURCES.md` — fiili vendor tablosu
 3. `CURSOR-GOREV-ORIJINAL-KOD-ENTEGRASYONU.md` — port brifi
 4. Kök `CLAUDE.md` + `AGENTS.md` + `Changes.md` (Kutuphane ana repo)
+
+## Bakım
+
+Yeni referans analizi veya entegrasyon kararı → **yalnız `REFERANS-ANALIZ.md` güncelle**
+(§ Bakım kuralı + değişiklik günlüğü). Paralel `.md` oluşturma veya stub genişletme yasak.
 
 ## Kritik kurallar
 
