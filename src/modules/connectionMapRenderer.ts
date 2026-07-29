@@ -596,14 +596,20 @@ function mountSvg(
     g.appendChild(tip);
     g.appendChild(circle);
 
-    // Always-on labels only for hubs; zoom/hover reveals more.
+    // Labels counter-scale with zoom so on-screen size stays constant (vector UX).
+    const labelWrap = doc.createElementNS("http://www.w3.org/2000/svg", "g");
+    labelWrap.setAttribute("class", "node-label-wrap");
+    labelWrap.setAttribute("data-anchor-r", String(r));
+
     const label = doc.createElementNS("http://www.w3.org/2000/svg", "text");
-    label.setAttribute("y", String(r + 10));
+    label.setAttribute("x", "0");
+    label.setAttribute("y", "12");
     label.setAttribute("text-anchor", "middle");
     label.setAttribute("class", "node-label");
     label.setAttribute("data-hub", hubIds.has(sn.id) ? "1" : "0");
     label.textContent = truncate(sn.node.title, 28);
-    g.appendChild(label);
+    labelWrap.appendChild(label);
+    g.appendChild(labelWrap);
 
     g.addEventListener("pointerenter", () => {
       label.style.display = "";
@@ -657,8 +663,7 @@ function mountSvg(
   svg.appendChild(root);
   canvas.appendChild(svg);
   paintConnectSelection(win);
-  applyTransform(root, st.transform);
-  syncLabelVisibility(svg, st.transform.k);
+  applyViewport(root, svg, st.transform);
   wireViewportControls(win, svg, root, st);
 }
 
@@ -817,7 +822,6 @@ function wireViewportControls(
             : we.deltaY;
       const factor = Math.exp(-delta * 0.0018);
       zoomAt(svg, root, st, we.clientX, we.clientY, factor);
-      syncLabelVisibility(svg, st.transform.k);
     },
     { passive: false },
   );
@@ -891,8 +895,7 @@ function wireViewportControls(
     if (t?.closest?.("g[data-node-id], line[data-edge-id]")) return;
     ev.preventDefault();
     fitView(st);
-    applyTransform(root, st.transform);
-    syncLabelVisibility(svg, st.transform.k);
+    applyViewport(root, svg, st.transform);
   });
 
   // Middle-click autoscroll / paste prevention.
@@ -916,8 +919,7 @@ function wireViewportControls(
     } else if (ev.key === "0" && (ev.ctrlKey || ev.metaKey)) {
       ev.preventDefault();
       fitView(cur);
-      applyTransform(root, cur.transform);
-      syncLabelVisibility(svg, cur.transform.k);
+      applyViewport(root, svg, cur.transform);
     } else if (ev.key === "+" || ev.key === "=") {
       const rect = svg.getBoundingClientRect();
       zoomAt(
@@ -928,7 +930,6 @@ function wireViewportControls(
         rect.top + rect.height / 2,
         1.12,
       );
-      syncLabelVisibility(svg, cur.transform.k);
     } else if (ev.key === "-" || ev.key === "_") {
       const rect = svg.getBoundingClientRect();
       zoomAt(
@@ -939,7 +940,6 @@ function wireViewportControls(
         rect.top + rect.height / 2,
         1 / 1.12,
       );
-      syncLabelVisibility(svg, cur.transform.k);
     }
   };
   const onKeyUp = (ev: KeyboardEvent) => {
@@ -993,7 +993,7 @@ function zoomAt(
   st.transform.k = nextK;
   st.transform.x = mx - wx * nextK;
   st.transform.y = my - wy * nextK;
-  applyTransform(root, st.transform);
+  applyViewport(root, svg, st.transform);
 }
 
 function fitView(st: RendererState) {
@@ -1024,6 +1024,17 @@ function fitView(st: RendererState) {
   st.transform.y = h / 2 - cy * st.transform.k;
 }
 
+function syncScreenFixedLabels(svg: Element, k: number) {
+  const inv = 1 / Math.max(k, 0.001);
+  const wraps = svg.querySelectorAll(".node-label-wrap");
+  for (let i = 0; i < wraps.length; i++) {
+    const wrap = wraps.item(i) as Element | null;
+    if (!wrap) continue;
+    const r = Number(wrap.getAttribute("data-anchor-r") || "8");
+    wrap.setAttribute("transform", `translate(0,${r}) scale(${inv})`);
+  }
+}
+
 function syncOneLabel(el: Element, k: number) {
   const hub = el.getAttribute("data-hub") === "1";
   const showAll = k >= 1.45;
@@ -1049,6 +1060,16 @@ function applyTransform(
   t: { x: number; y: number; k: number },
 ) {
   g.setAttribute("transform", `translate(${t.x},${t.y}) scale(${t.k})`);
+}
+
+function applyViewport(
+  root: SVGElement,
+  svg: Element,
+  t: { x: number; y: number; k: number },
+) {
+  applyTransform(root, t);
+  syncScreenFixedLabels(svg, t.k);
+  syncLabelVisibility(svg, t.k);
 }
 
 function clientToSvg(
