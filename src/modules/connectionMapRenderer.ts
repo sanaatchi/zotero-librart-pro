@@ -1269,7 +1269,8 @@ function startLoop(win: Window) {
   const tick = () => {
     const cur = stateByWin.get(win);
     if (!cur) return;
-    if (cur.energy > 0.01) {
+    // Lower threshold so soft springs keep drifting until nearly still.
+    if (cur.energy > 0.002) {
       stepForces(cur);
       paint(win);
     }
@@ -1286,11 +1287,12 @@ function stepForces(st: RendererState) {
     return;
   }
 
-  const repulsion = 1200;
-  const spring = 0.04;
-  const springLen = 90;
-  const centering = 0.01;
-  const damp = 0.85;
+  // Soft, elastic layout: weak springs + light damping so nodes drift together slowly.
+  const repulsion = 1600;
+  const spring = 0.012;
+  const springLen = 150;
+  const centering = 0.003;
+  const damp = 0.93;
 
   let cx = 0;
   let cy = 0;
