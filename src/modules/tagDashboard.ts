@@ -7,6 +7,14 @@ import {
   analyzeLibraryTags,
 } from "../utils/tagAnalysis";
 import { mergeTags, deleteTags } from "../utils/tagActions";
+import {
+  findItemsMissingMetadata,
+  previewEnrichment,
+  applyEnrichment,
+  detectUnregisteredItemTypes,
+  EnrichmentProposal,
+} from "../utils/metadataEnrichment";
+import { isLocalBookDbConfigured } from "../utils/localBookDb";
 
 export { openTagDashboard, initTagDashboardWindow };
 
@@ -62,7 +70,16 @@ async function initTagDashboardWindow(win: Window) {
 
   try {
     const report = await analyzeLibraryTags();
-    root.innerHTML = renderDashboard(report);
+    const missingItems = await findItemsMissingMetadata(report.libraryID);
+    const unregisteredTypes = await detectUnregisteredItemTypes(
+      report.libraryID,
+    );
+    const dbConfigured = isLocalBookDbConfigured();
+    root.innerHTML = renderDashboard(report, {
+      missingCount: missingItems.length,
+      unregisteredTypes,
+      dbConfigured,
+    });
     if (status) {
       status.textContent = getString("tag-dashboard-updated", {
         args: {
@@ -73,6 +90,7 @@ async function initTagDashboardWindow(win: Window) {
     }
     wireRefresh(win);
     wireActions(win, report);
+    wireMetadataEnrichment(win, missingItems);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     root.innerHTML = `<div class="callout callout-warn">${escapeHtml(
@@ -180,6 +198,79 @@ function wireActions(win: Window, report: TagAnalysisReport) {
   });
 }
 
+function wireMetadataEnrichment(win: Window, missingItems: Zotero.Item[]) {
+  const doc = win.document;
+  const previewBtn = doc.getElementById(
+    `${config.addonRef}-metadata-preview`,
+  ) as HTMLButtonElement | null;
+  const applyAllBtn = doc.getElementById(
+    `${config.addonRef}-metadata-apply-all`,
+  ) as HTMLButtonElement | null;
+  const results = doc.getElementById(`${config.addonRef}-metadata-results`);
+  if (!previewBtn || !results) return;
+
+  let currentProposals: EnrichmentProposal[] = [];
+
+  const renderRow = (p: EnrichmentProposal): string => {
+    const changes = (["publisher", "place", "date"] as const)
+      .filter((f) => p.proposed[f])
+      .map((f) => `${f}: ${escapeHtml(p.current[f] || "—")} → ${escapeHtml(p.proposed[f]!)}`)
+      .join(" · ");
+    return `<div class="list-row action-row" data-metadata-item="${p.itemID}">
+      <span class="action-text" title="${escapeHtml(p.title)}">
+        ${escapeHtml(p.title)} <span class="pill">${escapeHtml(p.source)}</span>
+        <br/><span class="muted small">${changes}</span>
+      </span>
+      <button type="button" class="btn-mini btn-primary btn-apply-metadata" data-item-id="${p.itemID}">${escapeHtml(
+        getString("metadata-enrich-apply"),
+      )}</button>
+    </div>`;
+  };
+
+  const wireRow = (p: EnrichmentProposal) => {
+    const row = results.querySelector(
+      `[data-metadata-item="${p.itemID}"] .btn-apply-metadata`,
+    ) as HTMLButtonElement | null;
+    row?.addEventListener("click", async () => {
+      row.disabled = true;
+      const count = await applyEnrichment([p]);
+      if (count) {
+        updateHint(getString("metadata-enrich-done", { args: { count } }));
+        row.closest(".list-row")?.remove();
+        currentProposals = currentProposals.filter((x) => x.itemID !== p.itemID);
+      } else {
+        row.disabled = false;
+      }
+    });
+  };
+
+  previewBtn.addEventListener("click", async () => {
+    previewBtn.disabled = true;
+    results.innerHTML = `<div class="muted small">${escapeHtml(getString("tag-dashboard-loading"))}</div>`;
+    try {
+      currentProposals = await previewEnrichment(missingItems);
+      if (!currentProposals.length) {
+        results.innerHTML = `<div class="muted">${escapeHtml(getString("tag-dashboard-none"))}</div>`;
+        if (applyAllBtn) applyAllBtn.style.display = "none";
+        return;
+      }
+      results.innerHTML = currentProposals.map(renderRow).join("");
+      currentProposals.forEach(wireRow);
+      if (applyAllBtn) applyAllBtn.style.display = "";
+    } finally {
+      previewBtn.disabled = false;
+    }
+  });
+
+  applyAllBtn?.addEventListener("click", async () => {
+    if (!currentProposals.length) return;
+    applyAllBtn.disabled = true;
+    const count = await applyEnrichment(currentProposals);
+    updateHint(getString("metadata-enrich-done", { args: { count } }));
+    await initTagDashboardWindow(win);
+  });
+}
+
 async function runMerge(
   win: Window,
   libraryID: number,
@@ -205,7 +296,52 @@ function fmt(n: number): string {
   return new Intl.NumberFormat(Zotero.locale || undefined).format(n);
 }
 
-function renderDashboard(r: TagAnalysisReport): string {
+type MetadataCardState = {
+  missingCount: number;
+  unregisteredTypes: string[];
+  dbConfigured: boolean;
+};
+
+function renderMetadataCard(state: MetadataCardState): string {
+  const { missingCount, unregisteredTypes, dbConfigured } = state;
+  return `
+<article class="card">
+  <header class="card-h">
+    <span>${escapeHtml(getString("metadata-enrich-title"))}</span>
+    <span class="pill${missingCount ? " pill-warn" : " pill-ok"}">${fmt(missingCount)}</span>
+  </header>
+  <div class="card-b">
+    ${
+      !dbConfigured
+        ? `<div class="callout callout-warn">${escapeHtml(getString("metadata-enrich-no-db"))}</div>`
+        : ""
+    }
+    <p class="muted small">${escapeHtml(
+      getString("metadata-enrich-missing-count", { args: { count: missingCount } }),
+    )}</p>
+    <div class="manual-row">
+      <button type="button" id="${config.addonRef}-metadata-preview" class="btn-mini btn-primary" ${
+        missingCount ? "" : "disabled"
+      }>${escapeHtml(getString("metadata-enrich-preview"))}</button>
+      <button type="button" id="${config.addonRef}-metadata-apply-all" class="btn-mini btn-primary" style="display:none">${escapeHtml(
+        getString("metadata-enrich-apply-all"),
+      )}</button>
+    </div>
+    <div id="${config.addonRef}-metadata-results" class="list"></div>
+    ${
+      unregisteredTypes.length
+        ? `<div class="callout callout-warn small">${escapeHtml(
+            getString("metadata-enrich-unregistered-types", {
+              args: { types: unregisteredTypes.join(", ") },
+            }),
+          )}</div>`
+        : ""
+    }
+  </div>
+</article>`;
+}
+
+function renderDashboard(r: TagAnalysisReport, meta: MetadataCardState): string {
   const s = r.summary;
   const catEntries = [
     {
@@ -279,6 +415,8 @@ function renderDashboard(r: TagAnalysisReport): string {
     }),
   )}
 </div>
+
+${renderMetadataCard(meta)}
 
 <div class="grid-2">
   <article class="card">

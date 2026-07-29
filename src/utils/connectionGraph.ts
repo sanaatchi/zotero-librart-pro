@@ -9,7 +9,7 @@ export type ConnectionState = "confirmed" | "suggested";
 export type DisciplineProfile = {
   primary: string;
   scores: Record<string, number>;
-  source: "collection" | "tags" | "embedding";
+  source: "collection" | "tags" | "embedding" | "openlibrary";
 };
 
 export type GraphNode = {

@@ -100,12 +100,28 @@ function scoreText(folded: string, keys: string[]): number {
 function inferDisciplineProfile(
   item: Zotero.Item,
   collectionLabels: string[],
+  subjects?: string[],
 ): DisciplineProfile {
   const scores: Record<string, number> = {};
 
   const bump = (label: string, amount: number) => {
     scores[label] = (scores[label] || 0) + amount;
   };
+
+  // Real bibliographic subject data (OpenLibrary) is the most trustworthy
+  // signal available — weighted above collection membership.
+  let subjectMatched = false;
+  for (const subj of subjects || []) {
+    const folded = foldTag(subj);
+    if (!folded) continue;
+    for (const entry of DISCIPLINE_LEXICON) {
+      const s = scoreText(folded, entry.keys);
+      if (s > 0) {
+        bump(entry.label, s + 3);
+        subjectMatched = true;
+      }
+    }
+  }
 
   for (const coll of collectionLabels) {
     if (!coll || coll === UNSORTED_DISCIPLINE_LABEL) continue;
@@ -149,14 +165,42 @@ function inferDisciplineProfile(
   return {
     primary: ranked[0][0],
     scores: Object.fromEntries(ranked.slice(0, 6)),
-    source: "tags",
+    source: subjectMatched ? "openlibrary" : "tags",
   };
 }
 
-/** Attach profile onto an existing node (mutates). */
+/** Attach profile onto an existing node (mutates). Fast/sync path — no ISBN lookup. */
 export function attachDisciplineProfile(node: GraphNode, item: Zotero.Item) {
   node.disciplineProfile = inferDisciplineProfile(
     item,
     node.disciplineLabels,
   );
+}
+
+/**
+ * Background pass: for nodes whose item has an ISBN, look up real
+ * OpenLibrary subjects and re-infer a stronger discipline profile.
+ * Returns true if at least one node's profile actually changed (so the
+ * caller can skip a redundant re-render when nothing new was found).
+ */
+export async function enrichDisciplineProfilesFromOpenLibrary(
+  nodes: Map<number, GraphNode>,
+): Promise<boolean> {
+  const { lookupSubjectsByIsbn } = await import("./localBookDb");
+  let changed = false;
+  for (const node of nodes.values()) {
+    if (node.disciplineProfile?.source === "openlibrary") continue;
+    const item = Zotero.Items.get(node.itemID);
+    if (!item) continue;
+    const isbn = item.getField("ISBN") as string;
+    if (!isbn) continue;
+    const subjects = await lookupSubjectsByIsbn(isbn);
+    if (!subjects.length) continue;
+    const next = inferDisciplineProfile(item, node.disciplineLabels, subjects);
+    if (next.source === "openlibrary") {
+      node.disciplineProfile = next;
+      changed = true;
+    }
+  }
+  return changed;
 }

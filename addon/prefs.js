@@ -10,3 +10,6 @@ pref("__prefsPrefix__.rulesSortColumnAscending", false);
 pref("__prefsPrefix__.connectionMapEnableHighlightLayer", true);
 /* Timeline JSON (capped). */
 pref("__prefsPrefix__.connectionMapTimelineJson", "[]");
+/* Local book DB bridge — empty path disables the feature. */
+pref("__prefsPrefix__.openLibraryDbPath", "");
+pref("__prefsPrefix__.kitaplarDbPath", "");

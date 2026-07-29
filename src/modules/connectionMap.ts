@@ -1,7 +1,12 @@
 import { config } from "../../package.json";
 import { getString } from "../utils/locale";
 import { isWindowAlive } from "../utils/window";
-import { buildConnectionGraph, ConnectionGraph } from "../utils/connectionGraph";
+import {
+  buildConnectionGraph,
+  ConnectionGraph,
+  isCrossDiscipline,
+} from "../utils/connectionGraph";
+import { enrichDisciplineProfilesFromOpenLibrary } from "../utils/connectionDiscipline";
 import {
   computeSemanticSuggestions,
   isZotSeekReady,
@@ -146,26 +151,46 @@ async function enrichGraphInBackground(
       if (status && isWindowAlive(win)) status.textContent = msg;
     });
     if (!isWindowAlive(win)) return;
-    if (!extra.length) {
-      updateStatus(status, base);
-      return;
-    }
 
-    const full = await buildConnectionGraph(base.libraryID, {
-      includeTagLayer: true,
-      includeManualLayer: true,
-      extraEdges: extra,
-    });
+    let graph = base;
+    if (extra.length) {
+      graph = await buildConnectionGraph(base.libraryID, {
+        includeTagLayer: true,
+        includeManualLayer: true,
+        extraEdges: extra,
+      });
+    }
     if (!isWindowAlive(win) || addon.data.connectionMap?.window !== win) {
       return;
     }
 
-    addon.data.connectionMap.lastGraph = full;
-    updateConnectionMapGraph(win, full, readLayerState(win.document));
-    updateStatus(status, full);
-    updateBlindSpotBanner(win, full);
+    // Discipline profiles improve independently of note/semantic edges —
+    // run on whichever graph is current (base if no extra edges appeared).
+    const disciplineChanged = await enrichDisciplineProfilesFromOpenLibrary(
+      graph.nodes,
+    );
+    if (disciplineChanged) {
+      for (const edge of graph.edges) {
+        const a = graph.nodes.get(edge.source);
+        const b = graph.nodes.get(edge.target);
+        if (a && b) edge.crossDiscipline = isCrossDiscipline(a, b);
+      }
+    }
+    if (!isWindowAlive(win) || addon.data.connectionMap?.window !== win) {
+      return;
+    }
+
+    if (!extra.length && !disciplineChanged) {
+      updateStatus(status, base);
+      return;
+    }
+
+    addon.data.connectionMap.lastGraph = graph;
+    updateConnectionMapGraph(win, graph, readLayerState(win.document));
+    updateStatus(status, graph);
+    updateBlindSpotBanner(win, graph);
     ztoolkit.log(
-      `Connection Map enriched: ${full.nodes.size} nodes, ${full.edges.length} edges`,
+      `Connection Map enriched: ${graph.nodes.size} nodes, ${graph.edges.length} edges`,
     );
   } catch (e) {
     ztoolkit.log("Connection Map background enrich failed", e);

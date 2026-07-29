@@ -14,6 +14,21 @@ export async function initPrefPane(_window: Window) {
   addon.data.prefs.window = _window;
   initUI();
   initEvents();
+  initLocalBookDbInputs();
+}
+
+/** Plain text inputs have no native `preference` binding — wire manually. */
+function initLocalBookDbInputs() {
+  const doc = addon.data.prefs.window?.document;
+  if (!doc) return;
+  const bind = (id: string, prefKey: string) => {
+    const el = doc.getElementById(id) as HTMLInputElement | null;
+    if (!el) return;
+    el.value = String(getPref(prefKey) || "");
+    el.addEventListener("change", () => setPref(prefKey, el.value.trim()));
+  };
+  bind(`${config.addonRef}-openlibrary-path`, "openLibraryDbPath");
+  bind(`${config.addonRef}-kitaplar-path`, "kitaplarDbPath");
 }
 
 function getColumnsWithSortIndicator() {

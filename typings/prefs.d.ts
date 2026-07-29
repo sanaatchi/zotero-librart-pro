@@ -16,6 +16,8 @@ declare namespace _ZoteroTypes {
       "rulesSortColumnAscending": boolean;
       "connectionMapEnableHighlightLayer": boolean;
       "connectionMapTimelineJson": string;
+      "openLibraryDbPath": string;
+      "kitaplarDbPath": string;
     };
   }
 }
