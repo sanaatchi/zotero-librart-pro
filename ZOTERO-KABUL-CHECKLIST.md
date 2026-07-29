@@ -2,7 +2,7 @@
 
 # LibRart Pro — Zotero manuel kabul checklist
 
-**Sürüm:** 1.0.46 · **Kaynak commit:** `c85b705` (güncelle: release sonrası)  
+**Sürüm:** 1.0.46 · **Kaynak commit:** `8301819`  
 **Rule:** önce [`CURSOR-KATMAN-3-EKSIKLER-RAPORU.md`](CURSOR-KATMAN-3-EKSIKLER-RAPORU.md)
 
 Her satırı doldur: `✅` / `❌` / `—` (uygulanmadı). Kanıt: kısa log veya ekran yolu.
