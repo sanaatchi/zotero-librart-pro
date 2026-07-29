@@ -605,26 +605,35 @@ ve bağımsız gereksinimlerle temiz oda biçiminde tasarlanmalıdır.
 **Bağlantı Haritası katman paneli:**
 ```
 ☑ Etiket   ☑ Elle   ☑ Anlamsal   ☑ Not   ☑ Atıf
-                              └─ ☑ Crossref  ☑ OpenAlex  ☑ Çevrimdışı  ☐ PDF
+                              └─ ☑ Crossref  ☑ OpenAlex  ☑ OpenCitations
 ```
+(Çevrimdışı/PDF atıf alt-katmanları kaldırıldı — §10A'da lisanssız kaynak
+yüzünden iptal edildi, temiz-oda karşılığı henüz planlanmadı.)
 
-**Menü yapısı (hedef):**
+**Menü yapısı (hedef — §10 güncel faz numaralarıyla hizalı):**
 ```
 LibRart Pro
 ├── Bağlantı Haritası
 ├── Etiket Analizi
-├── Okuma Panosu          (F3)
+├── Okuma Panosu              (F4)
 ├── Araçlar
-│   ├── Inciteful Search  (F1 ✅)
-│   ├── Atıf Grafiği (çevrimdışı)  (F5)
-│   ├── OpenAlex snowball (F8)
-│   └── Kutuphane citation analizi (F9)
+│   ├── Inciteful Search      (✅ tamamlandı)
+│   ├── Güvenli İçe Aktar     (F2 — .bib/.ris)
+│   ├── DOCX'te Kullanılanlar (F3)
+│   ├── PDF Gelen Kutusu      (F6 — import-only)
+│   └── Anki'ye Gönder        (F7)
 └── Tercihler
-    ├── Atıf katmanları
-    ├── Obsidian / markdb (F2)
-    ├── Okuma izleme (F3)
-    └── Semantic (F7)
+    ├── Atıf katmanları (Crossref ✅ / OpenAlex, OpenCitations)  (F5)
+    ├── Obsidian / MarkDB                                        (F8)
+    ├── Okuma izleme                                              (F4)
+    └── Semantic (ZotSeek / Kutuphane köprüsü)                    (F9)
 ```
+
+Çevrimdışı atıf grafiği (eski F5) ve OpenAlex "snowball" (citegeist) menü
+girişleri **kaldırıldı** — ilki lisanssız kaynak yüzünden §10A'da iptal, ikincisi
+§10'un F0–F9 kapsamı dışında "deneysel" kategoriye taşındı (bkz. §10 açıklama
+paragrafı). Kutuphane citation CLI köprüsü de aynı gerekçeyle deneysel kaldı;
+aktif F0–F9 menüsünde ayrı bir giriş yok.
 
 ---
 
