@@ -3,7 +3,7 @@ import { computeTagLayerEdges } from "./connectionTagLayer";
 import { attachDisciplineProfile } from "./connectionDiscipline";
 import { annotateBridgeScores } from "./connectionBridgeScore";
 
-export type LayerKind = "tag" | "manual" | "semantic" | "note";
+export type LayerKind = "tag" | "manual" | "semantic" | "note" | "citation";
 export type ConnectionState = "confirmed" | "suggested";
 
 export type DisciplineProfile = {

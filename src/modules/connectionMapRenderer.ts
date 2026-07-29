@@ -34,6 +34,7 @@ export type ConnectionMapLayerState = {
   manual: boolean;
   semantic: boolean;
   note: boolean;
+  citation: boolean;
 };
 
 export type RenderCallbacks = {
@@ -116,6 +117,7 @@ function edgeStyle(edge: GraphEdge): {
     manual: "var(--map-edge-manual)",
     semantic: "var(--map-edge-semantic)",
     note: "var(--map-edge-note)",
+    citation: "var(--map-edge-citation)",
   };
   return {
     stroke: colors[edge.layer],
@@ -218,7 +220,7 @@ function wireChrome(
     };
   }
 
-  for (const layer of ["tag", "manual", "semantic", "note"] as const) {
+  for (const layer of ["tag", "manual", "semantic", "note", "citation"] as const) {
     const el = doc.getElementById(
       `${config.addonRef}-layer-${layer}`,
     ) as HTMLInputElement | null;
@@ -414,6 +416,7 @@ function refilterFromCache(win: Window) {
     manual: checked(`${config.addonRef}-layer-manual`, true),
     semantic: checked(`${config.addonRef}-layer-semantic`, true),
     note: checked(`${config.addonRef}-layer-note`, true),
+    citation: checked(`${config.addonRef}-layer-citation`, true),
   });
 }
 
@@ -513,6 +516,7 @@ function visibleEdges(
     if (e.layer === "manual" && !layerState.manual) return false;
     if (e.layer === "semantic" && !layerState.semantic) return false;
     if (e.layer === "note" && !layerState.note) return false;
+    if (e.layer === "citation" && !layerState.citation) return false;
     return true;
   });
   return filterEdgesByTimelineDays(layered, timelineDays);

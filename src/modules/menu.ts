@@ -5,6 +5,7 @@ import { getPref } from "../utils/prefs";
 import { ActionData, ActionShowInMenu } from "../utils/actions";
 import { getCurrentItems, getItemIDsByKey } from "../utils/items";
 import { getIcon } from "../utils/icon";
+import { setRating, ratingStars } from "../utils/rating";
 
 export {
   initItemMenu,
@@ -13,7 +14,46 @@ export {
   buildItemMenu,
   initTagDashboardMenu,
   initConnectionMapMenu,
+  initRatingMenu,
 };
+
+function initRatingMenu() {
+  const menuId = `${config.addonRef}-rating-menu`;
+  if (ztoolkit.getGlobal("document")?.getElementById(menuId)) {
+    return;
+  }
+  const starItems = [1, 2, 3, 4, 5].map((n) => ({
+    tag: "menuitem" as const,
+    label: ratingStars(n),
+    commandListener: async () => {
+      const items = Zotero.getActiveZoteroPane()
+        ?.getSelectedItems()
+        ?.filter((i) => i.isRegularItem());
+      if (!items?.length) return;
+      for (const item of items) await setRating(item, n);
+    },
+  }));
+  ztoolkit.Menu.register("item", {
+    tag: "menu",
+    id: menuId,
+    label: getString("menu-rating"),
+    icon: `chrome://${config.addonRef}/content/icons/favicon.png`,
+    children: [
+      ...starItems,
+      {
+        tag: "menuitem",
+        label: getString("menu-rating-clear"),
+        commandListener: async () => {
+          const items = Zotero.getActiveZoteroPane()
+            ?.getSelectedItems()
+            ?.filter((i) => i.isRegularItem());
+          if (!items?.length) return;
+          for (const item of items) await setRating(item, 0);
+        },
+      },
+    ],
+  });
+}
 
 function initTagDashboardMenu() {
   const menuId = `${config.addonRef}-tag-dashboard-menu`;

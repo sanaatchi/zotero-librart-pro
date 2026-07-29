@@ -22,6 +22,7 @@ import {
   unregisterConnectionMapNoteObserver,
 } from "../utils/connectionNotify";
 import { findBlindSpots } from "../utils/connectionBlindSpot";
+import { computeCitationSuggestions } from "../utils/connectionCitationLayer";
 import {
   renderConnectionMap,
   updateConnectionMapGraph,
@@ -221,6 +222,13 @@ async function loadOptionalLayers(
   }
 
   try {
+    const citationEdges = await computeCitationSuggestions(base.nodes);
+    extra.push(...citationEdges);
+  } catch (e) {
+    ztoolkit.log("Connection Map citation layer failed (soft)", e);
+  }
+
+  try {
     if (isZotSeekReady()) {
       onStatus(getString("connection-map-loading") + " (ZotSeek…)");
       if (!addon.data.connectionMap) {
@@ -283,6 +291,7 @@ function readLayerState(doc: Document): ConnectionMapLayerState {
     manual: checked(`${config.addonRef}-layer-manual`, true),
     semantic: checked(`${config.addonRef}-layer-semantic`, true),
     note: checked(`${config.addonRef}-layer-note`, true),
+    citation: checked(`${config.addonRef}-layer-citation`, true),
   };
 }
 

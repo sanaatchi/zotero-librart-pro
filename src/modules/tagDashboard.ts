@@ -212,7 +212,7 @@ function wireMetadataEnrichment(win: Window, missingItems: Zotero.Item[]) {
   let currentProposals: EnrichmentProposal[] = [];
 
   const renderRow = (p: EnrichmentProposal): string => {
-    const changes = (["publisher", "place", "date"] as const)
+    const changes = Object.keys(p.proposed)
       .filter((f) => p.proposed[f])
       .map((f) => `${f}: ${escapeHtml(p.current[f] || "—")} → ${escapeHtml(p.proposed[f]!)}`)
       .join(" · ");

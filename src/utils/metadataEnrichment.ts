@@ -1,4 +1,5 @@
 import { lookupEdition, EditionRecord } from "./localBookDb";
+import { resolveByDoi, DoiRecord } from "./doiResolver";
 import { assignCitationKey } from "./citationKey";
 
 export {
@@ -10,7 +11,7 @@ export {
   detectUnregisteredItemTypes,
 };
 
-export type EnrichmentSource = "book-db" | "unsupported";
+export type EnrichmentSource = "book-db" | "doi-lookup" | "unsupported";
 
 export type ItemTypePackage = {
   itemType: string;
@@ -27,11 +28,13 @@ export type ItemTypePackage = {
  * webpage 8, bookSection 7, tvBroadcast/magazineArticle/document 3 each,
  * report/film 2 each, videoRecording/newspaperArticle 1 each).
  *
- * Only `book`/`bookSection` carry an ISBN and a publisher/place/date shape
- * compatible with a book-catalog lookup (kitaplar.db/openlibrary.db). The
- * rest need a different identifier (DOI) and/or data source that isn't
- * built yet — registered as "unsupported" on purpose, not silently
- * ignored, so `detectUnregisteredItemTypes` never re-flags them as unknown.
+ * `book`/`bookSection` carry an ISBN and a publisher/place/date shape
+ * compatible with a book-catalog lookup (kitaplar.db/openlibrary.db).
+ * `journalArticle` carries a DOI, resolved via Crossref/Semantic
+ * Scholar/arXiv (doiResolver.ts). The rest have neither a usable
+ * identifier nor a matching data source yet — registered as
+ * "unsupported" on purpose, not silently ignored, so
+ * `detectUnregisteredItemTypes` never re-flags them as unknown.
  */
 const ITEM_TYPE_REGISTRY: Record<string, ItemTypePackage> = {
   book: {
@@ -49,8 +52,8 @@ const ITEM_TYPE_REGISTRY: Record<string, ItemTypePackage> = {
   journalArticle: {
     itemType: "journalArticle",
     identifierField: "DOI",
-    source: "unsupported",
-    targetFields: ["publicationTitle", "volume", "issue", "ISSN"],
+    source: "doi-lookup",
+    targetFields: ["publicationTitle", "volume", "issue"],
   },
   thesis: {
     itemType: "thesis",
@@ -68,12 +71,12 @@ const ITEM_TYPE_REGISTRY: Record<string, ItemTypePackage> = {
   newspaperArticle: { itemType: "newspaperArticle", identifierField: null, source: "unsupported", targetFields: ["publicationTitle"] },
 };
 
-const BOOK_PACKAGE_TYPES = Object.values(ITEM_TYPE_REGISTRY)
-  .filter((p) => p.source === "book-db")
+const SUPPORTED_TYPES = Object.values(ITEM_TYPE_REGISTRY)
+  .filter((p) => p.source !== "unsupported")
   .map((p) => p.itemType);
 
 function isSupportedForEnrichment(item: Zotero.Item): boolean {
-  return BOOK_PACKAGE_TYPES.includes(item.itemType);
+  return SUPPORTED_TYPES.includes(item.itemType);
 }
 
 /**
@@ -99,13 +102,13 @@ async function detectUnregisteredItemTypes(
 export type EnrichmentProposal = {
   itemID: number;
   title: string;
-  isbn: string;
-  current: { publisher?: string; place?: string; date?: string };
-  proposed: { publisher?: string; place?: string; date?: string };
-  source: EditionRecord["source"];
+  identifier: string;
+  current: Record<string, string | undefined>;
+  proposed: Record<string, string | undefined>;
+  source: EditionRecord["source"] | DoiRecord["source"];
 };
 
-/** Book/bookSection items with an ISBN but a missing publisher or date. */
+/** Items whose package has an identifier present but at least one target field empty. */
 async function findItemsMissingMetadata(
   libraryID?: number,
 ): Promise<Zotero.Item[]> {
@@ -114,14 +117,68 @@ async function findItemsMissingMetadata(
   return allItems.filter((item) => {
     if (item.deleted || !isSupportedForEnrichment(item)) return false;
     const pkg = ITEM_TYPE_REGISTRY[item.itemType];
-    const isbn = pkg?.identifierField
+    const identifier = pkg?.identifierField
       ? (item.getField(pkg.identifierField) as string)
       : "";
-    if (!isbn) return false;
-    const missingPublisher = !item.getField("publisher");
-    const missingDate = !item.getField("date");
-    return missingPublisher || missingDate;
+    if (!identifier) return false;
+    return pkg.targetFields.some((f) => !item.getField(f));
   });
+}
+
+async function previewOne(
+  item: Zotero.Item,
+  pkg: ItemTypePackage,
+): Promise<EnrichmentProposal | null> {
+  const identifier = pkg.identifierField
+    ? (item.getField(pkg.identifierField) as string)
+    : "";
+  if (!identifier) return null;
+
+  let fields: Record<string, string | undefined> | null = null;
+  let source: EnrichmentProposal["source"] | null = null;
+
+  if (pkg.source === "book-db") {
+    const record = await lookupEdition(identifier);
+    if (!record) return null;
+    fields = {
+      publisher: record.publisher,
+      place: record.publishCity,
+      date: record.publishDate,
+    };
+    source = record.source;
+  } else if (pkg.source === "doi-lookup") {
+    const record = await resolveByDoi(identifier);
+    if (!record) return null;
+    fields = {
+      publicationTitle: record.publicationTitle,
+      volume: record.volume,
+      issue: record.issue,
+    };
+    source = record.source;
+  }
+  if (!fields || !source) return null;
+
+  const current: Record<string, string | undefined> = {};
+  const proposed: Record<string, string | undefined> = {};
+  let hasProposal = false;
+  for (const f of pkg.targetFields) {
+    const existing = (item.getField(f) as string) || undefined;
+    current[f] = existing;
+    if (!existing && fields[f]) {
+      proposed[f] = fields[f];
+      hasProposal = true;
+    }
+  }
+  if (!hasProposal) return null;
+
+  return {
+    itemID: item.id,
+    title: item.getDisplayTitle() || item.getField("title") || "",
+    identifier,
+    current,
+    proposed,
+    source,
+  };
 }
 
 /** Look up candidates without writing anything — for user review. */
@@ -131,33 +188,9 @@ async function previewEnrichment(
   const proposals: EnrichmentProposal[] = [];
   for (const item of items) {
     const pkg = ITEM_TYPE_REGISTRY[item.itemType];
-    const isbn = pkg?.identifierField
-      ? (item.getField(pkg.identifierField) as string)
-      : "";
-    if (!isbn) continue;
-    const record = await lookupEdition(isbn);
-    if (!record) continue;
-
-    const current = {
-      publisher: (item.getField("publisher") as string) || undefined,
-      place: (item.getField("place") as string) || undefined,
-      date: (item.getField("date") as string) || undefined,
-    };
-    const proposed = {
-      publisher: !current.publisher ? record.publisher : undefined,
-      place: !current.place ? record.publishCity : undefined,
-      date: !current.date ? record.publishDate : undefined,
-    };
-    if (!proposed.publisher && !proposed.place && !proposed.date) continue;
-
-    proposals.push({
-      itemID: item.id,
-      title: item.getDisplayTitle() || item.getField("title") || "",
-      isbn,
-      current,
-      proposed,
-      source: record.source,
-    });
+    if (!pkg) continue;
+    const proposal = await previewOne(item, pkg);
+    if (proposal) proposals.push(proposal);
   }
   return proposals;
 }
@@ -165,10 +198,11 @@ async function previewEnrichment(
 /**
  * Write the approved fields for each proposal. `fields` limits which
  * columns get written (e.g. user unchecked "place" in the preview UI).
+ * Omit to write every proposed field.
  */
 async function applyEnrichment(
   proposals: EnrichmentProposal[],
-  fields: Array<"publisher" | "place" | "date"> = ["publisher", "place", "date"],
+  fields?: string[],
 ): Promise<number> {
   const items = proposals
     .map((p) => ({ p, item: Zotero.Items.get(p.itemID) }))
@@ -180,7 +214,8 @@ async function applyEnrichment(
   await Zotero.DB.executeTransaction(async () => {
     for (const { p, item } of items) {
       let changed = false;
-      for (const field of fields) {
+      const allowed = fields ?? Object.keys(p.proposed);
+      for (const field of allowed) {
         const value = p.proposed[field];
         if (!value) continue;
         item.setField(field, value);
@@ -196,6 +231,8 @@ async function applyEnrichment(
 
   // Separate step (own saveTx per item) — assignCitationKey manages its
   // own save and shouldn't nest inside the batch executeTransaction above.
+  // Only meaningful for book/bookSection (ISBN-based); no-op otherwise
+  // since assignCitationKey falls back to a fresh CKxxxxxx code either way.
   for (const item of enrichedItems) {
     try {
       await assignCitationKey(item);

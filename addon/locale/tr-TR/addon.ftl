@@ -1,5 +1,8 @@
 prefs-title = Eylemler ve Etiketler
 
+menu-rating = Puanla
+menu-rating-clear = Puanı Temizle
+
 prefs-action-name = Ad
 prefs-action-event = Olay
 prefs-action-operation = İşlem
@@ -65,6 +68,7 @@ connection-map-layer-tag = Ortak etiket
 connection-map-layer-manual = Elle bağlantı
 connection-map-layer-semantic = Anlamsal öneri
 connection-map-layer-note = Not/alıntı
+connection-map-layer-citation = Atıf
 connection-map-zotseek-missing = ZotSeek eklentisi bulunamadı — anlamsal öneriler devre dışı
 connection-map-confirm-connect = { $a } ile { $b } arasında kalıcı bir bağlantı oluşturulsun mu?
 connection-map-offer-bridge-tag = Bu iki kaynak farklı disiplinlerden. Ortak bir "köprü" etiketi ("{ $tag }") eklensin mi?
@@ -87,7 +91,7 @@ local-book-db-kitaplar = Kitaplar veritabanı (kitaplar.db)
 local-book-db-hint = Boş bırakılırsa metadata tamamlama özelliği devre dışı kalır. Yollar bu bilgisayara özeldir.
 metadata-enrich-title = Metadata Tamamlama
 metadata-enrich-no-db = Yerel veritabanı yolu tanımlı değil — Ayarlar'dan OpenLibrary/Kitaplar veritabanı yolunu girin.
-metadata-enrich-missing-count = Eksik yayınevi/tarih bilgisi olan { $count } kitap/kitap bölümü bulundu.
+metadata-enrich-missing-count = Eksik metadata bilgisi olan { $count } kaynak bulundu (kitap/kitap bölümü/makale).
 metadata-enrich-preview = Önizle
 metadata-enrich-apply = Uygula
 metadata-enrich-apply-all = Tümünü Uygula

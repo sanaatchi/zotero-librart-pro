@@ -11,7 +11,9 @@ import {
   initReaderMenu,
   initTagDashboardMenu,
   initConnectionMapMenu,
+  initRatingMenu,
 } from "./modules/menu";
+import { registerRatingColumn } from "./utils/rating";
 import { editAction } from "./modules/edit";
 import { exportToFile, importFromFile } from "./modules/backup";
 import {
@@ -57,6 +59,8 @@ async function onStartup() {
 
   initReaderAnnotationMenu();
 
+  registerRatingColumn();
+
   // Trigger startup event without waiting so that the init is not blocked.
   addon.api.actionManager
     .dispatchActionByEvent(ActionEventTypes.programStartup, {})
@@ -69,6 +73,7 @@ async function onMainWindowLoad(win: Window): Promise<void> {
   initItemMenu(win);
   initTagDashboardMenu();
   initConnectionMapMenu();
+  initRatingMenu();
   await addon.api.actionManager.dispatchActionByEvent(
     ActionEventTypes.mainWindowLoad,
     {
