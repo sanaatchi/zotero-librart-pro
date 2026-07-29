@@ -82,7 +82,7 @@ function connectionMapMenuChild() {
 }
 
 /**
- * One consolidated "Eylemler ve Etiketler" entry per context (item
+ * One consolidated "LibRart Pro" entry per context (item
  * right-click, Tools menu) instead of scattering each feature as its own
  * top-level menu item — everything the plugin can do lives under a single
  * parent, with room for future features (v3+) to slot in as new children.

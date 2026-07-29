@@ -23,7 +23,7 @@ async function exportToFile(
     return false;
   }
   const exportObj = {} as Record<string, any>;
-  exportObj.type = "ActionsTagsBackup";
+  exportObj.type = "LibRartProBackup";
   exportObj.author = Zotero.Users.getCurrentUsername() || "anonymous";
   exportObj.platformVersion = Zotero.version;
   exportObj.pluginVersion = version;
@@ -70,7 +70,8 @@ async function importFromFile(options: { win: Window }) {
   if (
     !importObj.actions ||
     typeof importObj.actions !== "object" ||
-    importObj.type !== "ActionsTagsBackup" ||
+    (importObj.type !== "LibRartProBackup" &&
+      importObj.type !== "ActionsTagsBackup") ||
     !Object.keys(importObj.actions).length
   ) {
     updateHint(`${path} is not a valid actions file`);

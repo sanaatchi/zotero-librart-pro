@@ -4,15 +4,15 @@ Elle XPI yeniden kurmaya gerek yok. Zotero, eklenti içindeki `update_url` üzer
 
 | Repo | Görünürlük | İçerik |
 |---|---|---|
-| `sanaatchi/eylemler-ve-etiketler` | Private | Kaynak |
-| `sanaatchi/eylemler-ve-etiketler-releases` | **Public** | `.xpi` + `update.json` |
+| `sanaatchi/zotero-librart-pro` | Private | Kaynak |
+| `sanaatchi/zotero-librart-pro-releases` | **Public** | `.xpi` + `update.json` |
 
 ## Kanal
 
 Kurulu eklentinin `update_url` değeri:
 
 ```
-https://github.com/sanaatchi/eylemler-ve-etiketler-releases/releases/download/update/update.json
+https://github.com/sanaatchi/zotero-librart-pro-releases/releases/download/update/update.json
 ```
 
 Bu, Translate for Zotero ile aynı model: kalıcı bir `update` release’inde yalnızca `update.json` tutulur. Her yayında dosya **silinip yeniden yüklenir** (`--clobber` CDN’de eski dosyayı bırakabiliyor).

@@ -1,5 +1,11 @@
 {
   "extends": "zotero-types/entries/sandbox",
   "include": ["src", "typings", "node_modules/zotero-types"],
-  "exclude": ["build", "addon"]
+  "exclude": [
+    "build",
+    "addon",
+    "src/vendor/zotseek/core/embedding-pipeline.ts",
+    "src/vendor/zotseek/core/model-registry.ts",
+    "src/vendor/zotseek/logger.ts"
+  ]
 }

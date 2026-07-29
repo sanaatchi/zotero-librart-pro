@@ -1,6 +1,6 @@
-prefs-title = Eylemler ve Etiketler
+prefs-title = LibRart Pro
 
-menu-root = Eylemler ve Etiketler
+menu-root = LibRart Pro
 menu-rating = Puanla
 menu-rating-clear = Puanı Temizle
 

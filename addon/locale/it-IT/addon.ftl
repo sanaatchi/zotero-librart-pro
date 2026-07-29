@@ -1,4 +1,4 @@
-prefs-title = Actions & Tags
+prefs-title = LibRart Pro
 
 prefs-action-name = Nome
 prefs-action-event = Evento

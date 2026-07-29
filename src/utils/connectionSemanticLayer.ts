@@ -10,6 +10,10 @@ import {
   searchKutuphaneSemantic,
   buildKpIndex,
 } from "./kutuphaneSemanticBridge";
+import {
+  isVendoredZotSeekConfigured,
+  isVendoredZotSeekReady,
+} from "../vendor/zotseek/vendoredSemantic";
 
 export {
   isZotSeekReady,
@@ -27,6 +31,9 @@ export {
  */
 async function isSemanticLayerReady(): Promise<boolean> {
   if (isKutuphaneSemanticConfigured() && (await isKutuphaneSemanticReady())) {
+    return true;
+  }
+  if (isVendoredZotSeekConfigured() && (await isVendoredZotSeekReady())) {
     return true;
   }
   return isZotSeekReady();

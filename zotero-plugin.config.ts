@@ -1,7 +1,7 @@
 import { defineConfig } from "zotero-plugin-scaffold";
 import pkg from "./package.json";
 
-const DIST_REPO = "sanaatchi/eylemler-ve-etiketler-releases";
+const DIST_REPO = "sanaatchi/zotero-librart-pro-releases";
 
 export default defineConfig({
   source: ["src", "addon"],
@@ -9,6 +9,7 @@ export default defineConfig({
   name: pkg.config.addonName,
   id: pkg.config.addonID,
   namespace: pkg.config.addonRef,
+  xpiName: pkg.name,
   // Public releases repo — Zotero updater has no GitHub auth.
   updateURL: pkg.config.updateJSON,
   xpiDownloadLink: `https://github.com/${DIST_REPO}/releases/download/v{{version}}/{{xpiName}}.xpi`,

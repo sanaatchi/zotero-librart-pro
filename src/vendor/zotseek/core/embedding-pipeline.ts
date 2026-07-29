@@ -1,0 +1,406 @@
+// @ts-nocheck
+// Adapted from ZotSeek (MIT) src/core/embedding-pipeline.ts
+import { Logger } from '../logger';
+import { getActiveModel, getModel, ModelConfig, modelBasePath, setActiveModelId } from './model-registry';
+import { config } from '../../../package.json';
+
+declare const ChromeWorker: any;
+
+export interface EmbeddingResult {
+  embedding: number[];
+  modelId: string;
+  processingTimeMs: number;
+}
+
+export interface EmbeddingProgress {
+  current: number;
+  total: number;
+  currentTitle: string;
+  status: 'loading' | 'processing' | 'done' | 'error';
+}
+
+export type ProgressCallback = (progress: EmbeddingProgress) => void;
+
+/**
+ * Embedding Pipeline with ChromeWorker support
+ */
+export class EmbeddingPipeline {
+  private logger: Logger;
+  private model: ModelConfig = getActiveModel();
+  private worker: any = null;
+  private workerReady = false;
+  private pendingJobs = new Map<string, { resolve: Function; reject: Function }>();
+  private ready = false;
+  // In-flight init() promise so N concurrent cold-start callers share a single
+  // worker creation instead of each spawning (and leaking) their own. Cleared
+  // on failure so a later call can retry.
+  private initPromise: Promise<void> | null = null;
+  // Bounded recovery attempts so a permanently-broken worker doesn't loop forever
+  // within a single embed() call. Resets on every successful embed.
+  private consecutiveRecoveries = 0;
+  private static MAX_RECOVERIES_PER_EMBED = 2;
+
+  constructor() {
+    this.logger = new Logger('EmbeddingPipeline');
+  }
+
+  /**
+   * Initialize the embedding pipeline
+   */
+  async init(): Promise<void> {
+    if (this.ready) return;
+    if (this.initPromise) return this.initPromise;
+    this.model = getActiveModel();
+
+    this.initPromise = (async () => {
+      this.logger.info('Initializing embedding pipeline with Transformers.js');
+      await this.initWorker();  // Will throw on failure
+      this.logger.info('Using Transformers.js via ChromeWorker');
+      this.ready = true;
+    })();
+    const thisAttempt = this.initPromise;
+    try {
+      await thisAttempt;
+    } catch (e) {
+      // Reset so a later call can retry; a failed init must not poison retries.
+      if (this.initPromise === thisAttempt) this.initPromise = null;
+      throw e;
+    }
+  }
+
+  /**
+   * Initialize ChromeWorker for Transformers.js
+   */
+  private async initWorker(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      try {
+        // Get worker script path
+        const workerPath = `chrome://${config.addonRef}/content/scripts/embedding-worker.js`;
+
+        this.logger.info(`Creating ChromeWorker: ${workerPath}`);
+        this.worker = new ChromeWorker(workerPath);
+
+        const timeout = setTimeout(() => {
+          reject(new Error('Worker initialization timeout'));
+        }, 30000);
+
+        this.worker.onmessage = (event: any) => {
+          const { type, status, jobId, error, embedding, modelId, processingTimeMs, message, level, data } = event.data;
+
+          if (type === 'log') {
+            // Handle log messages from worker
+            const logMessage = data ? `${message} - ${JSON.stringify(data)}` : message;
+            switch(level) {
+              case 'error':
+                this.logger.error(logMessage);
+                break;
+              case 'warn':
+                this.logger.warn(logMessage);
+                break;
+              case 'info':
+              default:
+                this.logger.info(logMessage);
+                break;
+            }
+          } else if (type === 'status') {
+            // Only log important status updates, suppress repetitive loading progress
+            if (status !== 'loading' || !message?.includes('Loading model:')) {
+              this.logger.info(`Worker status: ${status} - ${message}`);
+            }
+            if (status === 'ready') {
+              clearTimeout(timeout);
+              this.workerReady = true;
+              resolve();
+            }
+          } else if (type === 'error') {
+            this.logger.error(`Worker error: ${error}`);
+            if (jobId && this.pendingJobs.has(jobId)) {
+              const job = this.pendingJobs.get(jobId)!;
+              this.pendingJobs.delete(jobId);
+              job.reject(new Error(error));
+            } else {
+              clearTimeout(timeout);
+              reject(new Error(error));
+            }
+          } else if (type === 'embedding' && jobId) {
+            const job = this.pendingJobs.get(jobId);
+            if (job) {
+              this.pendingJobs.delete(jobId);
+              job.resolve({ embedding, modelId, processingTimeMs });
+            }
+          }
+        };
+
+        this.worker.onerror = (event: any) => {
+          // Extract detailed error info from ErrorEvent
+          const errorInfo = {
+            message: event.message || 'Unknown error',
+            filename: event.filename || 'unknown',
+            lineno: event.lineno || 0,
+            colno: event.colno || 0,
+            error: event.error?.toString() || event.error?.message || 'No error details',
+          };
+          this.logger.error(`Worker error: ${errorInfo.message} at ${errorInfo.filename}:${errorInfo.lineno}:${errorInfo.colno}`);
+          this.logger.error(`Error details: ${errorInfo.error}`);
+          clearTimeout(timeout);
+
+          // Mark the worker as dead so embed() will trigger recovery.
+          // Reject any in-flight jobs with a recoverable error code so the
+          // caller knows to retry rather than treat as permanent failure.
+          this.workerReady = false;
+          for (const [jobId, job] of this.pendingJobs) {
+            job.reject(new Error('WORKER_DIED'));
+            this.pendingJobs.delete(jobId);
+          }
+
+          reject(new Error(`Worker failed: ${errorInfo.message}`));
+        };
+
+        this.worker.postMessage({
+          type: 'init',
+          model: {
+            modelId: this.model.id,
+            hfPath: this.model.hfPath,
+            pooling: this.model.pooling,
+            normalize: this.model.normalize,
+            queryPrefix: this.model.queryPrefix,
+            docPrefix: this.model.docPrefix,
+            basePath: modelBasePath(this.model),
+          },
+        });
+
+      } catch (error) {
+        this.logger.error('Failed to create ChromeWorker:', error);
+        reject(error);
+      }
+    });
+  }
+
+  /**
+   * Generate embedding for text using worker
+   * @param text - Text to embed
+   * @param kind - 'query' for search queries, 'doc' for documents
+   */
+  private async embedWithWorker(text: string, kind: 'query' | 'doc' = 'doc'): Promise<EmbeddingResult> {
+    return new Promise((resolve, reject) => {
+      const jobId = Math.random().toString(36).substring(2, 15);
+
+      this.pendingJobs.set(jobId, { resolve, reject });
+
+      this.worker.postMessage({
+        type: 'embed',
+        jobId,
+        data: { text, kind },
+      });
+
+      // Timeout for individual embedding
+      // With smaller chunks (~2000 tokens), embeddings should take ~3-10 seconds
+      // First embedding may be slower due to WASM compilation
+      setTimeout(() => {
+        if (this.pendingJobs.has(jobId)) {
+          this.pendingJobs.delete(jobId);
+          reject(new Error('Embedding timeout'));
+        }
+      }, 60000); // 60 seconds - enough for first-run WASM compilation
+    });
+  }
+
+  /**
+   * Generate embedding for a single text
+   * @param text - Text to embed
+   * @param kind - 'query' for search queries, 'doc' for documents
+   *
+   * Resilient against worker death: if the ChromeWorker has crashed (sleep,
+   * OOM, parent process recycled the worker process), this method silently
+   * tears it down and re-initialises before retrying. Bounded by
+   * MAX_RECOVERIES_PER_EMBED to prevent an infinite loop on a permanently
+   * broken state.
+   */
+  async embed(text: string, kind: 'query' | 'doc' = 'doc'): Promise<EmbeddingResult> {
+    for (let attempt = 0; ; attempt++) {
+      if (!this.ready || !this.workerReady) {
+        await this.recoverWorker();
+      }
+      try {
+        const result = await this.embedWithWorker(text, kind);
+        this.consecutiveRecoveries = 0;
+        return result;
+      } catch (e: any) {
+        const isWorkerDeath = e?.message === 'WORKER_DIED' || !this.workerReady;
+        if (!isWorkerDeath) throw e;
+        if (attempt >= EmbeddingPipeline.MAX_RECOVERIES_PER_EMBED) {
+          throw new Error(
+            `Embedding worker died and could not be recovered after ${attempt + 1} attempts`
+          );
+        }
+        this.consecutiveRecoveries++;
+        this.logger.warn(
+          `Embedding worker died - attempting recovery (${this.consecutiveRecoveries} total)`
+        );
+        // Loop: recoverWorker() will run at the top of the next iteration.
+      }
+    }
+  }
+
+  /**
+   * Tear down the current worker (if any) and re-initialise. Used both for
+   * the first init and for recovery after a worker crash.
+   */
+  private async recoverWorker(): Promise<void> {
+    if (this.worker) {
+      try { this.worker.terminate(); } catch { /* ignore */ }
+      this.worker = null;
+    }
+    this.workerReady = false;
+    this.ready = false;
+    this.initPromise = null;
+    this.pendingJobs.clear();
+    await this.init();
+  }
+
+  /**
+   * Convenience method for embedding search queries
+   * Uses the model's query prefix for better retrieval
+   */
+  async embedQuery(query: string): Promise<EmbeddingResult> {
+    return this.embed(query, 'query');
+  }
+
+  /**
+   * Convenience method for embedding documents
+   * Uses the model's document prefix for better retrieval
+   */
+  async embedDocument(text: string): Promise<EmbeddingResult> {
+    return this.embed(text, 'doc');
+  }
+
+  /**
+   * Generate embeddings for multiple texts with progress callback
+   * Always embeds as documents (isQuery=false) since this is for indexing
+   */
+  async embedBatch(
+    texts: { id: number; text: string; title: string }[],
+    onProgress?: ProgressCallback
+  ): Promise<Map<number, EmbeddingResult>> {
+    if (!this.ready) {
+      await this.init();
+    }
+
+    const results = new Map<number, EmbeddingResult>();
+    const total = texts.length;
+
+    for (let i = 0; i < texts.length; i++) {
+      const { id, text, title } = texts[i];
+
+      if (onProgress) {
+        onProgress({
+          current: i + 1,
+          total,
+          currentTitle: title,
+          status: 'processing',
+        });
+      }
+
+      try {
+        // Always use embedDocument for batch indexing
+        const result = await this.embedDocument(text);
+        results.set(id, result);
+      } catch (error) {
+        this.logger.error(`Failed to embed item ${id}:`, error);
+      }
+
+      // Yield to UI thread periodically
+      if (i % 10 === 0) {
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
+    }
+
+    if (onProgress) {
+      onProgress({
+        current: total,
+        total,
+        currentTitle: '',
+        status: 'done',
+      });
+    }
+
+    return results;
+  }
+
+  /**
+   * Check if pipeline is ready
+   */
+  isReady(): boolean {
+    return this.ready;
+  }
+
+  /**
+   * Reset pipeline to force re-initialization with new settings
+   */
+  reset(): void {
+    this.logger.info('Resetting embedding pipeline');
+    if (this.worker) {
+      try { this.worker.terminate(); } catch { /* ignore */ }
+      this.worker = null;
+    }
+    this.workerReady = false;
+    this.ready = false;
+    this.initPromise = null;
+    this.consecutiveRecoveries = 0;
+    for (const [, job] of this.pendingJobs) {
+      job.reject(new Error('Pipeline reset'));
+    }
+    this.pendingJobs.clear();
+  }
+
+  /**
+   * Switch to a different embedding model, tearing down and re-initialising
+   * the worker. If modelId is unknown, falls back to the active model from prefs.
+   */
+  async setModel(modelId: string): Promise<void> {
+    const found = getModel(modelId);
+    if (!found) {
+      this.logger.warn(`setModel: unknown model id '${modelId}', keeping active model`);
+      return;
+    }
+    if (found.id === this.model.id && this.ready && this.workerReady) return;
+    this.logger.info(`Switching embedding model to ${found.id}`);
+    // The active model is defined by the pref; init() reads it via getActiveModel().
+    // Persist it here so the worker reload picks up the requested model.
+    setActiveModelId(found.id);
+    this.reset();
+    await this.init();
+  }
+
+  /**
+   * Get current model ID
+   */
+  getModelId(): string {
+    return this.model.id;
+  }
+
+  /**
+   * Get model info
+   */
+  getModelInfo(): { id: string; dimensions: number; description: string } {
+    return {
+      id: this.model.id,
+      dimensions: this.model.dimensions,
+      description: `${this.model.label} (${this.model.dimensions} dims)`,
+    };
+  }
+
+  /**
+   * Cleanup worker
+   */
+  destroy(): void {
+    if (this.worker) {
+      this.worker.terminate();
+      this.worker = null;
+    }
+    this.pendingJobs.clear();
+  }
+}
+
+// Singleton instance
+export const embeddingPipeline = new EmbeddingPipeline();

@@ -1,4 +1,3 @@
-import { foldTag } from "./tagAnalysis";
 import { computeTagLayerEdges } from "./connectionTagLayer";
 import { attachDisciplineProfile } from "./connectionDiscipline";
 import { annotateBridgeScores } from "./connectionBridgeScore";
@@ -234,31 +233,6 @@ function buildManualEdges(
   return edges;
 }
 
-/**
- * Build folded-tag → itemIDs index for the tag layer.
- * Key is foldTag(name); value keeps a display name + item set.
- */
-function buildFoldedTagIndex(
-  items: Zotero.Item[],
-): Map<string, { display: string; itemIDs: Set<number> }> {
-  const index = new Map<string, { display: string; itemIDs: Set<number> }>();
-  for (const item of items) {
-    for (const t of item.getTags()) {
-      const name = t.tag;
-      if (!name || name.startsWith("/")) continue;
-      const folded = foldTag(name);
-      if (!folded) continue;
-      let entry = index.get(folded);
-      if (!entry) {
-        entry = { display: name, itemIDs: new Set() };
-        index.set(folded, entry);
-      }
-      entry.itemIDs.add(item.id);
-    }
-  }
-  return index;
-}
-
 async function buildConnectionGraph(
   libraryID?: number,
   options: BuildConnectionGraphOptions = {},
@@ -289,8 +263,7 @@ async function buildConnectionGraph(
   const edges: GraphEdge[] = [];
 
   if (includeTagLayer) {
-    const foldedTagIndex = buildFoldedTagIndex(items);
-    edges.push(...computeTagLayerEdges(nodes, foldedTagIndex));
+    edges.push(...computeTagLayerEdges(items, nodes));
   }
 
   if (includeManualLayer) {

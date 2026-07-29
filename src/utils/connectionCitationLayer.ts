@@ -1,27 +1,26 @@
+// Adapted from zotero-reference (AGPL-3.0) api.ts Crossref reference parsing.
+
 import {
   GraphEdge,
   GraphNode,
   isCrossDiscipline,
   makeEdgeId,
 } from "./connectionGraph";
-import { resolveByDoi, normalizeDoi } from "./doiResolver";
+import { normalizeDoi } from "./doiResolver";
+import { getReferenceAPI } from "../vendor/zotero-reference";
 
 export { computeCitationSuggestions };
 
 /**
- * Reimplements Zotero-Citation-Graph's idea (not its code — no license to
- * copy) with what we already have: DOI resolution (doiResolver.ts) plus
- * Crossref's own structured reference list. Only matches DOIs that are
- * already present on another item in THIS library — no external "have you
- * seen this new paper" discovery, that's a different, bigger feature.
- * Always "suggested" — never auto-promoted, consistent with the semantic
- * layer's confirm-before-persist design.
+ * Citation suggestions via zotero-reference's Crossref CSL JSON resolver
+ * (structured reference DOIs). Only links items already in this library.
  */
 async function computeCitationSuggestions(
   nodes: Map<number, GraphNode>,
   options: { maxQueries?: number } = {},
 ): Promise<GraphEdge[]> {
   const maxQueries = options.maxQueries ?? 40;
+  const api = getReferenceAPI();
 
   const doiIndex = new Map<string, number>();
   for (const node of nodes.values()) {
@@ -39,8 +38,11 @@ async function computeCitationSuggestions(
   for (let i = 0; i < queries.length; i++) {
     const [doi, itemID] = queries[i];
     try {
-      const record = await resolveByDoi(doi);
-      for (const refDoi of record?.references || []) {
+      const info = await api.getDOIInfoByCrossref(doi);
+      const refDois = (info?.references || [])
+        .map((r) => r.identifiers?.DOI)
+        .filter((d): d is string => typeof d === "string" && !!d);
+      for (const refDoi of refDois) {
         const targetID = doiIndex.get(refDoi.toLowerCase());
         if (!targetID || targetID === itemID) continue;
         const a = Math.min(itemID, targetID);

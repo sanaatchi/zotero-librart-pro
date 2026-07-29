@@ -1,5 +1,5 @@
 // Publish a release to the PUBLIC dist repo so Zotero can auto-update.
-// Source stays private in sanaatchi/eylemler-ve-etiketler.
+// Source stays private in sanaatchi/zotero-librart-pro.
 //
 // Update channel (same pattern as Translate for Zotero):
 //   manifest update_url →
@@ -22,8 +22,8 @@ import {
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
-const DIST_REPO = "sanaatchi/eylemler-ve-etiketler-releases";
-const SOURCE_REPO = "sanaatchi/eylemler-ve-etiketler";
+const DIST_REPO = "sanaatchi/zotero-librart-pro-releases";
+const SOURCE_REPO = "sanaatchi/zotero-librart-pro";
 const UPDATE_RELEASE = "update";
 const UPDATE_URL = `https://github.com/${DIST_REPO}/releases/download/${UPDATE_RELEASE}/update.json`;
 
@@ -38,7 +38,7 @@ const notesArg = process.argv.indexOf("--notes");
 const notes =
   notesArg !== -1 && process.argv[notesArg + 1]
     ? process.argv[notesArg + 1]
-    : `Actions and Tags ${tag}`;
+    : `LibRart Pro ${tag}`;
 
 function run(cmd) {
   console.log(`> ${cmd}`);

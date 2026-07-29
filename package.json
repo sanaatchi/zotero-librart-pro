@@ -1,15 +1,15 @@
 {
-  "name": "zotero-actions-tags",
-  "version": "1.0.30",
-  "description": "Eylem tetikle, etiketle, düzenle. Etiket Analizi ve Bağlantı Haritası dahil.",
+  "name": "zotero-librart-pro",
+  "version": "1.0.32",
+  "description": "LibRart Pro — etiketler, eylemler, Bağlantı Haritası ve referans araçları.",
   "config": {
-    "addonName": "Eylemler ve Etiketler",
-    "addonID": "zoterotag@euclpts.com",
-    "addonRef": "zoterotag",
-    "addonInstance": "ActionsTags",
-    "prefsPrefix": "extensions.actionsTags",
-    "releasePage": "https://github.com/sanaatchi/eylemler-ve-etiketler-releases/releases",
-    "updateJSON": "https://github.com/sanaatchi/eylemler-ve-etiketler-releases/releases/download/update/update.json"
+    "addonName": "LibRart Pro",
+    "addonID": "librartpro@euclpts.com",
+    "addonRef": "librartpro",
+    "addonInstance": "LibRartPro",
+    "prefsPrefix": "extensions.librartPro",
+    "releasePage": "https://github.com/sanaatchi/zotero-librart-pro-releases/releases",
+    "updateJSON": "https://github.com/sanaatchi/zotero-librart-pro-releases/releases/download/update/update.json"
   },
   "main": "src/index.ts",
   "scripts": {
@@ -23,14 +23,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sanaatchi/eylemler-ve-etiketler.git"
+    "url": "git+https://github.com/sanaatchi/zotero-librart-pro.git"
   },
   "author": "ibrahimyildiz.art",
   "license": "AGPL-3.0-or-later",
   "bugs": {
-    "url": "https://github.com/sanaatchi/eylemler-ve-etiketler/issues"
+    "url": "https://github.com/sanaatchi/zotero-librart-pro/issues"
   },
-  "homepage": "https://github.com/sanaatchi/eylemler-ve-etiketler-releases#readme",
+  "homepage": "https://github.com/sanaatchi/zotero-librart-pro-releases#readme",
   "dependencies": {
     "js-yaml": "^4.1.0",
     "zotero-plugin-toolkit": "^5.1.0-beta.10"

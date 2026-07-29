@@ -21,6 +21,8 @@ import {
   initConnectionMapWindow,
   openConnectionMap,
 } from "./modules/connectionMap";
+import { initReferenceReader } from "./modules/referenceReader";
+import { initNoteWorkspace } from "./modules/noteWorkspace";
 
 async function onStartup() {
   await Promise.all([
@@ -68,6 +70,8 @@ async function onStartup() {
 
 async function onMainWindowLoad(win: Window): Promise<void> {
   initItemMenu(win);
+  await initReferenceReader();
+  await initNoteWorkspace();
   await addon.api.actionManager.dispatchActionByEvent(
     ActionEventTypes.mainWindowLoad,
     {
