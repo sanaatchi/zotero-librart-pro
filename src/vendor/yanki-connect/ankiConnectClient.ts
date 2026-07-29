@@ -1,4 +1,4 @@
-// @ajan: cursor · @etiket: f7, anki, yanki-connect, vendor
+// @ajan: cursor · @etiket: f7, anki, yanki-connect, vendor, http-allowlist
 // AnkiConnect HTTP client — protocol compatible with yanki-connect (MIT).
 // Transport is injectable so Vitest can run without Zotero.HTTP.
 
@@ -34,11 +34,27 @@ const DEFAULT_HOST = "http://127.0.0.1";
 const DEFAULT_PORT = 8765;
 const DEFAULT_VERSION = 6;
 
+const LOOPBACK = new Set(["127.0.0.1", "localhost", "::1"]);
+
 function defaultAnkiEndpoint(host?: string, port?: number): string {
   const h = (host || DEFAULT_HOST).replace(/\/$/, "");
   const p =
     typeof port === "number" && Number.isFinite(port) ? port : DEFAULT_PORT;
-  return `${h}:${p}`;
+  const url = h.includes("://") ? `${h}:${p}` : `http://${h}:${p}`;
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return `${DEFAULT_HOST}:${DEFAULT_PORT}`;
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    return `${DEFAULT_HOST}:${DEFAULT_PORT}`;
+  }
+  if (!LOOPBACK.has(parsed.hostname.toLowerCase())) {
+    // Fail closed: non-loopback Anki hosts are rejected.
+    return `${DEFAULT_HOST}:${DEFAULT_PORT}`;
+  }
+  return `${parsed.protocol}//${parsed.hostname}:${p}`;
 }
 
 async function zoteroAnkiTransport(

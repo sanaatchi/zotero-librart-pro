@@ -1,5 +1,7 @@
+// @ajan: cursor · @etiket: f1, notify, vector-delete
 import { ActionEventTypes } from "../utils/actions";
 import { recordTabStatus } from "./tabs";
+import { removeItemEmbedding } from "../vendor/zotseek/vectorStoreRuntime";
 
 export { initNotifierObserver };
 
@@ -107,6 +109,14 @@ async function onNotify(
           },
         );
       }
+    }
+    return;
+  }
+  if ((event === "trash" || event === "delete") && type === "item") {
+    for (const id of ids) {
+      const n = typeof id === "number" ? id : Number(id);
+      if (!Number.isFinite(n)) continue;
+      await removeItemEmbedding(n);
     }
     return;
   }

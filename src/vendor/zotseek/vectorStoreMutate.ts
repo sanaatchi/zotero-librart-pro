@@ -4,6 +4,7 @@
 import {
   JsonVectorRow,
   JsonVectorStoreFile,
+  removeJsonVectorRow,
   upsertJsonVectorRow,
 } from "./jsonVectorStore";
 import { createSerialQueue } from "./serialQueue";
@@ -63,5 +64,20 @@ function createVectorMutator(deps: VectorMutateDeps) {
     });
   }
 
-  return { beginGeneration, commitRow };
+  async function removeRow(itemId: number): Promise<boolean> {
+    return queue(async () => {
+      const current = deps.getMemory() ?? (await deps.load());
+      if (!current.rows[String(itemId)]) {
+        deps.setMemory(current);
+        return false;
+      }
+      const next = removeJsonVectorRow(current, itemId);
+      await deps.persist(next);
+      deps.setMemory(next);
+      generations.delete(itemId);
+      return true;
+    });
+  }
+
+  return { beginGeneration, commitRow, removeRow };
 }

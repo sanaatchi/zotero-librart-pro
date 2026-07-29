@@ -523,8 +523,10 @@ export default class Views {
                 }
                 await Zotero.Promise.delay(1000);
               }
-              // let dest = unescape()
-              // 有报错，#39
+              // SECURITY(P2): vendored PDF dual-view needs iframe context.
+              // Lint-ignored vendor; tracked exception — replace with postMessage
+              // / PDFViewerApplication API when upstream allows (no string eval).
+              // eslint-disable-next-line no-eval -- zotero-reference dual-view destination jump
               _window.secondViewIframeWindow.eval(`PDFViewerApplication
                 .pdfViewer.linkService.goToDestination("${href.slice(1)}")`);
             });

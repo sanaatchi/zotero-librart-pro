@@ -15,6 +15,7 @@ import { topKSimilar } from "./vectorMath";
 
 export {
   indexItemEmbedding,
+  removeItemEmbedding,
   findSimilarInStore,
   getVectorStoreStats,
   extractItemEmbedText,
@@ -138,6 +139,15 @@ async function indexItemEmbedding(itemId: number): Promise<boolean> {
     generation,
   );
   return committed.applied || committed.reason === "unchanged";
+}
+
+async function removeItemEmbedding(itemId: number): Promise<boolean> {
+  try {
+    return await mutator.removeRow(itemId);
+  } catch (e) {
+    ztoolkit.log("[LibRart:ZotSeek] vector remove failed", itemId, e);
+    return false;
+  }
 }
 
 async function findSimilarInStore(

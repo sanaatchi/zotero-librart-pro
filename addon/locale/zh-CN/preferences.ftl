@@ -94,3 +94,23 @@ note-workspace = 笔记链接（兼容 Better Notes）
 note-workspace-enabled =
     .label = 启用插入笔记链接
 note-workspace-hint = 向所选笔记插入 zotero://note/… 维基链接；连接地图笔记层可读。完整 BN 工作区稍后。
+
+# --- synced from en-US (10 ids) ---
+openalex = Citation layers (OpenAlex / Crossref / OpenCitations)
+openalex-enabled =
+    .label = OpenAlex citation edges
+crossref-enabled =
+    .label = Crossref citation edges
+opencitations-enabled =
+    .label = OpenCitations citation edges (off by default)
+openalex-mailto =
+    .value = OpenAlex mailto (polite pool)
+openalex-mailto-hint = Optional; when set, OpenAlex polite pool is used.
+openalex-cache-days =
+    .value = Cache (days)
+
+citegeist = Citegeist (OpenAlex summary — experimental)
+citegeist-enabled =
+    .label = Enable citation summary menu
+citegeist-hint = OpenAlex citation/reference counts for selected items. Full Citegeist columns/pane not ported (no full GPL UI).
+

@@ -1,4 +1,4 @@
-// @ajan: cursor · @etiket: f9, semantic, kutuphane, parse
+// @ajan: cursor · @etiket: f9, semantic, kutuphane, parse, http-allowlist
 // Pure helpers for Kutuphane semantic bridge (8756) — no Zotero globals.
 
 export type SemanticStatusPayload = {
@@ -18,19 +18,54 @@ export type SemanticSearchHit = {
   score: number;
 };
 
+export type HttpTargetPolicy = {
+  /** When true (default), only loopback / localhost hosts are allowed. */
+  loopbackOnly?: boolean;
+  /** Extra hostnames allowed when loopbackOnly is true. */
+  allowHosts?: string[];
+};
+
 export {
   normalizeSemanticBaseUrl,
+  isAllowedHttpTarget,
   parseStatusPayload,
   parseSearchPayload,
   buildKpIndexFromEntries,
   mapHitsToItemIds,
 };
 
-function normalizeSemanticBaseUrl(raw: unknown): string | null {
+const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "::1", "[::1]"]);
+
+function isAllowedHttpTarget(
+  url: string,
+  policy: HttpTargetPolicy = {},
+): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    return false;
+  }
+  const loopbackOnly = policy.loopbackOnly !== false;
+  if (!loopbackOnly) return true;
+  const host = parsed.hostname.toLowerCase();
+  if (LOOPBACK_HOSTS.has(host)) return true;
+  const extra = (policy.allowHosts || []).map((h) => h.toLowerCase());
+  return extra.includes(host);
+}
+
+function normalizeSemanticBaseUrl(
+  raw: unknown,
+  policy: HttpTargetPolicy = {},
+): string | null {
   if (typeof raw !== "string") return null;
   const trimmed = raw.trim().replace(/\/+$/, "");
   if (!trimmed) return null;
   if (!/^https?:\/\//i.test(trimmed)) return null;
+  if (!isAllowedHttpTarget(trimmed, policy)) return null;
   return trimmed;
 }
 

@@ -17,6 +17,20 @@ describe("kutuphaneSemanticParse", () => {
     expect(normalizeSemanticBaseUrl("not-a-url")).toBeNull();
   });
 
+  it("rejects non-loopback HTTP targets by default", () => {
+    expect(normalizeSemanticBaseUrl("http://evil.example:8756")).toBeNull();
+    expect(
+      normalizeSemanticBaseUrl("http://evil.example:8756", {
+        loopbackOnly: false,
+      }),
+    ).toBe("http://evil.example:8756");
+    expect(
+      normalizeSemanticBaseUrl("http://semantic.local:8756", {
+        allowHosts: ["semantic.local"],
+      }),
+    ).toBe("http://semantic.local:8756");
+  });
+
   it("parses /status payload", () => {
     expect(
       parseStatusPayload({
