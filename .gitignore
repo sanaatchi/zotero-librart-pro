@@ -19,3 +19,7 @@ addon/content/models/**/*.onnx
 addon/content/wasm/*.wasm
 addon/content/wasm/*.mjs
 addon/content/scripts/embedding-worker.js
+
+# publish.mjs may write provenance at repo root
+/provenance.json
+
