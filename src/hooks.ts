@@ -1,4 +1,4 @@
-// @ajan: cursor · @etiket: f1, hooks, feature-registry, multi-window
+// @ajan: cursor · @etiket: f1, hooks, feature-registry, multi-window, startup-isolation
 import { config, homepage } from "../package.json";
 import { getString, initLocale } from "./utils/locale";
 import { initPrefPane } from "./modules/preferenceWindow";
@@ -63,9 +63,11 @@ async function onStartup() {
 
   addon.api.actionManager
     .dispatchActionByEvent(ActionEventTypes.programStartup, {})
-    .then(async () => {
-      await onMainWindowLoad(window);
+    .catch((err) => {
+      ztoolkit.log("programStartup action failed (window init continues)", err);
     });
+  // Window features must not depend on user startup actions succeeding.
+  await onMainWindowLoad(window);
 }
 
 async function onMainWindowLoad(win: Window): Promise<void> {

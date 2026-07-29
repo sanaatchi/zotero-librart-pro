@@ -1,10 +1,100 @@
-<!-- @ajan: codex · @etiket: katman-3, derin-analiz, eksik-raporu -->
+<!-- @ajan: cursor · @etiket: katman-3, eksik-raporu, startup-isolation -->
 
 # Cursor için Katman 3 eksik analizi
 
 > **Çalışma kuralı:** Her yeni Katman 3 düzenlemesinde  
 > **1)** bu raporu oku → **2)** açık maddeleri düzelt → **3)** ancak sonra özellik işi.  
 > Rule: `.cursor/rules/katman-eksik-raporu.mdc` (üç katman ortak) · `kaynak/AGENTS.md`
+
+## 2026-07-30 — Cursor düzeltmesi (startup izolasyonu)
+
+| Madde | Durum | Not |
+| ----- | ----- | --- |
+| Startup action hata izolasyonu | ✅ | `programStartup` `.catch` + her zaman `onMainWindowLoad` |
+| Typecheck | ✅ | `tsc --noEmit` |
+| Gerçek Zotero checklist | 🟡 | Manuel |
+| P2 pref/vektör/HTTP/eval/locale | ❌ | Önceki Codex listesi açık |
+
+---
+
+## Arşiv — Codex 2026-07-30 derin analiz
+
+> **Çalışma kuralı:** Her yeni Katman 3 düzenlemesinde  
+> **1)** bu raporu oku → **2)** açık maddeleri düzelt → **3)** ancak sonra özellik işi.  
+> Rule: `.cursor/rules/katman-eksik-raporu.mdc` (üç katman ortak) · `kaynak/AGENTS.md`
+
+## Üç-katman kapanış denetimi — 2026-07-30
+
+**Karar:** `request changes` — F0–F9.2.3 ve public v1.0.46 mevcut, fakat
+Katman 3 operasyonel/sertleştirme kapanışı tamam değil.
+
+**Bağımsız doğrulama:** çalışma ağacı temiz, HEAD `f55a40b`. **94/94 test**,
+TypeScript, ESLint, Prettier ve v1.0.46 XPI build ✅. Canlı CI HEAD
+[`30476540188`](https://github.com/sanaatchi/zotero-librart-pro/actions/runs/30476540188)
+başarılı. İndirilen public XPI **645.032 bayt**; SHA-512
+`f4c1c9c4cc816dcd85dd3789395ca80c5b1fbfb8458a23b039b632f67ec6407e4f1e852fb3e1d78d406c59ab490d6d07fe14f1726f518d353d81af6b53753965`
+ve public `update.json` eşleşiyor.
+
+| Madde                         | Durum | Sonuç                                                         |
+| ----------------------------- | ----- | ------------------------------------------------------------- |
+| F0–F9.2.3 / test / build      | ✅    | 94 test ve statik kapılar yeşil                               |
+| Public XPI / update SHA-512   | ✅    | v1.0.46 artefact bütünlüğü doğrulandı                          |
+| Startup action hata izolasyonu| ❌ P1 | Action reject olursa main-window init çalışmayabilir           |
+| Gerçek Zotero kabulü          | 🟡 P1 | Checklist sonuç/kanıt hücreleri boş                            |
+| Canlı pref reconcile          | ❌ P2 | Feature aç/kapat restart gerektiriyor                          |
+| Vektör delete/prune/recovery  | ❌ P2 | Runtime item-delete/invalidation zinciri yok                   |
+| HTTP hedef politikası         | ❌ P2 | Semantic/Anki URL’leri loopback/redirect allowlist’siz         |
+| Vendored `eval()`             | ❌ P2 | Çalıştırılabilir string vendor lint alanı dışında              |
+| Locale eşitliği               | ❌ P2 | Build it-IT/zh-CN için 14 eksik ID uyarısı verdi               |
+| Gerçek 10k / feature compose  | 🟡 P2 | Saf helper smoke var; Zotero runtime/bellek ölçümü yok         |
+
+### P1 — startup action reddi pencere özelliklerini hâlâ engelliyor
+
+`src/hooks.ts`, `dispatchActionByEvent(programStartup)` sonucuna `.then(() =>
+onMainWindowLoad(window))` bağlıyor; zincir await edilmiyor ve rejection handler
+yok. Bir kullanıcı startup action’ı hata verirse ana pencere fazı hiç initialize
+edilmez ve unhandled rejection oluşur. Önceki rapordaki bu P1 maddesi kodda
+duruyor.
+
+**Cursor görevi:** action dispatch ve pencere init’ini ayır; init’i garantili
+`finally`/bağımsız awaited blokta çalıştır, action hatasını logla. Reject eden
+action ile gerçek registry/main-window testini ekle.
+
+### P1 — manuel Zotero matrisi ve kaynak commit kaydı açık
+
+`ZOTERO-KABUL-CHECKLIST.md` tamamen boş. İki pencere, reader teardown,
+disable/enable, update ve bağlantı haritası gerçek Zotero’da kanıtlanmadı.
+Checklist `Kaynak commit: 8301819` diyor; public release workflow’u ise kod
+commit’i `c85b705` üzerinde çalıştı. Dokümantasyon commitini release kaynağı
+gibi göstermek provenance’ı belirsizleştiriyor.
+
+**Cursor görevi:** checklist’i gerçek sonuç/log/ekran kanıtıyla doldur; release
+source commitini `c85b705...` olarak ayır, docs/HEAD commitini ayrı yaz. Gelecek
+release’e Katman 2’deki gibi `provenance.json` ekle.
+
+### Açık P2 güvenlik ve yaşam döngüsü borcu
+
+- Pref penceresi yalnız UI bind ediyor; feature registry için off→on→off
+  reconcile/observer yok.
+- `removeJsonVectorRow()` helper’ı runtime item-delete notifier’ına bağlı değil;
+  model/schema değişiminde stale vektörler kalıyor, corrupt store recovery
+  sözleşmesi yok.
+- Semantic ve Anki hedefleri kullanıcı pref’inden HTTP’ye gidiyor; loopback
+  allowlist, userinfo/fragment reddi ve redirect hedef doğrulaması yok.
+- `src/vendor/zotero-reference/views.ts` dinamik `eval()` çalıştırıyor ve
+  `src/vendor/zotero-reference/**` tamamen ESLint ignore alanında.
+- Build, it-IT/zh-CN için `local-book-db*`, OpenAlex, Crossref,
+  OpenCitations ve Citegeist dahil 14 eksik Fluent ID uyarısı verdi.
+
+### Katman 3 zorunlu kapanış sırası
+
+1. Startup action hata izolasyonu.
+2. Gerçek Zotero checklist + doğru source provenance.
+3. Pref reconcile ve vektör delete/prune/recovery.
+4. HTTP loopback/redirect politikası ve vendored `eval` kaldırma.
+5. Locale eşitliği + gerçek Zotero 10k/feature-composition kabulü.
+
+---
 
 ## Derin yeniden analiz — 2026-07-29
 
