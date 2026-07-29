@@ -50,10 +50,19 @@ type SimNode = {
   node: GraphNode;
 };
 
+type RopePoint = {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+};
+
 type SimEdge = {
   edge: GraphEdge;
   source: SimNode;
   target: SimNode;
+  /** Free points along the thread — lag behind endpoints so the link bends. */
+  mids: [RopePoint, RopePoint];
 };
 
 type RendererState = {
@@ -561,7 +570,12 @@ function buildSimulation(
       const hayT = `${t.node.title} ${t.node.creatorSummary}`.toLocaleLowerCase("tr");
       if (!hayS.includes(filter) && !hayT.includes(filter)) continue;
     }
-    simEdges.push({ edge, source: s, target: t });
+    simEdges.push({
+      edge,
+      source: s,
+      target: t,
+      mids: initRopeMids(s, t),
+    });
   }
 
   const prev = stateByWin.get(win);
@@ -628,24 +642,28 @@ function mountSvg(
   nodeLayer.setAttribute("class", "nodes");
 
   for (const se of st.simEdges) {
-    const line = doc.createElementNS("http://www.w3.org/2000/svg", "line");
-    line.setAttribute("data-edge-id", se.edge.id);
+    const path = doc.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("data-edge-id", se.edge.id);
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke-linecap", "round");
+    path.setAttribute("stroke-linejoin", "round");
+    path.setAttribute("d", ropePathD(se));
     const style = edgeStyle(se.edge);
-    line.setAttribute("stroke", style.stroke);
-    line.setAttribute("stroke-width", String(style.width));
-    line.setAttribute("stroke-opacity", String(style.opacity));
-    if (style.dash) line.setAttribute("stroke-dasharray", style.dash);
-    line.style.cursor =
+    path.setAttribute("stroke", style.stroke);
+    path.setAttribute("stroke-width", String(style.width));
+    path.setAttribute("stroke-opacity", String(style.opacity));
+    if (style.dash) path.setAttribute("stroke-dasharray", style.dash);
+    path.style.cursor =
       se.edge.state === "suggested" || se.edge.layer === "manual"
         ? "pointer"
         : "default";
 
     const title = doc.createElementNS("http://www.w3.org/2000/svg", "title");
     title.textContent = edgeTooltip(se.edge, se.source.node, se.target.node);
-    line.appendChild(title);
+    path.appendChild(title);
 
     if (se.edge.state === "suggested") {
-      line.addEventListener("click", async (ev) => {
+      path.addEventListener("click", async (ev) => {
         ev.stopPropagation();
         const pct = Math.round(se.edge.confidence * 100);
         const acceptMsg = getString("connection-map-accept-confirm", {
@@ -692,7 +710,7 @@ function mountSvg(
     }
 
     if (se.edge.layer === "manual" && se.edge.state === "confirmed") {
-      line.addEventListener("contextmenu", async (ev) => {
+      path.addEventListener("contextmenu", async (ev) => {
         ev.preventDefault();
         ev.stopPropagation();
         const msg = getString("connection-map-confirm-remove", {
@@ -713,7 +731,7 @@ function mountSvg(
         refreshBtn?.click();
       });
     }
-    edgeLayer.appendChild(line);
+    edgeLayer.appendChild(path);
   }
 
   // Precompute degree so hub labels stay readable in dense graphs.
@@ -1008,7 +1026,7 @@ function wireViewportControls(
     if (left && !st.spaceHeld && pe.target !== svg && pe.target !== root) {
       // Node/edge handlers manage their own interactions.
       const t = pe.target as Element | null;
-      if (t?.closest?.("g[data-node-id], line[data-edge-id]")) return;
+      if (t?.closest?.("g[data-node-id], path[data-edge-id]")) return;
     }
 
     pe.preventDefault();
@@ -1064,7 +1082,7 @@ function wireViewportControls(
 
   svg.addEventListener("dblclick", (ev) => {
     const t = ev.target as Element | null;
-    if (t?.closest?.("g[data-node-id], line[data-edge-id]")) return;
+    if (t?.closest?.("g[data-node-id], path[data-edge-id]")) return;
     ev.preventDefault();
     fitView(st);
     applyViewport(root, svg, st.transform);
@@ -1076,7 +1094,7 @@ function wireViewportControls(
   });
   svg.addEventListener("contextmenu", (ev) => {
     const t = ev.target as Element | null;
-    if (!t?.closest?.("line[data-edge-id]")) ev.preventDefault();
+    if (!t?.closest?.("path[data-edge-id]")) ev.preventDefault();
   });
 
   const onKeyDown = (ev: KeyboardEvent) => {
@@ -1287,14 +1305,15 @@ function stepForces(st: RendererState) {
     return;
   }
 
-  // Zero-g threads: links only pull when taut (no rod-like push), soft stretch.
+  // Zero-g threads: bendable ropes (midpoints lag) + soft repulsion.
   const repulsion = 380;
-  const thread = 0.005;
-  const slack = 130;
+  const thread = 0.008;
+  const midPull = 0.028;
+  const midDamp = 0.9;
   const centering = 0.001;
   const damp = 0.94;
   const maxRepulse = 1.8;
-  const maxTension = 1.2;
+  const maxTension = 1.4;
 
   let cx = 0;
   let cy = 0;
@@ -1332,20 +1351,33 @@ function stepForces(st: RendererState) {
   for (const se of st.simEdges) {
     const a = se.source;
     const b = se.target;
-    const dx = b.x - a.x;
-    const dy = b.y - a.y;
-    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-    const stretch = dist - slack;
-    // Slack string: no force when loose; gentle pull only when taut.
-    if (stretch <= 0) continue;
-    let f = stretch * thread;
-    if (f > maxTension) f = maxTension;
-    const fx = (dx / dist) * f;
-    const fy = (dy / dist) * f;
-    a.vx += fx;
-    a.vy += fy;
-    b.vx -= fx;
-    b.vy -= fy;
+    const [m0, m1] = se.mids;
+    const chord = Math.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2) || 1;
+    const segRest = Math.max(chord / 3, 24);
+
+    // Soft anchors toward 1/3 and 2/3 of the chord — weak so mids lag and the thread bends.
+    const r0x = a.x + (b.x - a.x) / 3;
+    const r0y = a.y + (b.y - a.y) / 3;
+    const r1x = a.x + (2 * (b.x - a.x)) / 3;
+    const r1y = a.y + (2 * (b.y - a.y)) / 3;
+    m0.vx += (r0x - m0.x) * midPull;
+    m0.vy += (r0y - m0.y) * midPull;
+    m1.vx += (r1x - m1.x) * midPull;
+    m1.vy += (r1y - m1.y) * midPull;
+
+    // Chain tension only when a segment is taut (string, not rod).
+    softThreadLink(a, m0, segRest, thread, maxTension, true);
+    softThreadLink(m0, m1, segRest, thread, maxTension, false);
+    softThreadLink(m1, b, segRest, thread, maxTension, true);
+
+    m0.vx *= midDamp;
+    m0.vy *= midDamp;
+    m1.vx *= midDamp;
+    m1.vy *= midDamp;
+    m0.x += m0.vx;
+    m0.y += m0.vy;
+    m1.x += m1.vx;
+    m1.y += m1.vy;
   }
 
   let energy = 0;
@@ -1359,7 +1391,74 @@ function stepForces(st: RendererState) {
     a.y += a.vy;
     energy += a.vx * a.vx + a.vy * a.vy;
   }
-  st.energy = energy / n;
+  for (const se of st.simEdges) {
+    for (const m of se.mids) {
+      energy += m.vx * m.vx + m.vy * m.vy;
+    }
+  }
+  st.energy = energy / Math.max(1, n + st.simEdges.length);
+}
+
+/** Pull only when stretched past rest (slack string). Optionally tug SimNode ends. */
+function softThreadLink(
+  p: { x: number; y: number; vx: number; vy: number },
+  q: { x: number; y: number; vx: number; vy: number },
+  rest: number,
+  k: number,
+  maxF: number,
+  tugNodes: boolean,
+) {
+  const dx = q.x - p.x;
+  const dy = q.y - p.y;
+  const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+  const stretch = dist - rest;
+  if (stretch <= 0) return;
+  let f = stretch * k;
+  if (f > maxF) f = maxF;
+  const fx = (dx / dist) * f;
+  const fy = (dy / dist) * f;
+  if (tugNodes) {
+    p.vx += fx;
+    p.vy += fy;
+    q.vx -= fx;
+    q.vy -= fy;
+  } else {
+    p.vx += fx * 0.5;
+    p.vy += fy * 0.5;
+    q.vx -= fx * 0.5;
+    q.vy -= fy * 0.5;
+  }
+}
+
+function initRopeMids(s: SimNode, t: SimNode): [RopePoint, RopePoint] {
+  const dx = t.x - s.x;
+  const dy = t.y - s.y;
+  let nx = -dy;
+  let ny = dx;
+  const nlen = Math.sqrt(nx * nx + ny * ny) || 1;
+  nx = (nx / nlen) * 10;
+  ny = (ny / nlen) * 10;
+  return [
+    {
+      x: s.x + dx / 3 + nx,
+      y: s.y + dy / 3 + ny,
+      vx: 0,
+      vy: 0,
+    },
+    {
+      x: s.x + (2 * dx) / 3 - nx,
+      y: s.y + (2 * dy) / 3 - ny,
+      vx: 0,
+      vy: 0,
+    },
+  ];
+}
+
+function ropePathD(se: SimEdge): string {
+  const a = se.source;
+  const b = se.target;
+  const [m0, m1] = se.mids;
+  return `M ${a.x} ${a.y} C ${m0.x} ${m0.y} ${m1.x} ${m1.y} ${b.x} ${b.y}`;
 }
 
 function paint(win: Window) {
@@ -1372,14 +1471,11 @@ function paint(win: Window) {
   if (!canvas) return;
 
   for (const se of st.simEdges) {
-    const line = canvas.querySelector(
-      `line[data-edge-id="${cssEscape(se.edge.id)}"]`,
-    ) as SVGLineElement | null;
-    if (!line) continue;
-    line.setAttribute("x1", String(se.source.x));
-    line.setAttribute("y1", String(se.source.y));
-    line.setAttribute("x2", String(se.target.x));
-    line.setAttribute("y2", String(se.target.y));
+    const path = canvas.querySelector(
+      `path[data-edge-id="${cssEscape(se.edge.id)}"]`,
+    ) as SVGPathElement | null;
+    if (!path) continue;
+    path.setAttribute("d", ropePathD(se));
   }
 
   for (const sn of st.simNodes) {
