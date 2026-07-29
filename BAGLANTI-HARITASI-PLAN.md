@@ -1,6 +1,13 @@
+<!-- @ajan: codex · @etiket: librart-pro, baglanti-haritasi, tarihsel-plan -->
 # Bağlantı Haritası (Connection Map) — v1 Uygulama Planı
 
-> Bu dosya, onaylanmış v1 planının ortak referansıdır. Cursor / Claude Code / GPT Codex gibi bu depo üzerinde eş zamanlı çalışan araçlar aynı plana bakmalıdır.
+> **Tarihsel uygulama kaydı:** Bu belge v1'in nasıl inşa edildiğini ve manuel
+> doğrulama listesini korur. Proje artık LibRart Pro'dur; aşağıdaki
+> `zotero-actions-tags`, `zoterotag` ve `ActionsTags` adları tarihsel
+> başlangıç durumunu anlatır, güncel kimlik değildir. Yeni özellik/lisans/faz
+> kararlarında [`REFERANS-ANALIZ.md`](REFERANS-ANALIZ.md) geçerlidir.
+
+> Bu dosya, tamamlanmış v1 uygulamasının tarihsel referansıdır.
 >
 > **Çakışma uyarısı:** İmplementasyon başlamadan veya bu dosyayı değiştirmeden önce `git status` / `git log` ile başka bir oturumun aynı dosyaları düzenleyip düzenlemediğini kontrol edin.
 

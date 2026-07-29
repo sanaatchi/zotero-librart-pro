@@ -33,3 +33,5 @@ Zotero güncelleme manifesti:
 `addonID` değiştiği için bu, **Eylemler ve Etiketler** (`zoterotag@euclpts.com`) ile aynı eklenti değildir — yeni kurulum gerekir; eski tercihler otomatik taşınmaz.
 
 Vendor kaynak kodları: `VENDOR-SOURCES.md`
+
+**Referans analizi ve entegrasyon planı (tek kaynak):** [`REFERANS-ANALIZ.md`](REFERANS-ANALIZ.md)

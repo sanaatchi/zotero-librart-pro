@@ -1,10 +1,17 @@
+<!-- @ajan: codex · @etiket: librart-pro, commit, eski-kimlik -->
 # Claude Code — Git commit prompt
+
+> **Kimlik düzeltmesi:** Güncel proje **LibRart Pro**
+> (`zotero-librart-pro`, `librartpro@euclpts.com`) ve kaynak deposu
+> `sanaatchi/zotero-librart-pro`dur. Aşağıdaki Eylemler ve Etiketler adları,
+> eski addon ID ve eski release adresleri tarihsel metindir; commit/release
+> işleminde kullanılmaz.
 
 Bu dosyayı Claude Code’a vererek commit yaptır.
 
 ---
 
-Bu proje Zotero eklentisi: **Eylemler ve Etiketler** (`eylemler-ve-etiketler`).
+Bu proje Zotero eklentisi: **LibRart Pro** (`zotero-librart-pro`).
 
 ## Plugin nedir?
 
@@ -13,9 +20,9 @@ Zotero için “Actions and Tags” tabanlı özel fork.
 - Eylemlerle öğelere otomatik etiket ekleme / kaldırma / aç-kapa
 - **Etiket Analizi** paneli: kütüphane etiketlerini canlı analiz eder (istatistik, tür dağılımı, birleştirme adayları)
 - Türkçe arayüz
-- Otomatik güncelleme: public repo `sanaatchi/eylemler-ve-etiketler-releases`
-- Kaynak (private): `sanaatchi/eylemler-ve-etiketler`
-- Addon ID: `zoterotag@euclpts.com`
+- Otomatik güncelleme hedefi: `sanaatchi/zotero-librart-pro-releases`
+- Kaynak (private): `sanaatchi/zotero-librart-pro`
+- Addon ID: `librartpro@euclpts.com`
 - Yayın: `npm run gh-release` (XPI + `update.json`)
 
 ## Git commit kuralları (Windows PowerShell)

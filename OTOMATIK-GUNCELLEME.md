@@ -1,16 +1,26 @@
+<!-- @ajan: codex · @etiket: librart-pro, updater, bilinen-tutarsizlik -->
 # Güncelleme (elle tetikleme)
+
+> **Mevcut durum — yayınlamaya hazır değil:** Yapılandırma
+> `sanaatchi/zotero-librart-pro-releases` deposunu hedefliyor; son doğrulamada
+> bu public depo mevcut değildi. Ayrıca `zotero-plugin.config.ts` içinde
+> `makeUpdateJson.hash: false` ve üretilmiş `build/update.json` içinde
+> `update_hash` yok. Aşağıdaki hedef akış, depo oluşturulup SHA-512 hash
+> üretimi ve gerçek Zotero güncellemesi uçtan uca doğrulanmadan çalışıyor
+> kabul edilmez.
 
 Kaynak **private**; Zotero güncellemesi için yalnızca `.xpi` + `update.json` **public** release reposunda tutulur.
 
 | Repo | Görünürlük | İçerik |
 |---|---|---|
 | `sanaatchi/zotero-librart-pro` | Private | Kaynak |
-| `sanaatchi/zotero-librart-pro-releases` | **Public** | `.xpi` + `update.json` (kaynak kod yok) |
+| `sanaatchi/zotero-librart-pro-releases` | **Planlanan public repo — henüz mevcut/doğrulanmış değil** | `.xpi` + `update.json` (kaynak kod yok) |
 
 ## Elle güncelleme (Zotero içinden)
 
-1. Yayın: `npm run gh-release` (aşağıya bakın).
-2. Zotero → **Araçlar → Eklentiler** → ⚙ → **Güncellemeleri denetle**.
+1. Önkoşul: public release deposu ve update hash üretimi hazır olmalı.
+2. Yayın: `npm run gh-release` (aşağıya bakın).
+3. Zotero → **Araçlar → Eklentiler** → ⚙ → **Güncellemeleri denetle**.
 
 Otomatik arka plan kontrolünü kapatmak için (isteğe bağlı): `about:config` →  
 `extensions.update.enabled` = **false**  
@@ -50,4 +60,7 @@ npm run gh-release
 2. Hızlı ardışık release’lerde Zotero hâlâ eski sürümü görüyordu → “güncelleme yok”.  
 3. `update_hash` yoktu; çalışan eklentilerde (PDF Translate) hash var.
 
-Bunlar giderildi. **1.0.20+** kuruluysa bundan sonra sadece release + Check for Updates yeterli.
+Bu sorunlar tarihsel olarak tespit edildi; mevcut LibRart Pro yapılandırmasında hash
+yeniden kapalı olduğu için giderilmiş sayılmaz. Release deposu oluşturulup
+`update_hash` içeren gerçek manifest Zotero üzerinden doğrulanana kadar yalnız build
+çıktısına güvenilmemelidir.

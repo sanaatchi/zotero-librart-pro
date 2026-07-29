@@ -1,4 +1,12 @@
+<!-- @ajan: codex · @etiket: librart-pro, tarihsel-brief, lisans-uyarisi -->
 # Cursor Görevi: Referans Pluginlerin Orijinal Kodlarını Doğrudan Entegre Et
+
+> **TARİHSEL / UYGULANMAYACAK BRİF:** Bu görev metninin lisanslı AGPL/MIT
+> kaynaklara ilişkin bölümleri geçmiş bağlamdır. Lisanssız
+> `Zotero-Citation-Graph`, `citation_map` ve benzeri kaynakları port etmeyi
+> söyleyen maddeler geçersizdir. Kullanıcı onayı telif izni değildir. Güncel
+> kararlar için [`REFERANS-ANALIZ.md`](REFERANS-ANALIZ.md) ve
+> `VENDOR-SOURCES.md` kullanılır.
 
 ## Arka plan
 
@@ -16,13 +24,13 @@ kulan"* (evet, yeniden yapılandır, orijinal kodlamaları kullan).
 
 ## Proje kimliği (referans için)
 
-- Repo (kaynak): `sanaatchi/eylemler-ve-etiketler` — bu makinede
+- Repo (kaynak): `sanaatchi/zotero-librart-pro` — bu makinede
   `C:\Users\ibrah\Projeler\Kutuphane\zotero-eklentiler\kaynak`
   (kendi bağımsız git geçmişi var; Kütüphane projesinin repo'suna dahil
   değil — Kütüphane'nin `.gitignore`'unda `zotero-eklentiler/` olarak
   hariç tutuldu, sadece fiziksel olarak aynı üst klasörde duruyor.)
-- Repo (release): `sanaatchi/eylemler-ve-etiketler-releases`
-- `addonID`: `zoterotag@euclpts.com`, `addonRef`: `zoterotag`
+- Repo (release): `sanaatchi/zotero-librart-pro-releases`
+- Görünen ad: **LibRart Pro** · `addonID`: `librartpro@euclpts.com`, `addonRef`: `librartpro`
 - Lisans: **AGPL-3.0-or-later** (`package.json` satır 29) — bu, aşağıdaki dört
   pluginin kodunu doğrudan kullanmamıza izin veriyor (AGPL→AGPL ve MIT→AGPL
   ikisi de serbest; tek şart: birleşik eser AGPL kalmalı, ki zaten öyle).
@@ -40,8 +48,8 @@ kulan"* (evet, yeniden yapılandır, orijinal kodlamaları kullan).
 | zotero-reference | AGPL-3.0 | ✅ Doğrudan kod kullanılabilir |
 | zotero-better-notes | AGPL-3.0 | ✅ Doğrudan kod kullanılabilir |
 | ZotSeek | MIT | ✅ Doğrudan kod kullanılabilir |
-| Zotero-Citation-Graph | **LICENSE dosyası yok** (tüm haklar saklı) | ❌ Kod **kopyalanamaz** — sadece yaklaşım/algoritma fikri kullanılabilir, satır satır port edilemez |
-| inciteful-zotero-plugin | — | ❌ Kullanıcı gizlilik gerekçesiyle bu pluginin tamamen dışlanmasını istedi — hiç kullanılmayacak |
+| Zotero-Citation-Graph | repoda LICENSE yok | ❌ Kod/vendor/port yasak; yalnız davranış incelemesi ve temiz oda uygulama |
+| inciteful-zotero-plugin | AGPL-3.0-or-later | ✅ **Kullanılacak** — menü + `openIncitefulSearch` / `openIncitefulConnector` port edilecek (harici `inciteful.xyz` API; kullanıcı bilinçli tercih) |
 
 **Kural:** Kod kopyalarken/uyarlarken dosya başına orijinal telif/lisans
 notunu koru (AGPL/MIT gereği). Yeni dosyalarda üstte kısa bir yorum satırıyla
@@ -131,17 +139,36 @@ ediyoruz) ve paralelde kendi Kutuphane köprümüzü kurduk
     bozmadan, sadece ZotSeek'e olan **dış plugin bağımlılığını** ortadan
     kaldırmak için yapılabilir.
 
-### 5. Zotero-Citation-Graph — SADECE FİKİR, KOD KOPYALANMAYACAK
+### 5. Zotero-Citation-Graph — `Zotero-Citation-Graph-main/Zotero-Citation-Graph-main/src/`
 
-LICENSE dosyası yok. Bizim `connectionCitationLayer.ts` ve `connectionGraph.ts`
-içindeki atıf-grafiği yaklaşımı bu projeden **ilham aldıysa**, bu şekilde
-kalmalı — satır satır kod taşınmayacak. Sadece genel algoritma fikri
-(örn. hangi atıf ilişkisi türlerinin gösterileceği) kullanılabilir.
+**Güncel karar (2026-07-29):** Upstream lisansı bulunmadığından orijinal kod
+port edilmeyecek. Aşağıdaki eski görev maddeleri uygulanmaz; yalnız davranış
+gereksinimi çıkarılabilir.
 
-### 6. inciteful-zotero-plugin — HİÇ KULLANILMAYACAK
+Kaynak: `plugin-core.js` (~1400 satır), `graph/graph.js`, `graph/graph.xhtml`,
+`graph/graph.css`, `cache-entry.js`, cytoscape bağımlılığı.
 
-Kullanıcı gizlilik gerekçesiyle bunu tamamen dışladı. Cursor bu pluginden
-hiçbir kod/fikir almamalı.
+- **Cache / kenar üretimi:** Zotero `cites`/`references`/`isCitedBy` relations;
+  `Extra` ve child note'lardan DOI; ek metni + normalize başlık eşlemesi.
+- **UI:** Ayrı cytoscape graf penceresi (`Tools → Open Citation Graph`, öğe menüsü
+  "Show Graph"). LibRart Pro'da Bağlantı Haritası ile çakışmayı önlemek için
+  ya aynı pencerede yeni katman olarak ya da menüden ayrı giriş olarak bağla.
+- **Bizim kod:** `connectionCitationLayer.ts` şu an yalnızca zotero-reference
+  Crossref DOI eşlemesi yapıyor — Citation-Graph'in çevrimdışı relation/DOI
+  motoru vendor edildikten sonra bu katmanı güçlendirmeli veya değiştirmeli.
+- **Lisans sınırı:** Attribution tek başına izin oluşturmaz. Upstream açık lisans
+  yayımlamadıkça kod kopyalanmaz; lisanslı muadil veya temiz oda uygulama seçilir.
+
+### 6. inciteful-zotero-plugin (AGPL-3.0) — `inciteful-zotero-plugin-0.2.2/src/`
+
+**Durum:** Faz 1 tamamlandı — `src/vendor/inciteful/incitefulCore.ts` + `incitefulBridge.ts`.
+
+### 7–12. Diğer atıf kaynakları
+
+Tam liste, faz sırası ve vendor yolları: **`CITATION-GRAPH-ENTEGRASYON.md`**
+
+Özet: ZoteroCitationMaps (MIT/OpenAlex), zotero-openalex (GPL), citation_map (PDF),
+Local-Citation-Graph (referans), zotero-citegeist (snowball), OleksiyPenkov CLI (Kutuphane köprüsü).
 
 ## Yan görev (isteğe bağlı, aynı oturumda ele alınabilir)
 
