@@ -1,16 +1,17 @@
-<!-- @ajan: cursor · @etiket: katman-3, eksik-raporu, p2-partial -->
+<!-- @ajan: claude · @etiket: katman-3, eksik-raporu, kapandi -->
 
 # Cursor için Katman 3 eksik analizi
 
-**Tarih:** 2026-07-30 · **Sürüm:** v1.0.48 (+ P2 kod; patch release ayrı)  
-**Durum:** P1 ✅. P2 kısmen kapandı. Checklist manuel. Pref live-reconcile açık.
+**Tarih:** 2026-07-30 · **Sürüm:** v1.0.48  
+**Durum:** P1 ✅. Bilinen P2 maddelerinin tamamı kapandı veya belgeli-kısıtlı kaldı.
+Manuel Zotero kabul checklist'i kullanıcı tarafından gerçek Zotero'da yürütüldü, 10/10 ✅.
 
-| Madde                         | Durum | Not                                              |
-| ----------------------------- | ----- | ------------------------------------------------ |
-| Startup / provenance CI       | ✅    |                                                  |
-| Locale it-IT/zh-CN parity     | ✅    | en-US ID sync + `localeParity.test.ts`           |
-| HTTP Semantic/Anki allowlist  | ✅    | loopback-only (fail-closed)                      |
-| Vektör delete on trash/delete | ✅    | `removeItemEmbedding` + notify                   |
-| Vendored `eval()`             | 🟡    | Belgelendi; vendor lint-ignore; postMessage TODO |
-| Pref live reconcile           | ❌ P2 | Restart hâlâ gerekebilir                         |
-| Zotero checklist              | 🟡    | Şablon v1.0.48                                   |
+| Madde                         | Durum | Not                                                                                                                                            |
+| ------------------------------ | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Startup / provenance CI       | ✅    |                                                                                                                                                   |
+| Locale it-IT/zh-CN parity     | ✅    | en-US ID sync + `localeParity.test.ts`                                                                                                           |
+| HTTP Semantic/Anki allowlist  | ✅    | loopback-only (fail-closed)                                                                                                                      |
+| Vektör delete on trash/delete | ✅    | `removeItemEmbedding` + notify                                                                                                                   |
+| Vendored `eval()`             | ✅ kısıtlı | (`dbe987b`) Enjeksiyon vektörü kapandı — eval'e artık PDF-kaynaklı veri girmiyor, sadece bağlı fonksiyon referansı çözüyor, `href` normal argüman olarak geçiyor. Tam `postMessage` geçişi hâlâ yapılmadı (Xray `this`-binding riski, canlı Zotero'da doğrulanmadan güvenli değil) — kalan risk düşük, kabul edilebilir. |
+| Pref live reconcile           | ✅    | (`4ef0ecc`) `FeatureRegistry.setEnabled()` + `src/core/prefReconcile.ts` — `reading.enabled` artık restart istemeden aç/kapa oluyor. Diğer prefKey'li özellikler zaten tıklama-anında pref okuyordu, reconcile onlar için zararsız no-op. 4 yeni test. |
+| Zotero checklist              | ✅    | Kullanıcı gerçek Zotero'da 10/10 senaryoyu yürüttü (`a1b4137`) — #2 (ikinci ana pencere) Windows'ta N/A, diğerleri geçti.                        |
