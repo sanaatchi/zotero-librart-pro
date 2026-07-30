@@ -1,4 +1,4 @@
-// @ajan: cursor · @etiket: f3, docx-cited, bridge
+// @ajan: cursor · @etiket: f3, docx-cited, bridge, stale-tag-sweep
 // Adapted from zotero-tag-cited (MIT) tagCited.js
 
 import { getString } from "../utils/locale";
@@ -9,7 +9,12 @@ import {
   extractCitationUrisFromDocumentXml,
 } from "../utils/docxCitedParse";
 
-export { runDocxCitedTagging, docxCitedMenuChild, isDocxCitedEnabled };
+export {
+  runDocxCitedTagging,
+  docxCitedMenuChild,
+  isDocxCitedEnabled,
+  seedCitedByLibrary,
+};
 
 const REGISTRY_PREF = "docxCited.registry";
 
@@ -170,16 +175,30 @@ async function refreshTag(
   tag: string,
   citedItems: Zotero.Item[],
 ): Promise<RefreshResult> {
-  const citedByLibrary = new Map<number, Set<number>>();
-  for (const item of citedItems) {
-    if (!citedByLibrary.has(item.libraryID)) {
-      citedByLibrary.set(item.libraryID, new Set());
+  // Libraries that already carry this tag must be visited even if this DOCX
+  // pass cites nothing there — otherwise group-library tags go stale forever.
+  const librariesNeedingSweep: number[] = [];
+  const getAll = (
+    Zotero.Libraries as unknown as {
+      getAll?: () => Array<{ libraryID?: number; id?: number }>;
     }
-    citedByLibrary.get(item.libraryID)!.add(item.id);
+  ).getAll;
+  if (typeof getAll === "function") {
+    for (const lib of getAll.call(Zotero.Libraries) || []) {
+      const libraryID = Number(lib.libraryID ?? lib.id);
+      if (!Number.isFinite(libraryID)) continue;
+      if (libraryID === Zotero.Libraries.userLibraryID) continue;
+      if (citedItems.some((item) => item.libraryID === libraryID)) continue;
+      const tagged = await getTaggedItemIDs(tag, libraryID);
+      if (tagged.size > 0) librariesNeedingSweep.push(libraryID);
+    }
   }
-  if (!citedByLibrary.has(Zotero.Libraries.userLibraryID)) {
-    citedByLibrary.set(Zotero.Libraries.userLibraryID, new Set());
-  }
+
+  const citedByLibrary = seedCitedByLibrary(
+    citedItems,
+    Zotero.Libraries.userLibraryID,
+    librariesNeedingSweep,
+  );
 
   let added = 0;
   let removed = 0;
@@ -212,6 +231,33 @@ async function refreshTag(
   }
 
   return { added, removed, unchanged };
+}
+
+/**
+ * Build library → cited item IDs. Always includes userLibraryID.
+ * `librariesNeedingSweep` gets an empty set so prior tags are cleared.
+ */
+function seedCitedByLibrary(
+  citedItems: Array<{ id: number; libraryID: number }>,
+  userLibraryID: number,
+  librariesNeedingSweep: number[] = [],
+): Map<number, Set<number>> {
+  const citedByLibrary = new Map<number, Set<number>>();
+  for (const item of citedItems) {
+    if (!citedByLibrary.has(item.libraryID)) {
+      citedByLibrary.set(item.libraryID, new Set());
+    }
+    citedByLibrary.get(item.libraryID)!.add(item.id);
+  }
+  if (!citedByLibrary.has(userLibraryID)) {
+    citedByLibrary.set(userLibraryID, new Set());
+  }
+  for (const libraryID of librariesNeedingSweep) {
+    if (!citedByLibrary.has(libraryID)) {
+      citedByLibrary.set(libraryID, new Set());
+    }
+  }
+  return citedByLibrary;
 }
 
 async function runDocxCitedTagging(window: Window): Promise<void> {

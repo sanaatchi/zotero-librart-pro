@@ -9,6 +9,7 @@ import {
   buildBasicFields,
   decideNoteId,
   findNotesQuery,
+  isAnkiMissingNoteError,
   itemKeyTag,
   parseAnkiLink,
   writeAnkiLink,
@@ -71,6 +72,13 @@ describe("ankiNotePayload", () => {
     expect(decideNoteId(99, [1, 2])).toBe(99);
     expect(decideNoteId(null, [7, 8])).toBe(7);
     expect(decideNoteId(undefined, [])).toBeNull();
+  });
+
+  it("detects missing-note AnkiConnect errors", () => {
+    expect(isAnkiMissingNoteError(new Error("Note was not found: 12345"))).toBe(
+      true,
+    );
+    expect(isAnkiMissingNoteError(new Error("deck was not found"))).toBe(false);
   });
 });
 

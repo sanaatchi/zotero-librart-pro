@@ -1,4 +1,4 @@
-// @ajan: cursor · @etiket: f7, anki, yanki-connect, vendor
+// @ajan: cursor · @etiket: f7, anki, yanki-connect, vendor, stale-note-recovery
 // Protocol shapes inspired by yanki-connect (MIT, Eric Mika) + AnkiConnect API v6.
 // Thin helpers only — full YankiConnect class is not vendored (Node/fetch/autoLaunch).
 
@@ -35,6 +35,7 @@ export {
   findNotesQuery,
   buildBasicFields,
   decideNoteId,
+  isAnkiMissingNoteError,
 };
 
 function parseAnkiLink(extra: string): AnkiLinkData | null {
@@ -128,4 +129,12 @@ function decideNoteId(
     (id) => typeof id === "number" && Number.isFinite(id) && id > 0,
   );
   return first ?? null;
+}
+
+/** AnkiConnect errors when Extra noteId no longer exists (deleted / other profile). */
+function isAnkiMissingNoteError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /note was not found|couldn['’]t find note|unknown note|invalid note/i.test(
+    msg,
+  );
 }

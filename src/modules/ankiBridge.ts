@@ -1,4 +1,4 @@
-// @ajan: cursor · @etiket: f7, anki, bridge, menu
+// @ajan: cursor · @etiket: f7, anki, bridge, menu, stale-note-recovery
 // LibRart → AnkiConnect bridge. Protocol inspired by yanki-connect (MIT).
 
 import { getString } from "../utils/locale";
@@ -15,6 +15,7 @@ import {
   buildBasicFields,
   decideNoteId,
   findNotesQuery,
+  isAnkiMissingNoteError,
   itemKeyTag,
   parseAnkiLink,
   writeAnkiLink,
@@ -136,14 +137,40 @@ async function syncItemToAnki(
   if (!linked?.noteId) {
     found = await client.findNotes(findNotesQuery(item.key));
   }
-  const noteId = decideNoteId(linked?.noteId, found);
+  let noteId = decideNoteId(linked?.noteId, found);
 
   let finalId: number;
   let action: "created" | "updated";
   if (noteId) {
-    await client.updateNoteFields({ id: noteId, fields });
-    finalId = noteId;
-    action = "updated";
+    try {
+      await client.updateNoteFields({ id: noteId, fields });
+      finalId = noteId;
+      action = "updated";
+    } catch (err) {
+      // Stale Extra noteId (card deleted / other Anki profile): recover.
+      if (!isAnkiMissingNoteError(err)) throw err;
+      found = await client.findNotes(findNotesQuery(item.key));
+      noteId = decideNoteId(null, found);
+      if (noteId) {
+        await client.updateNoteFields({ id: noteId, fields });
+        finalId = noteId;
+        action = "updated";
+      } else {
+        await client.createDeck(deckName);
+        const created = await client.addNote({
+          deckName,
+          modelName,
+          fields,
+          tags,
+          options: { allowDuplicate: false },
+        });
+        if (!created) {
+          throw new Error(`addNote returned null for ${item.key}`);
+        }
+        finalId = created;
+        action = "created";
+      }
+    }
   } else {
     await client.createDeck(deckName);
     const created = await client.addNote({
