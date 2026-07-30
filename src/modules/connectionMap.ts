@@ -1,9 +1,10 @@
-// @ajan: cursor · @etiket: connection-map, f8, markdb, f5.2
+// @ajan: cursor · @etiket: connection-map, f8, markdb, f5.2, perf-merge
 import { config } from "../../package.json";
 import { getString } from "../utils/locale";
 import { isWindowAlive } from "../utils/window";
 import {
   buildConnectionGraph,
+  mergeExtraEdgesIntoGraph,
   ConnectionGraph,
   isCrossDiscipline,
 } from "../utils/connectionGraph";
@@ -161,11 +162,7 @@ async function enrichGraphInBackground(
 
     let graph = base;
     if (extra.length) {
-      graph = await buildConnectionGraph(base.libraryID, {
-        includeTagLayer: true,
-        includeManualLayer: true,
-        extraEdges: extra,
-      });
+      graph = mergeExtraEdgesIntoGraph(base, extra);
     }
     if (!isWindowAlive(win) || addon.data.connectionMap?.window !== win) {
       return;

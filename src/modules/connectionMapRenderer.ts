@@ -1,4 +1,4 @@
-// @ajan: cursor · @etiket: connection-map, renderer, f5.2
+// @ajan: cursor · @etiket: connection-map, renderer, f5.2, perf-sparse-force
 import { config } from "../../package.json";
 import { getString } from "../utils/locale";
 import {
@@ -1756,6 +1756,35 @@ function startLoop(win: Window) {
   st.raf = win.requestAnimationFrame(tick);
 }
 
+/** Full all-pairs repulsion is O(n²); above this, use sparse samples. */
+const FULL_REPULSE_NODE_CAP = 180;
+const SPARSE_REPULSE_SAMPLES = 14;
+
+function applyPairRepulse(
+  a: SimNode,
+  b: SimNode,
+  repulsion: number,
+  maxRepulse: number,
+) {
+  let dx = a.x - b.x;
+  let dy = a.y - b.y;
+  let dist2 = dx * dx + dy * dy;
+  if (dist2 < 0.01) {
+    dx = Math.random() - 0.5;
+    dy = Math.random() - 0.5;
+    dist2 = dx * dx + dy * dy;
+  }
+  const dist = Math.sqrt(dist2);
+  let force = repulsion / dist2;
+  if (force > maxRepulse) force = maxRepulse;
+  const fx = (dx / dist) * force;
+  const fy = (dy / dist) * force;
+  a.vx += fx;
+  a.vy += fy;
+  b.vx -= fx;
+  b.vy -= fy;
+}
+
 function stepForces(st: RendererState) {
   const nodes = st.simNodes;
   const n = nodes.length;
@@ -1783,27 +1812,25 @@ function stepForces(st: RendererState) {
   cx /= n;
   cy /= n;
 
-  for (let i = 0; i < n; i++) {
-    for (let j = i + 1; j < n; j++) {
-      const a = nodes[i];
-      const b = nodes[j];
-      let dx = a.x - b.x;
-      let dy = a.y - b.y;
-      let dist2 = dx * dx + dy * dy;
-      if (dist2 < 0.01) {
-        dx = Math.random() - 0.5;
-        dy = Math.random() - 0.5;
-        dist2 = dx * dx + dy * dy;
+  if (n <= FULL_REPULSE_NODE_CAP) {
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        applyPairRepulse(nodes[i], nodes[j], repulsion, maxRepulse);
       }
-      const dist = Math.sqrt(dist2);
-      let force = repulsion / dist2;
-      if (force > maxRepulse) force = maxRepulse;
-      const fx = (dx / dist) * force;
-      const fy = (dy / dist) * force;
-      a.vx += fx;
-      a.vy += fy;
-      b.vx -= fx;
-      b.vy -= fy;
+    }
+  } else {
+    // Sparse: edge endpoints + fixed samples per node (keeps UI responsive).
+    for (const se of st.simEdges) {
+      applyPairRepulse(se.source, se.target, repulsion * 1.2, maxRepulse);
+    }
+    for (let i = 0; i < n; i++) {
+      const a = nodes[i];
+      for (let s = 0; s < SPARSE_REPULSE_SAMPLES; s++) {
+        const j = (i * 17 + s * 31 + 7) % n;
+        if (j === i) continue;
+        if (j < i) continue; // apply once per unordered pair in sample set
+        applyPairRepulse(a, nodes[j], repulsion, maxRepulse);
+      }
     }
   }
 

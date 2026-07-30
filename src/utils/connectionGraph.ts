@@ -1,4 +1,4 @@
-// @ajan: cursor · @etiket: connection-graph, f8, markdb
+// @ajan: cursor · @etiket: connection-graph, f8, markdb, perf-merge
 import { computeTagLayerEdges } from "./connectionTagLayer";
 import { attachDisciplineProfile } from "./connectionDiscipline";
 import { annotateBridgeScores } from "./connectionBridgeScore";
@@ -71,6 +71,7 @@ export const UNSORTED_DISCIPLINE_LABEL = "Unsorted";
 
 export {
   buildConnectionGraph,
+  mergeExtraEdgesIntoGraph,
   getNodeDisciplineKey,
   makeEdgeId,
   isCrossDiscipline,
@@ -304,6 +305,40 @@ async function buildConnectionGraph(
     libraryID,
     libraryName,
     nodes,
+    edges: merged,
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Merge optional-layer edges into an existing graph without a second
+ * `Items.getAll` (enrich path). Same collision rules as buildConnectionGraph.
+ */
+function mergeExtraEdgesIntoGraph(
+  graph: ConnectionGraph,
+  extraEdges: GraphEdge[],
+): ConnectionGraph {
+  if (!extraEdges.length) return graph;
+  const byId = new Map<string, GraphEdge>();
+  for (const edge of graph.edges) {
+    byId.set(edge.id, edge);
+  }
+  for (const edge of extraEdges) {
+    const pairManualId = makeEdgeId("manual", edge.source, edge.target, "");
+    if (edge.state === "suggested" && byId.has(pairManualId)) continue;
+    if (
+      edge.layer === "note" &&
+      edge.state === "confirmed" &&
+      byId.has(pairManualId)
+    ) {
+      continue;
+    }
+    byId.set(edge.id, edge);
+  }
+  const merged = [...byId.values()];
+  annotateBridgeScores(graph.nodes, merged);
+  return {
+    ...graph,
     edges: merged,
     generatedAt: new Date().toISOString(),
   };

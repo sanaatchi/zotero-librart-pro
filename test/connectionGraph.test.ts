@@ -1,4 +1,4 @@
-// @ajan: cursor · @etiket: f0, vitest, connection-graph
+// @ajan: cursor · @etiket: f0, vitest, connection-graph, perf-merge
 import { describe, expect, it } from "vitest";
 import {
   UNSORTED_DISCIPLINE_ID,
@@ -6,6 +6,9 @@ import {
   getNodeDisciplineKey,
   isCrossDiscipline,
   makeEdgeId,
+  mergeExtraEdgesIntoGraph,
+  type ConnectionGraph,
+  type GraphEdge,
   type GraphNode,
 } from "../src/utils/connectionGraph";
 
@@ -71,5 +74,44 @@ describe("getNodeDisciplineKey", () => {
       disciplineProfile: { primary: "Tarih", scores: {}, source: "collection" },
     });
     expect(getNodeDisciplineKey(n)).toBe("Tarih");
+  });
+});
+
+describe("mergeExtraEdgesIntoGraph", () => {
+  it("merges without dropping existing edges", () => {
+    const nodes = new Map<number, GraphNode>([
+      [1, node({ itemID: 1, disciplineIDs: [1], disciplineLabels: ["A"] })],
+      [2, node({ itemID: 2, disciplineIDs: [2], disciplineLabels: ["B"] })],
+    ]);
+    const baseEdge: GraphEdge = {
+      id: makeEdgeId("tag", 1, 2, "x"),
+      source: 1,
+      target: 2,
+      layer: "tag",
+      state: "confirmed",
+      confidence: 1,
+      crossDiscipline: true,
+    };
+    const graph: ConnectionGraph = {
+      libraryID: 1,
+      libraryName: "L",
+      nodes,
+      edges: [baseEdge],
+      generatedAt: "t0",
+    };
+    const extra: GraphEdge = {
+      id: makeEdgeId("citation", 1, 2, "openalex"),
+      source: 1,
+      target: 2,
+      layer: "citation",
+      state: "suggested",
+      confidence: 0.8,
+      citationSource: "openalex",
+      crossDiscipline: true,
+    };
+    const merged = mergeExtraEdgesIntoGraph(graph, [extra]);
+    expect(merged.edges).toHaveLength(2);
+    expect(merged.edges.some((e) => e.id === baseEdge.id)).toBe(true);
+    expect(merged.edges.some((e) => e.id === extra.id)).toBe(true);
   });
 });
