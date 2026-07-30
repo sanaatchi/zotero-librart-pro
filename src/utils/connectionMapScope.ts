@@ -20,11 +20,16 @@ export const CONNECTION_MAP_MAX_NODES = 120;
 
 export { resolveConnectionMapScope };
 
-function regularLive(item: Zotero.Item | false | undefined | null): item is Zotero.Item {
+function regularLive(
+  item: Zotero.Item | false | undefined | null,
+): item is Zotero.Item {
   return Boolean(item && item.isRegularItem() && !item.deleted);
 }
 
-function capIds(ids: number[], max: number): { ids: number[]; truncated: boolean } {
+function capIds(
+  ids: number[],
+  max: number,
+): { ids: number[]; truncated: boolean } {
   if (ids.length <= max) return { ids, truncated: false };
   return { ids: ids.slice(0, max), truncated: true };
 }

@@ -262,9 +262,8 @@ async function buildConnectionGraph(
 
   let items: Zotero.Item[];
   if (itemIDs && itemIDs.length) {
-    items = Zotero.Items.get(itemIDs).filter(
-      (item): item is Zotero.Item =>
-        Boolean(item && item.isRegularItem() && !item.deleted),
+    items = Zotero.Items.get(itemIDs).filter((item): item is Zotero.Item =>
+      Boolean(item && item.isRegularItem() && !item.deleted),
     );
   } else {
     const allItems = await Zotero.Items.getAll(libraryID);
