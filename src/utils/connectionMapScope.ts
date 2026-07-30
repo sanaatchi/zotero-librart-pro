@@ -18,7 +18,7 @@ export type ConnectionMapScope = {
 /** Soft ceiling — force layout + SVG stay usable. */
 export const CONNECTION_MAP_MAX_NODES = 120;
 
-export { resolveConnectionMapScope };
+export { resolveConnectionMapScope, expandRelated };
 
 function regularLive(
   item: Zotero.Item | false | undefined | null,
@@ -34,15 +34,20 @@ function capIds(
   return { ids: ids.slice(0, max), truncated: true };
 }
 
-function expandRelated(seed: Zotero.Item[], libraryID: number): number[] {
+function expandRelated(seed: Zotero.Item[]): number[] {
   const ids = new Set<number>();
   for (const item of seed) {
     ids.add(item.id);
     const related = item.relatedItems || [];
     for (const relatedKey of related) {
-      const rel =
-        Zotero.Items.getByLibraryAndKey?.(libraryID, relatedKey) ||
-        Zotero.Items.getByLibraryAndKey(item.libraryID, relatedKey);
+      // BUG FIX: was falling back through a caller-supplied `libraryID`
+      // first. Zotero item keys are only unique *within* a library, so
+      // looking a relatedKey up in the wrong library could silently
+      // resolve to a completely unrelated item there instead of failing
+      // through to the correct lookup. `item.libraryID` is always the
+      // right library for this item's own relatedItems — no outer
+      // libraryID needed.
+      const rel = Zotero.Items.getByLibraryAndKey(item.libraryID, relatedKey);
       if (regularLive(rel)) ids.add(rel.id);
     }
   }
@@ -70,7 +75,7 @@ async function resolveConnectionMapScope(
       ?.getSelectedItems?.()
       ?.filter((item: Zotero.Item) => regularLive(item)) ?? [];
   if (selected.length >= 1) {
-    const expanded = expandRelated(selected, libraryID);
+    const expanded = expandRelated(selected);
     const { ids, truncated } = capIds(expanded, CONNECTION_MAP_MAX_NODES);
     return {
       kind: "selection",
@@ -90,7 +95,7 @@ async function resolveConnectionMapScope(
         }
       ).getChildItems?.(true) || [];
     const regular = children.filter((item) => regularLive(item));
-    const expanded = expandRelated(regular, libraryID);
+    const expanded = expandRelated(regular);
     const { ids, truncated } = capIds(expanded, CONNECTION_MAP_MAX_NODES);
     const name =
       typeof (collection as { name?: string }).name === "string"

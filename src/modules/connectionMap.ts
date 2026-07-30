@@ -104,7 +104,14 @@ async function initConnectionMapWindow(win: Window) {
   if (status) status.textContent = getString("connection-map-loading");
 
   try {
-    const libraryID = Zotero.Libraries.userLibraryID;
+    // BUG FIX: was hardcoded to Zotero.Libraries.userLibraryID — anyone
+    // viewing/selecting in a group library got wrong results (library-cap
+    // fallback showed personal-library items, not the group library the
+    // user was actually looking at). Use the currently active pane's
+    // library, matching the pattern already used in items.ts.
+    const libraryID =
+      Zotero.getActiveZoteroPane?.()?.getSelectedLibraryID() ??
+      Zotero.Libraries.userLibraryID;
     const scope = await resolveConnectionMapScope(libraryID);
     applyScopeSubtitle(doc, scope);
 
