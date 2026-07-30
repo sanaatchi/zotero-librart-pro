@@ -2,11 +2,12 @@
 
 # Cursor için Katman 3 eksik analizi
 
-**Tarih:** 2026-07-30 · **Sürüm:** v1.0.54  
+**Tarih:** 2026-07-30 · **Sürüm:** v1.0.55  
 **Durum:** P1 ✅. Bilinen P2 maddelerinin tamamı kapandı veya belgeli-kısıtlı kaldı.
 Manuel Zotero kabul checklist'i kullanıcı tarafından gerçek Zotero'da yürütüldü, 10/10 ✅.
 Semantic köprü (birincil yol) canlı doğrulandı. ZotSeek ONNX (yedek yol) HF token
 gerektirdiği için ertelendi — düşük öncelik, birincil yol zaten tam kapasite.
+Offline bağlam grafiği: FAISS yokken pairwise semantik (makale dahil); XPI 1.0.55.
 
 | Madde                                                       | Durum            | Not                                                                                                                                                                                                                                                                                                                                                  |
 | ----------------------------------------------------------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -19,4 +20,4 @@ gerektirdiği için ertelendi — düşük öncelik, birincil yol zaten tam kapa
 | Zotero checklist                                            | ✅               | Kullanıcı gerçek Zotero'da 10/10 senaryoyu yürüttü (`a1b4137`) — #2 (ikinci ana pencere) Windows'ta N/A, diğerleri geçti.                                                                                                                                                                                                                            |
 | Semantic köprü (8756) canlı                                 | ✅               | `curl http://127.0.0.1:8756/status` → `{"ready":true,"backend":"ollama","model":"qwen3-embedding:8b","chunkCount":55555}`. Bu, birincil semantic yolu — daha önce hiç canlı doğrulanmamıştı, artık teyitli.                                                                                                                                          |
 | ZotSeek ONNX model dosyası                                  | 🟡 düşük öncelik | `model_quantized.onnx` (~131 MB) yerelde/HF'de yok — HF anonim indirme artık 401 (token gerekiyor). WASM+tokenizer indi (`fetch:zotseek-assets` kısmi). Birincil yol (yukarı satır) canlı ve tam kapasite olduğundan bu tamamen yedek/opsiyonel kaldı — kullanıcı token sağlarsa tamamlanır, aksi halde ertelendi.                                   |
-| Kutuphane offline bağlam grafiği (8756 `/connection-graph`) | ✅               | LibRart 1.0.54: harita katmanı **Kütüphane (offline)** (F0–F3), FAISS `semantic` kenarları graf JSON'da (F4). Köprü kapalıyken katman gizlenir; açıkken düşük kapsam / eski `generatedAt` uyarısı durum satırında. XPI: `zotero-eklentiler/kaynak/build/*.xpi`. Graf üretimi: `_sync_zotero_library_index.py` + `_build_zotero_connection_graph.py`. |
+| Kutuphane offline bağlam grafiği (8756 `/connection-graph`) | ✅               | LibRart 1.0.54: harita katmanı **Kütüphane (offline)** (F0–F3). F4: FAISS yokken **pairwise** semantik (kitap+makale); graf `semantic:400` (136 journalArticle). Canlı `/search` için FAISS rebuild sürüyor. Köprü kapalıyken katman gizlenir. Graf: `_build_zotero_connection_graph.py`. |

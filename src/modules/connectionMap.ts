@@ -1,4 +1,4 @@
-// @ajan: cursor · @etiket: connection-map, kutuphane-graph, scope
+// @ajan: cursor · @etiket: connection-map, kutuphane-graph, offline-semantic
 import { config } from "../../package.json";
 import { getString } from "../utils/locale";
 import { isWindowAlive } from "../utils/window";
@@ -40,6 +40,7 @@ import {
   updateConnectionMapGraph,
   ConnectionMapLayerState,
   updateKutuphaneGraphLayerUI,
+  ensureOfflineSemanticLayerVisible,
 } from "./connectionMapRenderer";
 
 export { openConnectionMap, initConnectionMapWindow };
@@ -210,6 +211,7 @@ async function enrichGraphInBackground(
     }
 
     addon.data.connectionMap.lastGraph = graph;
+    ensureOfflineSemanticLayerVisible(win, graph);
     updateConnectionMapGraph(win, graph, readLayerState(win.document));
     updateStatus(status, graph, addon.data.connectionMap?.mapScope);
     updateBlindSpotBanner(win, graph);

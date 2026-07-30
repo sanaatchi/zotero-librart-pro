@@ -1,4 +1,4 @@
-// @ajan: cursor · @etiket: connection-map, renderer, f5.2, perf-sparse-force, paint-refs
+// @ajan: cursor · @etiket: connection-map, renderer, offline-semantic-ui
 import { config } from "../../package.json";
 import { getString } from "../utils/locale";
 import {
@@ -115,6 +115,8 @@ export {
   updateConnectionMapGraph,
   edgeStyle,
   updateKutuphaneGraphLayerUI,
+  updateZotSeekUI,
+  ensureOfflineSemanticLayerVisible,
 };
 
 function updateKutuphaneGraphLayerUI(win: Window) {
@@ -130,6 +132,18 @@ function updateKutuphaneGraphLayerUI(win: Window) {
     ) as HTMLInputElement | null;
     if (el) el.checked = false;
   }
+}
+
+/** FAISS hazır olmasa da offline pairwise semantic kenarlar görünsün. */
+function ensureOfflineSemanticLayerVisible(
+  win: Window,
+  graph: ConnectionGraph,
+): void {
+  const hasOfflineSemantic = graph.edges.some(
+    (e) => e.kutuphaneOffline && e.layer === "semantic",
+  );
+  if (!hasOfflineSemantic) return;
+  updateZotSeekUI(win, true, { preferChecked: true });
 }
 
 function edgeStyle(edge: GraphEdge): {
@@ -554,7 +568,11 @@ function paintNodeStates(win: Window) {
   });
 }
 
-function updateZotSeekUI(win: Window, ready: boolean) {
+function updateZotSeekUI(
+  win: Window,
+  ready: boolean,
+  opts?: { preferChecked?: boolean },
+) {
   const doc = win.document;
   const semanticWrap = doc.getElementById(
     `${config.addonRef}-layer-semantic-wrap`,
@@ -567,11 +585,13 @@ function updateZotSeekUI(win: Window, ready: boolean) {
     missing.textContent = getString("connection-map-zotseek-missing");
     (missing as HTMLElement).style.display = ready ? "none" : "";
   }
+  const el = doc.getElementById(
+    `${config.addonRef}-layer-semantic`,
+  ) as HTMLInputElement | null;
   if (!ready) {
-    const el = doc.getElementById(
-      `${config.addonRef}-layer-semantic`,
-    ) as HTMLInputElement | null;
     if (el) el.checked = false;
+  } else if (opts?.preferChecked && el) {
+    el.checked = true;
   }
 }
 
