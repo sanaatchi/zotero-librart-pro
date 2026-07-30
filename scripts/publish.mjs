@@ -161,9 +161,13 @@ function syncUpdateRelease() {
   } catch {
     /* none yet */
   }
+  // --latest=false: `gh release create` defaults new non-prerelease releases
+  // to "latest" unless told otherwise. Without this flag, recreating "update"
+  // here (even in the mid-poll CDN-staleness retry) silently steals the
+  // "latest" pointer back from the versioned tag release every time.
   run(
     `gh release create ${UPDATE_RELEASE} update.json --repo ${DIST_REPO} ` +
-      `--title "update manifest" --notes "Stable Zotero auto-update manifest."`,
+      `--title "update manifest" --notes "Stable Zotero auto-update manifest." --latest=false`,
   );
 }
 
