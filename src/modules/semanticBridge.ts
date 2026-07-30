@@ -46,7 +46,7 @@ async function formatKutuphaneLine(): Promise<string> {
   if (!status) {
     return getString("semantic-error-unreachable");
   }
-  return getString("semantic-status", {
+  let line = getString("semantic-status", {
     args: {
       ready: status.ready ? "ready" : "not-ready",
       chunks: status.chunkCount ?? 0,
@@ -54,6 +54,21 @@ async function formatKutuphaneLine(): Promise<string> {
       error: status.error || "",
     },
   });
+  const cg = status.connectionGraph;
+  if (cg?.ok && cg.generatedAt) {
+    line +=
+      "\n" +
+      getString("semantic-connection-graph-line", {
+        args: {
+          nodes: cg.nodeCount ?? 0,
+          edges: cg.edgeCount ?? 0,
+          at: new Date(cg.generatedAt).toLocaleString(),
+        },
+      });
+  } else if (cg && !cg.ok) {
+    line += "\n" + getString("semantic-connection-graph-missing");
+  }
+  return line;
 }
 
 async function formatZotSeekLine(): Promise<string> {

@@ -6,6 +6,7 @@ import {
   normalizeSemanticBaseUrl,
   parseSearchPayload,
   parseStatusPayload,
+  parseConnectionGraphPayload,
 } from "../src/utils/kutuphaneSemanticParse";
 
 describe("kutuphaneSemanticParse", () => {
@@ -76,5 +77,42 @@ describe("kutuphaneSemanticParse", () => {
       minScore: 0.5,
     });
     expect(mapped).toEqual([{ itemId: 30, similarity: 0.7, title: "b" }]);
+  });
+
+  it("parses /connection-graph payload", () => {
+    const payload = parseConnectionGraphPayload({
+      ok: true,
+      version: 1,
+      generatedAt: "2026-07-30T00:00:00Z",
+      edges: [
+        {
+          id: "manual::A::B::",
+          source: "AAAAAAA1",
+          target: "BBBBBBB2",
+          layer: "manual",
+          state: "confirmed",
+          confidence: 1,
+        },
+        { source: "x", target: "", layer: "tag" },
+      ],
+    });
+    expect(payload?.edges).toHaveLength(1);
+    expect(payload?.generatedAt).toBe("2026-07-30T00:00:00Z");
+    expect(parseConnectionGraphPayload({ ok: false })).toBeNull();
+  });
+
+  it("parses /status connectionGraph summary", () => {
+    const status = parseStatusPayload({
+      ready: true,
+      chunkCount: 100,
+      connectionGraph: {
+        ok: true,
+        generatedAt: "2026-07-30T07:00:00Z",
+        nodeCount: 889,
+        edgeCount: 460,
+      },
+    });
+    expect(status.connectionGraph?.ok).toBe(true);
+    expect(status.connectionGraph?.edgeCount).toBe(460);
   });
 });

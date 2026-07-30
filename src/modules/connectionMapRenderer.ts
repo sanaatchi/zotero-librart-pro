@@ -34,6 +34,7 @@ import {
   isSemanticLayerReady,
   searchByText,
 } from "../utils/connectionSemanticLayer";
+import { isKutuphaneGraphLayerEnabled } from "../utils/kutuphaneSemanticBridge";
 
 export type ConnectionMapLayerState = {
   tag: boolean;
@@ -43,6 +44,7 @@ export type ConnectionMapLayerState = {
   citation: boolean;
   openalex: boolean;
   opencitations: boolean;
+  kutuphane: boolean;
 };
 
 export type RenderCallbacks = {
@@ -108,7 +110,22 @@ type RendererState = {
 
 const stateByWin = new WeakMap<Window, RendererState>();
 
-export { renderConnectionMap, updateConnectionMapGraph, edgeStyle };
+export { renderConnectionMap, updateConnectionMapGraph, edgeStyle, updateKutuphaneGraphLayerUI };
+
+function updateKutuphaneGraphLayerUI(win: Window) {
+  const doc = win.document;
+  const wrap = doc.getElementById(`${config.addonRef}-layer-kutuphane-wrap`);
+  const enabled = isKutuphaneGraphLayerEnabled();
+  if (wrap) {
+    (wrap as HTMLElement).style.display = enabled ? "" : "none";
+  }
+  if (!enabled) {
+    const el = doc.getElementById(
+      `${config.addonRef}-layer-kutuphane`,
+    ) as HTMLInputElement | null;
+    if (el) el.checked = false;
+  }
+}
 
 function edgeStyle(edge: GraphEdge): {
   stroke: string;
@@ -116,6 +133,14 @@ function edgeStyle(edge: GraphEdge): {
   dash: string;
   opacity: number;
 } {
+  if (edge.kutuphaneOffline) {
+    return {
+      stroke: "var(--map-edge-kutuphane)",
+      width: edge.state === "suggested" ? 1.2 : 1.6,
+      dash: edge.state === "suggested" ? "4 3" : "2 2",
+      opacity: edge.state === "suggested" ? 0.6 : 0.8,
+    };
+  }
   if (edge.crossDiscipline) {
     return {
       stroke: "var(--map-bridge)",
@@ -240,6 +265,7 @@ function wireChrome(
     "citation",
     "openalex",
     "opencitations",
+    "kutuphane",
   ] as const) {
     const el = doc.getElementById(
       `${config.addonRef}-layer-${layer}`,
@@ -455,6 +481,7 @@ function refilterFromCache(win: Window) {
     citation: checked(`${config.addonRef}-layer-citation`, true),
     openalex: checked(`${config.addonRef}-layer-openalex`, true),
     opencitations: checked(`${config.addonRef}-layer-opencitations`, true),
+    kutuphane: checked(`${config.addonRef}-layer-kutuphane`, true),
   });
 }
 
@@ -550,6 +577,7 @@ function visibleEdges(
   readingFilter: ReadingMapFilter = "all",
 ): GraphEdge[] {
   const layered = graph.edges.filter((e) => {
+    if (e.kutuphaneOffline && !layerState.kutuphane) return false;
     if (e.layer === "tag" && !layerState.tag) return false;
     if (e.layer === "manual" && !layerState.manual) return false;
     if (e.layer === "semantic" && !layerState.semantic) return false;

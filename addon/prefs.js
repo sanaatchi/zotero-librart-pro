@@ -34,6 +34,7 @@ pref("__prefsPrefix__.note.markdb.matchStrategy", "citekeyyaml");
 /* F9 — Semantic (Kutuphane 8756 primary; ZotSeek opt-in) */
 pref("__prefsPrefix__.semantic.kutuphane.enabled", false);
 pref("__prefsPrefix__.semantic.kutuphaneUrl", "http://127.0.0.1:8756");
+pref("__prefsPrefix__.semantic.kutuphane.graph.enabled", true);
 pref("__prefsPrefix__.semantic.zotseek.enabled", false);
 /* F8.2 — Better Notes–compatible note links (opt-in; full workspace later) */
 pref("__prefsPrefix__.note.workspace.enabled", false);

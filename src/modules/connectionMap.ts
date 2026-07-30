@@ -1,4 +1,4 @@
-// @ajan: cursor · @etiket: connection-map, f8, markdb, f5.2, perf-merge, scope
+// @ajan: cursor · @etiket: connection-map, kutuphane-graph, scope
 import { config } from "../../package.json";
 import { getString } from "../utils/locale";
 import { isWindowAlive } from "../utils/window";
@@ -34,10 +34,12 @@ import { computeCitationSuggestions } from "../utils/connectionCitationLayer";
 import { computeOpenAlexCitationSuggestions } from "../utils/openAlexCitationLayer";
 import { computeOpenCitationsCitationSuggestions } from "../utils/openCitationsCitationLayer";
 import { computeMarkdbNoteEdges } from "./markdbBridge";
+import { computeKutuphaneOfflineGraphEdges } from "../utils/kutuphaneConnectionGraphLayer";
 import {
   renderConnectionMap,
   updateConnectionMapGraph,
   ConnectionMapLayerState,
+  updateKutuphaneGraphLayerUI,
 } from "./connectionMapRenderer";
 
 export { openConnectionMap, initConnectionMapWindow };
@@ -134,6 +136,7 @@ async function initConnectionMapWindow(win: Window) {
       onRefresh: () => initConnectionMapWindow(win),
       zotSeekReady: await isSemanticLayerReady(),
     });
+    updateKutuphaneGraphLayerUI(win);
     updateStatus(status, base, scope);
     updateBlindSpotBanner(win, base);
     ztoolkit.log(
@@ -252,6 +255,18 @@ async function loadOptionalLayers(
   }
 
   try {
+    onStatus(getString("connection-map-loading") + " (Kütüphane…)");
+    const { edges: kutuphaneEdges, meta } =
+      await computeKutuphaneOfflineGraphEdges(base.nodes);
+    if (addon.data.connectionMap) {
+      addon.data.connectionMap.kutuphaneGraphMeta = meta ?? undefined;
+    }
+    extra.push(...kutuphaneEdges);
+  } catch (e) {
+    ztoolkit.log("Connection Map Kutuphane offline graph failed (soft)", e);
+  }
+
+  try {
     const citationEdges = await computeCitationSuggestions(base.nodes);
     extra.push(...citationEdges);
   } catch (e) {
@@ -360,6 +375,7 @@ function readLayerState(doc: Document): ConnectionMapLayerState {
     citation: checked(`${config.addonRef}-layer-citation`, true),
     openalex: checked(`${config.addonRef}-layer-openalex`, true),
     opencitations: checked(`${config.addonRef}-layer-opencitations`, true),
+    kutuphane: checked(`${config.addonRef}-layer-kutuphane`, true),
   };
 }
 
@@ -407,7 +423,37 @@ function updateStatus(
         confirmed,
         suggested,
       },
-    }) + (scopeNote ? ` · ${scopeNote}` : "");
+    }) +
+    formatKutuphaneGraphStatusSuffix() +
+    (scopeNote ? ` · ${scopeNote}` : "");
+}
+
+function formatKutuphaneGraphStatusSuffix(): string {
+  const meta = addon.data.connectionMap?.kutuphaneGraphMeta;
+  if (!meta?.generatedAt && !meta?.totalEdges) return "";
+  let suffix = "";
+  if (meta.generatedAt) {
+    const at = new Date(meta.generatedAt).toLocaleString();
+    suffix = ` · ${getString("connection-map-kutuphane-graph-meta", {
+      args: {
+        inScope: meta.inScope,
+        total: meta.totalEdges,
+        at,
+      },
+    })}`;
+  }
+  for (const w of meta.warns ?? []) {
+    if (w.kind === "lowInScope") {
+      suffix += ` · ${getString("connection-map-kutuphane-graph-warn-low", {
+        args: { inScope: meta.inScope, total: meta.totalEdges },
+      })}`;
+    } else if (w.kind === "stale") {
+      suffix += ` · ${getString("connection-map-kutuphane-graph-warn-stale", {
+        args: { days: w.days },
+      })}`;
+    }
+  }
+  return suffix;
 }
 
 function updateBlindSpotBanner(win: Window, graph: ConnectionGraph) {

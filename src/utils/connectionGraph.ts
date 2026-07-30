@@ -44,9 +44,12 @@ export type GraphEdge = {
     | "citation-span"
     | "better-notes-wikilink"
     | "highlight-semantic"
-    | "markdb-vault";
+    | "markdb-vault"
+    | "kutuphane-offline";
   /** F5 — which citation API produced this edge (citation layer only). */
   citationSource?: CitationSource;
+  /** Kutuphane offline graph (`/connection-graph`) — F2 toggle. */
+  kutuphaneOffline?: boolean;
   crossDiscipline: boolean;
   createdAt?: string;
 };

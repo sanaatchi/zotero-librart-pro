@@ -35,6 +35,7 @@ declare namespace _ZoteroTypes {
       "note.markdb.matchStrategy": string;
       "semantic.kutuphane.enabled": boolean;
       "semantic.kutuphaneUrl": string;
+      "semantic.kutuphane.graph.enabled": boolean;
       "semantic.zotseek.enabled": boolean;
       "note.workspace.enabled": boolean;
       "citegeist.enabled": boolean;

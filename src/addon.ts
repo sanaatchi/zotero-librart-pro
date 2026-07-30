@@ -52,6 +52,7 @@ class Addon {
       dismissedSemanticIds?: Set<string>;
       lastGraph?: ConnectionGraph;
       mapScope?: import("./utils/connectionMapScope").ConnectionMapScope;
+      kutuphaneGraphMeta?: import("./utils/kutuphaneConnectionGraphLayer").KutuphaneGraphMeta;
     };
     safeImport: {
       window?: Window;
