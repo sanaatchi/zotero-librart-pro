@@ -110,7 +110,12 @@ type RendererState = {
 
 const stateByWin = new WeakMap<Window, RendererState>();
 
-export { renderConnectionMap, updateConnectionMapGraph, edgeStyle, updateKutuphaneGraphLayerUI };
+export {
+  renderConnectionMap,
+  updateConnectionMapGraph,
+  edgeStyle,
+  updateKutuphaneGraphLayerUI,
+};
 
 function updateKutuphaneGraphLayerUI(win: Window) {
   const doc = win.document;

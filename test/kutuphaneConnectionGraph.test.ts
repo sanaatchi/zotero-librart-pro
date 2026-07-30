@@ -58,9 +58,9 @@ describe("kutuphaneConnectionGraphLayer", () => {
     };
     const edges = edgesFromKutuphanePayload(payload, nodes);
     expect(edges).toHaveLength(2);
-    expect(edges.some((e) => e.layer === "citation" && e.state === "suggested")).toBe(
-      true,
-    );
+    expect(
+      edges.some((e) => e.layer === "citation" && e.state === "suggested"),
+    ).toBe(true);
     expect(edges.every((e) => nodes.has(e.source) && nodes.has(e.target))).toBe(
       true,
     );

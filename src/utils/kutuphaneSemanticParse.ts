@@ -229,8 +229,7 @@ function parseConnectionGraphPayload(
       typeof o.version === "number" && Number.isFinite(o.version)
         ? o.version
         : undefined,
-    generatedAt:
-      typeof o.generatedAt === "string" ? o.generatedAt : undefined,
+    generatedAt: typeof o.generatedAt === "string" ? o.generatedAt : undefined,
     nodeCount:
       typeof o.nodeCount === "number" && Number.isFinite(o.nodeCount)
         ? o.nodeCount
