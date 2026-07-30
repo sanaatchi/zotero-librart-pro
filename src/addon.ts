@@ -51,6 +51,7 @@ class Addon {
       /** Session-dismissed semantic edge ids. */
       dismissedSemanticIds?: Set<string>;
       lastGraph?: ConnectionGraph;
+      mapScope?: import("./utils/connectionMapScope").ConnectionMapScope;
     };
     safeImport: {
       window?: Window;

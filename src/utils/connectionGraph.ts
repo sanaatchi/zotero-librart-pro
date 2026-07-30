@@ -63,6 +63,8 @@ export type BuildConnectionGraphOptions = {
   includeTagLayer?: boolean;
   includeManualLayer?: boolean;
   extraEdges?: GraphEdge[];
+  /** When set, only these regular items become nodes (scoped map). */
+  itemIDs?: number[];
 };
 
 /** Sentinel discipline for items not in any top-level collection. */
@@ -248,6 +250,7 @@ async function buildConnectionGraph(
     includeTagLayer = true,
     includeManualLayer = true,
     extraEdges = [],
+    itemIDs,
   } = options;
 
   libraryID = libraryID ?? Zotero.Libraries.userLibraryID;
@@ -257,10 +260,16 @@ async function buildConnectionGraph(
       ? String((library as { name?: string }).name || libraryID)
       : String(libraryID);
 
-  const allItems = await Zotero.Items.getAll(libraryID);
-  const items = allItems.filter(
-    (item) => item.isRegularItem() && !item.deleted,
-  );
+  let items: Zotero.Item[];
+  if (itemIDs && itemIDs.length) {
+    items = Zotero.Items.get(itemIDs).filter(
+      (item): item is Zotero.Item =>
+        Boolean(item && item.isRegularItem() && !item.deleted),
+    );
+  } else {
+    const allItems = await Zotero.Items.getAll(libraryID);
+    items = allItems.filter((item) => item.isRegularItem() && !item.deleted);
+  }
 
   const nodes = new Map<number, GraphNode>();
   for (const item of items) {

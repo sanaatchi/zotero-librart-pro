@@ -1,4 +1,4 @@
-// Adapted from zotero-style (AGPL-3.0) graphView.ts tag layer + zotero-reference tag co-occurrence.
+// @ajan: cursor · @etiket: connection-tag-layer, max-edges-400
 
 import {
   GraphEdge,
@@ -13,7 +13,7 @@ import {
 
 export { computeTagLayerEdges };
 
-const MAX_TAG_EDGES = 1800;
+const MAX_TAG_EDGES = 400;
 
 /**
  * Tag co-occurrence layer using zotero-style's getGraphByItemArrLink algorithm

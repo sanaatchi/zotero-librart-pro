@@ -1,4 +1,4 @@
-// @ajan: cursor · @etiket: connection-map, f8, markdb, f5.2, perf-merge
+// @ajan: cursor · @etiket: connection-map, f8, markdb, f5.2, perf-merge, scope
 import { config } from "../../package.json";
 import { getString } from "../utils/locale";
 import { isWindowAlive } from "../utils/window";
@@ -8,6 +8,10 @@ import {
   ConnectionGraph,
   isCrossDiscipline,
 } from "../utils/connectionGraph";
+import {
+  resolveConnectionMapScope,
+  type ConnectionMapScope,
+} from "../utils/connectionMapScope";
 import { enrichDisciplineProfilesFromOpenLibrary } from "../utils/connectionDiscipline";
 import {
   computeSemanticSuggestions,
@@ -100,8 +104,13 @@ async function initConnectionMapWindow(win: Window) {
   if (status) status.textContent = getString("connection-map-loading");
 
   try {
-    // 1) Fast path: tag + manual — paint immediately so the window is not blank.
-    const base = await buildConnectionGraph(undefined, {
+    const libraryID = Zotero.Libraries.userLibraryID;
+    const scope = await resolveConnectionMapScope(libraryID);
+    applyScopeSubtitle(doc, scope);
+
+    // 1) Fast path: scoped nodes + manual (tags off by default — dense hairball).
+    const base = await buildConnectionGraph(libraryID, {
+      itemIDs: scope.itemIDs,
       includeTagLayer: true,
       includeManualLayer: true,
     });
@@ -110,6 +119,7 @@ async function initConnectionMapWindow(win: Window) {
       ...addon.data.connectionMap,
       window: win,
       lastGraph: base,
+      mapScope: scope,
     };
 
     const layerState = readLayerState(doc);
@@ -117,10 +127,10 @@ async function initConnectionMapWindow(win: Window) {
       onRefresh: () => initConnectionMapWindow(win),
       zotSeekReady: await isSemanticLayerReady(),
     });
-    updateStatus(status, base);
+    updateStatus(status, base, scope);
     updateBlindSpotBanner(win, base);
     ztoolkit.log(
-      `Connection Map base: ${base.nodes.size} nodes, ${base.edges.length} edges`,
+      `Connection Map base (${scope.kind}): ${base.nodes.size} nodes, ${base.edges.length} edges`,
     );
 
     try {
@@ -185,20 +195,22 @@ async function enrichGraphInBackground(
     }
 
     if (!extra.length && !disciplineChanged) {
-      updateStatus(status, base);
+      updateStatus(status, base, addon.data.connectionMap?.mapScope);
       return;
     }
 
     addon.data.connectionMap.lastGraph = graph;
     updateConnectionMapGraph(win, graph, readLayerState(win.document));
-    updateStatus(status, graph);
+    updateStatus(status, graph, addon.data.connectionMap?.mapScope);
     updateBlindSpotBanner(win, graph);
     ztoolkit.log(
       `Connection Map enriched: ${graph.nodes.size} nodes, ${graph.edges.length} edges`,
     );
   } catch (e) {
     ztoolkit.log("Connection Map background enrich failed", e);
-    if (isWindowAlive(win)) updateStatus(status, base);
+    if (isWindowAlive(win)) {
+      updateStatus(status, base, addon.data.connectionMap?.mapScope);
+    }
   }
 }
 
@@ -334,7 +346,7 @@ function readLayerState(doc: Document): ConnectionMapLayerState {
     return el ? !!el.checked : fallback;
   };
   return {
-    tag: checked(`${config.addonRef}-layer-tag`, true),
+    tag: checked(`${config.addonRef}-layer-tag`, false),
     manual: checked(`${config.addonRef}-layer-manual`, true),
     semantic: checked(`${config.addonRef}-layer-semantic`, true),
     note: checked(`${config.addonRef}-layer-note`, true),
@@ -344,18 +356,51 @@ function readLayerState(doc: Document): ConnectionMapLayerState {
   };
 }
 
-function updateStatus(status: Element | null, graph: ConnectionGraph) {
+function applyScopeSubtitle(doc: Document, scope: ConnectionMapScope) {
+  const el = doc.getElementById(`${config.addonRef}-connection-map-subtitle`);
+  if (!el) return;
+  if (scope.kind === "selection") {
+    el.textContent = getString("connection-map-scope-selection", {
+      args: { shown: scope.itemIDs.length, total: scope.totalAvailable },
+    });
+    return;
+  }
+  if (scope.kind === "collection") {
+    el.textContent = getString("connection-map-scope-collection", {
+      args: {
+        name: scope.label,
+        shown: scope.itemIDs.length,
+        total: scope.totalAvailable,
+      },
+    });
+    return;
+  }
+  el.textContent = getString("connection-map-scope-library-cap", {
+    args: { shown: scope.itemIDs.length, total: scope.totalAvailable },
+  });
+}
+
+function updateStatus(
+  status: Element | null,
+  graph: ConnectionGraph,
+  scope?: ConnectionMapScope,
+) {
   if (!status) return;
   const confirmed = graph.edges.filter((e) => e.state === "confirmed").length;
   const suggested = graph.edges.filter((e) => e.state === "suggested").length;
-  status.textContent = getString("connection-map-status-updated", {
-    args: {
-      library: graph.libraryName,
-      time: new Date(graph.generatedAt).toLocaleString(),
-      confirmed,
-      suggested,
-    },
-  });
+  const scopeNote =
+    scope?.truncated && scope.kind === "library-cap"
+      ? getString("connection-map-scope-truncated-hint")
+      : "";
+  status.textContent =
+    getString("connection-map-status-updated", {
+      args: {
+        library: graph.libraryName,
+        time: new Date(graph.generatedAt).toLocaleString(),
+        confirmed,
+        suggested,
+      },
+    }) + (scopeNote ? ` · ${scopeNote}` : "");
 }
 
 function updateBlindSpotBanner(win: Window, graph: ConnectionGraph) {
