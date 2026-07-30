@@ -1,4 +1,4 @@
-// @ajan: cursor · @etiket: connection-map, renderer, f5.2, perf-sparse-force
+// @ajan: cursor · @etiket: connection-map, renderer, f5.2, perf-sparse-force, paint-refs
 import { config } from "../../package.json";
 import { getString } from "../utils/locale";
 import {
@@ -57,6 +57,8 @@ type SimNode = {
   vx: number;
   vy: number;
   node: GraphNode;
+  /** Bound on mount — paint uses this instead of querySelector. */
+  el?: SVGGElement | null;
 };
 
 type RopePoint = {
@@ -72,6 +74,8 @@ type SimEdge = {
   target: SimNode;
   /** Free points along the thread — lag behind endpoints so the link bends. */
   mids: [RopePoint, RopePoint];
+  /** Bound on mount — paint uses this instead of querySelector. */
+  el?: SVGPathElement | null;
 };
 
 type RendererState = {
@@ -793,6 +797,7 @@ function mountSvg(
     const title = doc.createElementNS("http://www.w3.org/2000/svg", "title");
     title.textContent = edgeTooltip(se.edge, se.source.node, se.target.node);
     path.appendChild(title);
+    se.el = path;
 
     if (se.edge.state === "suggested") {
       path.addEventListener("click", async (ev) => {
@@ -1021,6 +1026,7 @@ function mountSvg(
       showNodeContextMenu(win, st, sn, me.clientX, me.clientY);
     });
 
+    sn.el = g;
     nodeLayer.appendChild(g);
   }
 
@@ -1955,27 +1961,16 @@ function ropePathD(se: SimEdge): string {
 function paint(win: Window) {
   const st = stateByWin.get(win);
   if (!st) return;
-  const doc = win.document;
-  const canvas = doc.getElementById(`${config.addonRef}-connection-map-canvas`);
-  if (!canvas) return;
 
   for (const se of st.simEdges) {
-    const path = canvas.querySelector(
-      `path[data-edge-id="${cssEscape(se.edge.id)}"]`,
-    ) as SVGPathElement | null;
+    const path = se.el;
     if (!path) continue;
     path.setAttribute("d", ropePathD(se));
   }
 
   for (const sn of st.simNodes) {
-    const g = canvas.querySelector(
-      `g[data-node-id="${sn.id}"]`,
-    ) as SVGGElement | null;
+    const g = sn.el;
     if (!g) continue;
     g.setAttribute("transform", `translate(${sn.x},${sn.y})`);
   }
-}
-
-function cssEscape(s: string): string {
-  return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
