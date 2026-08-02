@@ -1,3 +1,4 @@
+// @ajan: cursor · @etiket: katman-3, publish, prune-5
 // Publish a release to the PUBLIC dist repo so Zotero can auto-update.
 // Source stays private in sanaatchi/zotero-librart-pro.
 //
@@ -21,6 +22,8 @@ const DIST_REPO = "sanaatchi/zotero-librart-pro-releases";
 const SOURCE_REPO = "sanaatchi/zotero-librart-pro";
 const UPDATE_RELEASE = "update";
 const UPDATE_URL = `https://github.com/${DIST_REPO}/releases/download/${UPDATE_RELEASE}/update.json`;
+/** Keep this many versioned (v*) releases; always preserve `update`. */
+const KEEP_VERSIONED_RELEASES = 5;
 
 const pkg = JSON.parse(
   readFileSync(new URL("../package.json", import.meta.url), "utf8"),
@@ -38,6 +41,47 @@ const notes =
 function run(cmd) {
   console.log(`> ${cmd}`);
   execSync(cmd, { stdio: "inherit", shell: true });
+}
+
+function pruneOldVersionedReleases() {
+  console.log(
+    `\n=== Prune: keep ${KEEP_VERSIONED_RELEASES} versioned + '${UPDATE_RELEASE}' ===`,
+  );
+  let raw;
+  try {
+    raw = execSync(
+      `gh release list --repo ${DIST_REPO} --limit 100 --json tagName,createdAt`,
+      { encoding: "utf8", shell: true },
+    );
+  } catch (e) {
+    console.warn("Release list failed; skip prune", e.message || e);
+    return;
+  }
+  let rows;
+  try {
+    rows = JSON.parse(raw);
+  } catch (e) {
+    console.warn("Release list JSON parse failed; skip prune", e.message || e);
+    return;
+  }
+  const versioned = [...rows]
+    .filter((r) => /^v\d/.test(String(r.tagName || "")))
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const drop = versioned.slice(KEEP_VERSIONED_RELEASES);
+  if (!drop.length) {
+    console.log("Nothing to prune");
+    return;
+  }
+  for (const r of drop) {
+    console.log(`Deleting old release ${r.tagName}`);
+    try {
+      run(
+        `gh release delete ${r.tagName} --repo ${DIST_REPO} --yes --cleanup-tag`,
+      );
+    } catch (e) {
+      console.warn(`Failed to delete ${r.tagName}:`, e.message || e);
+    }
+  }
 }
 
 function findXpi() {
@@ -252,6 +296,7 @@ run(`gh release edit ${tag} --repo ${DIST_REPO} --latest`);
 publishUpdateJsonToBranch(updateBody);
 syncUpdateRelease();
 waitUntilUpdateVisible(version);
+pruneOldVersionedReleases();
 
 // Mirror tag on private source repo (optional convenience)
 try {
