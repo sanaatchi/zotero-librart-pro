@@ -1,4 +1,4 @@
-// @ajan: cursor · @etiket: f1, f5.2, f7, f8, f9, citegeist, features
+// @ajan: cursor · @etiket: features, g1-citation-bridge-removed
 import { FeatureRegistry } from "./featureRegistry";
 import { ActionEventTypes, initActions } from "../utils/actions";
 import { getPref, setPref } from "../utils/prefs";
@@ -24,6 +24,7 @@ import { ensureAnkiPrefDefaults } from "../modules/ankiBridge";
 import { ensureMarkdbPrefDefaults } from "../modules/markdbBridge";
 import { ensureSemanticPrefDefaults } from "../modules/semanticBridge";
 import { ensureCitegeistPrefDefaults } from "../modules/citegeistBridge";
+import { ensureRefcheckerPrefDefaults } from "../modules/refcheckerBridge";
 
 export { registerLibRartFeatures };
 
@@ -189,6 +190,14 @@ function registerLibRartFeatures(registry: FeatureRegistry): void {
     phase: "startup",
     init: () => {
       ensureCitegeistPrefDefaults();
+    },
+  });
+
+  registry.register({
+    id: "refchecker.bridge",
+    phase: "startup",
+    init: () => {
+      ensureRefcheckerPrefDefaults();
     },
   });
 

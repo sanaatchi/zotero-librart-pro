@@ -7,8 +7,12 @@ import {
 } from "../src/utils/kutuphaneSemanticParse";
 
 describe("normalizeHitDocId", () => {
-  it("uppercases KP ids", () => {
+  it("uppercases and pads KP ids", () => {
     expect(normalizeHitDocId("kp000001")).toBe("KP000001");
+    expect(normalizeHitDocId("KP42")).toBe("KP000042");
+  });
+  it("rejects oversized KP digits", () => {
+    expect(normalizeHitDocId("KP1234567")).toBeNull();
   });
   it("maps z:KEY", () => {
     expect(normalizeHitDocId("z:TyAh9IeC")).toBe("Z:TYAH9IEC");

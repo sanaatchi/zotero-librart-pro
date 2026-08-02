@@ -1,10 +1,12 @@
-// @ajan: cursor · @etiket: f8, markdb, bridge, menu
-// Obsidian/MarkDB vault → Bağlantı Haritası note edges.
-// Scan patterns adapted from zotero-markdb-connect (MIT).
+// @ajan: cursor · @etiket: f8, markdb, bridge, menu, ux, makale-yazim
+// Obsidian/MarkDB vault → Bağlantı Haritası note edges + tag sync + open.
+// Scan patterns adapted from zotero-markdb-connect (MIT). Open URI / tag sync
+// inspired by mdbcUX.ts / mdbcScan.ts (MIT) — selective clean-room.
 
 import { getString } from "../utils/locale";
 import { getPref, setPref } from "../utils/prefs";
 import { updateHint } from "../utils/hint";
+import { getZoteroAdapter } from "../adapters/zoteroAdapter";
 import {
   GraphEdge,
   GraphNode,
@@ -34,9 +36,15 @@ export {
   buildIdMapsFromNodes,
   getMarkdbVaultPath,
   getMarkdbMatchStrategy,
+  openMarkdbNoteForSelection,
+  syncMarkdbTagsFromVault,
 };
 
 const MAX_VAULT_FILES = 2500;
+const DEFAULT_TAG = "mdbc";
+
+/** Last successful vault match: itemID → note absolute paths. */
+let lastNotePathsByItemId = new Map<number, string[]>();
 
 function isMarkdbEnabled(): boolean {
   return getPref("note.markdb.enabled") === true;
@@ -52,6 +60,9 @@ function ensureMarkdbPrefDefaults(): void {
   if (getPref("note.markdb.matchStrategy") === undefined) {
     setPref("note.markdb.matchStrategy", "citekeyyaml");
   }
+  if (getPref("note.markdb.tag") === undefined) {
+    setPref("note.markdb.tag", DEFAULT_TAG);
+  }
 }
 
 function getMarkdbVaultPath(): string {
@@ -63,6 +74,12 @@ function getMarkdbMatchStrategy(): MarkdbMatchStrategy {
   const v = getPref("note.markdb.matchStrategy");
   if (v === "zotitemkey") return "zotitemkey";
   return "citekeyyaml";
+}
+
+function getMarkdbTag(): string {
+  const v = getPref("note.markdb.tag");
+  const t = typeof v === "string" ? v.trim() : "";
+  return t || DEFAULT_TAG;
 }
 
 function alertDialog(message: string) {
@@ -156,7 +173,6 @@ function buildIdMapsFromNodes(nodes: Map<number, GraphNode>): MarkdbIdMaps {
       const extra = String(item.getField("extra") || "");
       const ck = extractCitationKeyFromExtra(extra);
       if (ck) citekeyToItemId.set(ck.toLowerCase(), node.itemID);
-      // Better BibTeX may expose citationKey on some builds.
       const bbt = (
         item as Zotero.Item & { getField: (f: string) => unknown }
       ).getField("citationKey");
@@ -168,6 +184,177 @@ function buildIdMapsFromNodes(nodes: Map<number, GraphNode>): MarkdbIdMaps {
     }
   }
   return { citekeyToItemId, itemKeyToItemId };
+}
+
+async function buildIdMapsFromLibraryAsync(
+  libraryID: number,
+): Promise<MarkdbIdMaps> {
+  const raw = Zotero.Items.getAll(libraryID) as
+    | Zotero.Item[]
+    | Promise<Zotero.Item[]>;
+  const items = Array.isArray(raw) ? raw : await raw;
+  const citekeyToItemId = new Map<string, number>();
+  const itemKeyToItemId = new Map<string, number>();
+  for (const item of items) {
+    if (!item.isRegularItem()) continue;
+    itemKeyToItemId.set(item.key.toUpperCase(), item.id);
+    try {
+      const extra = String(item.getField("extra") || "");
+      const ck = extractCitationKeyFromExtra(extra);
+      if (ck) citekeyToItemId.set(ck.toLowerCase(), item.id);
+      const bbt = (
+        item as Zotero.Item & { getField: (f: string) => unknown }
+      ).getField("citationKey");
+      if (typeof bbt === "string" && bbt.trim()) {
+        citekeyToItemId.set(bbt.trim().toLowerCase(), item.id);
+      }
+    } catch {
+      /* soft */
+    }
+  }
+  return { citekeyToItemId, itemKeyToItemId };
+}
+
+function resolveNoteItemId(
+  note: MarkdbParsedNote,
+  maps: MarkdbIdMaps,
+): number | undefined {
+  if (note.primaryItemKey) {
+    const id = maps.itemKeyToItemId.get(note.primaryItemKey.toUpperCase());
+    if (id) return id;
+  }
+  if (note.primaryCitekey) {
+    return maps.citekeyToItemId.get(note.primaryCitekey.toLowerCase());
+  }
+  return undefined;
+}
+
+function rememberNotePaths(
+  notes: MarkdbParsedNote[],
+  maps: MarkdbIdMaps,
+): Map<number, string[]> {
+  const byId = new Map<number, string[]>();
+  for (const note of notes) {
+    const id = resolveNoteItemId(note, maps);
+    if (!id || !note.path) continue;
+    const list = byId.get(id) || [];
+    list.push(note.path);
+    byId.set(id, list);
+  }
+  lastNotePathsByItemId = byId;
+  return byId;
+}
+
+async function syncMarkdbTagsFromVault(
+  notes: MarkdbParsedNote[],
+  maps: MarkdbIdMaps,
+): Promise<{ tagged: number; removed: number }> {
+  const tagstr = getMarkdbTag();
+  const withNotes = new Set<number>();
+  for (const note of notes) {
+    const id = resolveNoteItemId(note, maps);
+    if (id) withNotes.add(id);
+  }
+
+  const search = new Zotero.Search();
+  search.addCondition("tag", "is", tagstr);
+  const taggedIds = await search.search();
+  const taggedSet = new Set(taggedIds);
+
+  let tagged = 0;
+  let removed = 0;
+
+  for (const id of withNotes) {
+    if (taggedSet.has(id)) continue;
+    const item = Zotero.Items.get(id);
+    if (!item?.isRegularItem()) continue;
+    item.addTag(tagstr);
+    await item.saveTx();
+    tagged++;
+  }
+
+  for (const id of taggedIds) {
+    if (withNotes.has(id)) continue;
+    const item = Zotero.Items.get(id);
+    if (!item?.isRegularItem()) continue;
+    item.removeTag(tagstr);
+    await item.saveTx();
+    removed++;
+  }
+
+  return { tagged, removed };
+}
+
+function vaultNameFromPath(vaultPath: string): string {
+  const parts = vaultPath.replace(/\\/g, "/").split("/").filter(Boolean);
+  return parts[parts.length - 1] || "vault";
+}
+
+function relativeVaultPath(vaultPath: string, notePath: string): string {
+  const v = vaultPath.replace(/\\/g, "/").replace(/\/+$/, "");
+  const n = notePath.replace(/\\/g, "/");
+  if (n.toLowerCase().startsWith(v.toLowerCase() + "/")) {
+    return n.slice(v.length + 1);
+  }
+  return n.split("/").pop() || n;
+}
+
+function openObsidianNote(vaultPath: string, notePath: string): void {
+  const vault = encodeURIComponent(vaultNameFromPath(vaultPath));
+  const file = encodeURIComponent(relativeVaultPath(vaultPath, notePath));
+  const uri = `obsidian://open?vault=${vault}&file=${file}`;
+  try {
+    Zotero.launchURL(uri);
+  } catch (err) {
+    ztoolkit.log("MarkDB Obsidian URI failed", uri, err);
+    alertDialog(getString("markdb-error-open"));
+  }
+}
+
+async function openMarkdbNoteForSelection(): Promise<void> {
+  ensureMarkdbPrefDefaults();
+  if (!isMarkdbEnabled()) {
+    alertDialog(getString("markdb-disabled"));
+    return;
+  }
+  const vaultPath = getMarkdbVaultPath();
+  if (!vaultPath) {
+    alertDialog(getString("markdb-error-no-path"));
+    return;
+  }
+
+  const selected =
+    getZoteroAdapter()
+      .getActivePane()
+      ?.getSelectedItems()
+      ?.filter((i) => i.isRegularItem()) ?? [];
+  if (!selected.length) {
+    alertDialog(getString("markdb-error-no-selection"));
+    return;
+  }
+
+  let paths = lastNotePathsByItemId.get(selected[0].id);
+  if (!paths?.length) {
+    try {
+      const notes = await scanVaultMarkdownNotes(
+        vaultPath,
+        getMarkdbMatchStrategy(),
+      );
+      const maps = await buildIdMapsFromLibraryAsync(selected[0].libraryID);
+      rememberNotePaths(notes, maps);
+      paths = lastNotePathsByItemId.get(selected[0].id);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      alertDialog(getString("markdb-error-scan", { args: { message: msg } }));
+      return;
+    }
+  }
+
+  if (!paths?.length) {
+    alertDialog(getString("markdb-error-no-note"));
+    return;
+  }
+  openObsidianNote(vaultPath, paths[0]);
 }
 
 async function computeMarkdbNoteEdges(
@@ -187,6 +374,7 @@ async function computeMarkdbNoteEdges(
   }
 
   const maps = buildIdMapsFromNodes(nodes);
+  rememberNotePaths(notes, maps);
   const candidates = buildMarkdbEdgeCandidates(notes, maps);
   const edges: GraphEdge[] = [];
 
@@ -226,14 +414,26 @@ async function runManualVaultScan(): Promise<void> {
       vaultPath,
       getMarkdbMatchStrategy(),
     );
+    const pane = getZoteroAdapter().getActivePane();
+    const libraryID =
+      pane?.getSelectedItems()?.[0]?.libraryID ??
+      Zotero.Libraries.userLibraryID;
+    const maps = await buildIdMapsFromLibraryAsync(libraryID);
+    rememberNotePaths(notes, maps);
+    const { tagged, removed } = await syncMarkdbTagsFromVault(notes, maps);
     const withPrimary = notes.filter(
       (n) => n.primaryCitekey || n.primaryItemKey,
     ).length;
-    updateHint(
-      getString("markdb-scan-done", {
-        args: { total: notes.length, matched: withPrimary },
-      }),
-    );
+    const msg = getString("markdb-scan-done", {
+      args: {
+        total: notes.length,
+        matched: withPrimary,
+        tagged,
+        removed,
+      },
+    });
+    updateHint(msg);
+    alertDialog(msg);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     alertDialog(getString("markdb-error-scan", { args: { message: msg } }));
@@ -242,10 +442,23 @@ async function runManualVaultScan(): Promise<void> {
 
 function markdbMenuChild() {
   return {
-    tag: "menuitem" as const,
-    label: getString("menu-markdb-scan"),
-    commandListener: () => {
-      void runManualVaultScan();
-    },
+    tag: "menu" as const,
+    label: getString("menu-markdb"),
+    children: [
+      {
+        tag: "menuitem" as const,
+        label: getString("menu-markdb-scan"),
+        commandListener: () => {
+          void runManualVaultScan();
+        },
+      },
+      {
+        tag: "menuitem" as const,
+        label: getString("menu-markdb-open"),
+        commandListener: () => {
+          void openMarkdbNoteForSelection();
+        },
+      },
+    ],
   };
 }

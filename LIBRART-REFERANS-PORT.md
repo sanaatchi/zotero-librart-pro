@@ -1,4 +1,4 @@
-<!-- @ajan: cursor · @etiket: referans-entegrasyon, vendor, lisans, f8 -->
+<!-- @ajan: cursor · @etiket: referans-port, g3-sync, companion-xpi -->
 
 # LibRart Pro — referans eklenti entegrasyon planı
 
@@ -13,8 +13,9 @@ Giriş: [`LIBRART-GIRIS.md`](LIBRART-GIRIS.md) · Fiili tablo: [`LIBRART-VENDOR.
 
 ## 1. Kapsam
 
-- **91 depo** klonlu (`../README.md` envanter listesi)
-- Referans kökü: `zotero-eklentiler/referanslar/<klasör>/`
+- Kuratör kök: `referanslar/katman-3/` (**7** kategori: notlar, atif-graf, otomasyon, bibtex-export, ceviri, word-atif, ai-ajan)
+- Eski “91 depo” envanteri tarihsel; karar SSOT bu belge + `LIBRART-VENDOR.md`
+- Referans kökü: `zotero-eklentiler/referanslar/katman-3/<klasör>/` (+ ortak/gelistirme)
 - Hedef: `kaynak/src/vendor/` veya `kaynak/src/modules/`, `src/utils/`
 - **Yeni klon ekleme:** Atıf grafiği (~19) ve AI/RAG (~11) kategorileri doymuş — ekleme yok
 
@@ -74,10 +75,10 @@ Giriş: [`LIBRART-GIRIS.md`](LIBRART-GIRIS.md) · Fiili tablo: [`LIBRART-VENDOR.
 | ------------------------------------ | ----- | -------------------------- |
 | `connectionTagLayer`                 | ✅    | zotero-style               |
 | `connectionCitationLayer` (Crossref) | ✅    | zotero-reference           |
-| `connectionCitationLayer` (OpenAlex) | plan  | ZoteroCitationMaps         |
+| `connectionCitationLayer` (OpenAlex) | ✅    | ZoteroCitationMaps vendor  |
 | `connectionNoteLayer`                | kısmi | markdb + better-notes (F8) |
-| `connectionSemanticLayer`            | kısmi | ZotSeek + Kutuphane köprü  |
-| `connectionTimeline`                 | plan  | zotero-reading-flow (F4)   |
+| `connectionSemanticLayer`            | ✅    | ZotSeek JSON + Kutuphane 8756 |
+| `connectionTimeline` / reading-flow  | ✅ F4 | zotero-reading-flow vendor |
 | `incitefulBridge`                    | ✅    | inciteful                  |
 | `referenceExtractor`                 | ✅    | zotero-reference/pdf       |
 
@@ -239,3 +240,14 @@ Yapılandırma fazı detayı: [`LIBRART-YAPILANDIRMA.md`](LIBRART-YAPILANDIRMA.m
 | ---------- | ------ | --------------------------------------------- |
 | 2026-07-29 | cursor | §9 faz bazlı port haritası (F0–F9 + yasaklar) |
 | 2026-07-29 | cursor | `LIBRART-REFERANS-PORT.md` adı                |
+
+## Companion XPI (LibRart’a gömülmez)
+
+| İhtiyaç | Yan XPI | Mirror |
+|---------|---------|--------|
+| BibTeX / Citation Key | Better BibTeX | `katman-3/bibtex-export/` |
+| PDF çeviri | zotero-pdf-translate | `katman-3/ceviri/` |
+| Word atıf | zotero-citation | `katman-3/word-atif/` |
+| AI sohbet | — | **yasak** — K1 `8077` / semantic `8756` |
+| OpenAlex CLI :8767 | — | **kaldırıldı** v1.0.58; offline graf = 8756 |
+

@@ -14,6 +14,10 @@ declare namespace _ZoteroTypes {
       "showPopup": boolean;
       "rulesSortColumnIndex": number;
       "rulesSortColumnAscending": boolean;
+      "inciteful.enabled": boolean;
+      "reading.enabled": boolean;
+      "import.enabled": boolean;
+      "docxCited.enabled": boolean;
       "connectionMapEnableHighlightLayer": boolean;
       "connectionMapTimelineJson": string;
       "openLibraryDbPath": string;
@@ -33,12 +37,16 @@ declare namespace _ZoteroTypes {
       "note.markdb.enabled": boolean;
       "note.markdb.vaultPath": string;
       "note.markdb.matchStrategy": string;
+      "note.markdb.tag": string;
       "semantic.kutuphane.enabled": boolean;
       "semantic.kutuphaneUrl": string;
       "semantic.kutuphane.graph.enabled": boolean;
       "semantic.zotseek.enabled": boolean;
       "note.workspace.enabled": boolean;
       "citegeist.enabled": boolean;
+      "refchecker.enabled": boolean;
+      "refchecker.url": string;
+      "kutuphane.aiUrl": string;
       "vendoredZotSeek": boolean;
       "embeddingModel": string;
     };

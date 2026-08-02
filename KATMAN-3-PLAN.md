@@ -10,7 +10,7 @@
 | Alan    | Değer                                                        |
 | ------- | ------------------------------------------------------------ |
 | addonID | `librartpro@euclpts.com`                                     |
-| Sürüm   | 1.0.46                                                       |
+| Sürüm   | 1.0.57                                                       |
 | Girdi   | Katman 2’den temiz Zotero kayıtları + PDF ekleri             |
 | Amaç    | Makale yazarken: harita, etiket, atıf, okuma, bağlantı kurma |
 
@@ -38,7 +38,7 @@
 **Oturum başı sırası:** eksik raporu → P1 düzelt → özellik.
 
 **Katman 3 — LibRart Pro.** F0–**F9.2.3** özellik çekirdeği ✅ + stabilizasyon
-(v1.0.46). Açık kabul kapısı: `CURSOR-KATMAN-3-EKSIKLER-RAPORU.md`.
+(v1.0.55). Açık iş: makale yazım boşlukları — `CURSOR-KATMAN-3-EKSIKLER-RAPORU.md`.
 
 ```bash
 cd zotero-eklentiler/kaynak

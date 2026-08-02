@@ -55,6 +55,17 @@ tag-dashboard = Etiket Analizi
 tag-dashboard-open =
     .label = Etiket Analizi panelini aç
 
+writing-features = Yazım özellikleri
+inciteful-enabled =
+    .label = Inciteful araçlarını aç
+reading-enabled =
+    .label = Okuma panosu / durumu aç
+import-enabled =
+    .label = Güvenli BibTeX/RIS içe aktarmayı aç
+docx-cited-enabled =
+    .label = DOCX'te kullanılanlar etiketlemeyi aç
+writing-features-hint = Kapalı özellikler LibRart Pro menüsünde gizlenir. Menü eski görünürse Zotero'yu yeniden başlatın.
+
 openalex = Atıf katmanları (OpenAlex / Crossref / OpenCitations)
 openalex-enabled =
     .label = OpenAlex atıf kenarları
@@ -97,7 +108,9 @@ markdb-strategy-citekey =
     .label = Citekey (YAML / @dosyaadı)
 markdb-strategy-itemkey =
     .label = Zotero itemKey
-markdb-hint = Notlar @citekey.md olmalı; gövde [[@citekey]] veya itemKey referansları Bağlantı Haritası not kenarları üretir.
+markdb-tag =
+    .value = Eşitleme etiketi
+markdb-hint = Notlar @citekey.md olmalı; gövde [[@citekey]] veya itemKey referansları Bağlantı Haritası not kenarları üretir. Tarama yukarıdaki etiketi eşitler.
 
 semantic = Anlamsal (Kutuphane / ZotSeek)
 semantic-kutuphane-enabled =
@@ -112,3 +125,13 @@ note-workspace = Not bağlantıları (Better Notes uyumlu)
 note-workspace-enabled =
     .label = Not bağlantısı eklemeyi etkinleştir
 note-workspace-hint = Seçili nota zotero://note/… wikilink ekler; Bağlantı Haritası not katmanı okur. Tam BN workspace sonra.
+
+refchecker = RefChecker + Katman 1 AI
+refchecker-enabled =
+    .label = RefChecker menüsünü aç (harici servis)
+refchecker-url =
+    .value = RefChecker URL
+k1-ai-url =
+    .value = Katman 1 AI URL (arsiv_app)
+refchecker-hint = RefChecker web UI loopback :8000. Kaynakça ipuçları arsiv_app :8077 — LibRart içinde LLM yok.
+

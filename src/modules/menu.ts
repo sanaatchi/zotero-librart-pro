@@ -1,4 +1,4 @@
-// @ajan: cursor · @etiket: menu, f5.2, f7, f8, f9, citegeist
+// @ajan: cursor · @etiket: menu, g1-citation-bridge-removed
 import { TagElementProps } from "zotero-plugin-toolkit";
 import { config } from "../../package.json";
 import { getString } from "../utils/locale";
@@ -10,17 +10,34 @@ import { setRating, ratingStars } from "../utils/rating";
 import { getZoteroAdapter } from "../adapters/zoteroAdapter";
 import { referenceExtractorMenuChild } from "./referenceExtractor";
 import { safeImportMenuChild } from "./safeImportBridge";
-import { docxCitedMenuChild } from "./docxCitedBridge";
+import { docxCitedMenuChild, isDocxCitedEnabled } from "./docxCitedBridge";
 import {
   readingFlowMenuChild,
   readingStatusMenuChild,
   isReadingFlowEnabled,
 } from "./readingFlowBridge";
-import { ankiMenuChild } from "./ankiBridge";
-import { markdbMenuChild } from "./markdbBridge";
+import { ankiMenuChild, isAnkiEnabled } from "./ankiBridge";
+import { markdbMenuChild, isMarkdbEnabled } from "./markdbBridge";
 import { semanticMenuChild } from "./semanticBridge";
-import { noteWorkspaceMenuChild } from "./noteWorkspace";
-import { citegeistMenuChild } from "./citegeistBridge";
+import {
+  noteWorkspaceMenuChild,
+  isNoteWorkspaceEnabled,
+} from "./noteWorkspace";
+import { citegeistMenuChild, isCitegeistEnabled } from "./citegeistBridge";
+import {
+  incitefulMenuChild,
+  incitefulCollectionMenuChild,
+  isIncitefulEnabled,
+} from "./incitefulBridge";
+import { manuscriptDiffMenuChild } from "./manuscriptDiffBridge";
+import {
+  refcheckerMenuChild,
+  isRefcheckerEnabled,
+} from "./refcheckerBridge";
+import {
+  isKutuphaneSemanticEnabled,
+  isZotSeekSemanticEnabled,
+} from "../utils/kutuphaneSemanticBridge";
 
 export {
   initItemMenu,
@@ -103,11 +120,18 @@ function connectionMapMenuChild() {
   };
 }
 
+function isSafeImportEnabled(): boolean {
+  return getPref("import.enabled") !== false;
+}
+
+function isSemanticMenuEnabled(): boolean {
+  return isKutuphaneSemanticEnabled() || isZotSeekSemanticEnabled();
+}
+
 /**
  * One consolidated "LibRart Pro" entry per context (item
- * right-click, Tools menu) instead of scattering each feature as its own
- * top-level menu item — everything the plugin can do lives under a single
- * parent, with room for future features (v3+) to slot in as new children.
+ * right-click, Tools menu). Opt-in features are omitted from the menu
+ * when disabled (prefs) so users do not see dead "feature disabled" items.
  */
 function initItemMenu(win: Window) {
   const rootIcon = `chrome://${config.addonRef}/content/icons/favicon.png`;
@@ -121,13 +145,24 @@ function initItemMenu(win: Window) {
       actionsMenuChild("item"),
       ratingMenuChild(),
       ...(isReadingFlowEnabled() ? [readingStatusMenuChild()] : []),
-      ankiMenuChild(),
-      citegeistMenuChild(),
-      noteWorkspaceMenuChild(),
+      ...(isIncitefulEnabled() ? [incitefulMenuChild()] : []),
+      ...(isAnkiEnabled() ? [ankiMenuChild()] : []),
+      ...(isCitegeistEnabled() ? [citegeistMenuChild()] : []),
+      ...(isMarkdbEnabled() ? [markdbMenuChild()] : []),
+      ...(isNoteWorkspaceEnabled() ? [noteWorkspaceMenuChild()] : []),
     ],
   });
 
-  ztoolkit.Menu.register("collection", actionsMenuChild("collection"));
+  ztoolkit.Menu.register("collection", {
+    tag: "menu",
+    id: `${config.addonRef}-root-collection-menu`,
+    label: getString("menu-root"),
+    icon: rootIcon,
+    children: [
+      actionsMenuChild("collection"),
+      ...(isIncitefulEnabled() ? [incitefulCollectionMenuChild()] : []),
+    ],
+  });
 
   ztoolkit.Menu.register("menuTools", {
     tag: "menu",
@@ -135,18 +170,22 @@ function initItemMenu(win: Window) {
     label: getString("menu-root"),
     icon: rootIcon,
     children: [
-      actionsMenuChild("tools"),
-      tagDashboardMenuChild(),
-      readingFlowMenuChild(),
       connectionMapMenuChild(),
-      safeImportMenuChild(),
-      docxCitedMenuChild(),
-      ankiMenuChild(),
-      citegeistMenuChild(),
-      markdbMenuChild(),
-      semanticMenuChild(),
-      noteWorkspaceMenuChild(),
+      tagDashboardMenuChild(),
+      ...(isReadingFlowEnabled() ? [readingFlowMenuChild()] : []),
+      ...(isIncitefulEnabled() ? [incitefulMenuChild()] : []),
+      ...(isSafeImportEnabled() ? [safeImportMenuChild()] : []),
+      ...(isDocxCitedEnabled()
+        ? [docxCitedMenuChild(), manuscriptDiffMenuChild()]
+        : []),
       referenceExtractorMenuChild(),
+      ...(isAnkiEnabled() ? [ankiMenuChild()] : []),
+      ...(isCitegeistEnabled() ? [citegeistMenuChild()] : []),
+      ...(isMarkdbEnabled() ? [markdbMenuChild()] : []),
+      ...(isSemanticMenuEnabled() ? [semanticMenuChild()] : []),
+      ...(isNoteWorkspaceEnabled() ? [noteWorkspaceMenuChild()] : []),
+      ...(isRefcheckerEnabled() ? [refcheckerMenuChild()] : []),
+      actionsMenuChild("tools"),
     ],
   });
 }

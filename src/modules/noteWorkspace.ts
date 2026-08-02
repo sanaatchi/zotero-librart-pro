@@ -19,6 +19,7 @@ import {
   mergeRelatedNoteCandidates,
   RelatedNoteCandidate,
 } from "../vendor/zotero-better-notes/relatedNotes";
+import { openNotesInWorkspaceTabs } from "../vendor/zotero-better-notes/workspace/openNoteTab";
 
 export {
   initNoteWorkspace,
@@ -27,6 +28,7 @@ export {
   noteWorkspaceMenuChild,
   insertNoteLinkIntoSelection,
   showRelatedNotesForSelection,
+  openRelatedNotesInTabs,
   getNoteLinkForItem,
   collectRelatedNotesForItem,
 };
@@ -346,6 +348,52 @@ async function showRelatedNotesForSelection(): Promise<void> {
   );
 }
 
+async function openRelatedNotesInTabs(): Promise<void> {
+  ensureNoteWorkspacePrefDefaults();
+  if (!isNoteWorkspaceEnabled()) {
+    alertDialog(getString("note-workspace-disabled"));
+    return;
+  }
+
+  const selected =
+    getZoteroAdapter()
+      .getActivePane()
+      ?.getSelectedItems()
+      ?.filter((i) => i.isRegularItem() || i.isNote()) ?? [];
+
+  const sourceNote = resolveSourceNote(selected);
+  if (!sourceNote) {
+    alertDialog(getString("note-workspace-error-no-source"));
+    return;
+  }
+
+  const rows = collectRelatedNotesForItem(sourceNote);
+  if (!rows.length) {
+    alertDialog(getString("note-related-empty"));
+    return;
+  }
+
+  const pane = getZoteroAdapter().getActivePane() as
+    | (ReturnType<ReturnType<typeof getZoteroAdapter>["getActivePane"]> & {
+        selectItem?: (id: number) => void;
+        openNoteWindow?: (id: number) => void;
+      })
+    | null
+    | undefined;
+
+  const opened = await openNotesInWorkspaceTabs(
+    rows.map((r) => r.note),
+    {
+      selectItem: (id) => pane?.selectItem?.(id),
+      openNoteWindow: (id) => pane?.openNoteWindow?.(id),
+      max: 6,
+    },
+  );
+  updateHint(
+    getString("note-related-tabs-opened", { args: { count: opened } }),
+  );
+}
+
 function noteWorkspaceMenuChild() {
   return {
     tag: "menu" as const,
@@ -366,6 +414,13 @@ function noteWorkspaceMenuChild() {
           void showRelatedNotesForSelection();
         },
       },
+      {
+        tag: "menuitem" as const,
+        label: getString("menu-note-related-tabs"),
+        commandListener: () => {
+          void openRelatedNotesInTabs();
+        },
+      },
     ],
   };
 }
@@ -374,6 +429,6 @@ async function initNoteWorkspace(): Promise<void> {
   ensureNoteWorkspacePrefDefaults();
   if (!isNoteWorkspaceEnabled()) return;
   ztoolkit.log(
-    "Note workspace (F8.2.2): note-link insert + related notes; full BN UI deferred.",
+    "Note workspace: link + related + open-in-tabs; full BN chrome deferred.",
   );
 }

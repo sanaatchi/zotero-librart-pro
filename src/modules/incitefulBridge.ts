@@ -1,4 +1,4 @@
-// @ajan: cursor · @etiket: inciteful, citation-graph, menu
+// @ajan: cursor · @etiket: inciteful, citation-graph, menu, makale-yazim
 
 import { config } from "../../package.json";
 import { getString } from "../utils/locale";
@@ -10,7 +10,12 @@ import {
   openIncitefulSearch,
 } from "../vendor/inciteful/incitefulCore";
 
-export { initIncitefulMenus, isIncitefulEnabled };
+export {
+  initIncitefulMenus,
+  isIncitefulEnabled,
+  incitefulMenuChild,
+  incitefulCollectionMenuChild,
+};
 
 function isIncitefulEnabled(): boolean {
   const v = getPref("inciteful.enabled");
@@ -70,24 +75,25 @@ function incitefulMenuChildren() {
   ];
 }
 
-function initIncitefulMenus() {
-  if (!isIncitefulEnabled()) return;
-
-  const icon = `chrome://${config.addonRef}/content/icons/favicon.png`;
-
-  ztoolkit.Menu.register("item", {
-    tag: "menu",
-    id: `${config.addonRef}-inciteful-item-menu`,
+/** Nested under LibRart Pro root (not a separate top-level menu). */
+function incitefulMenuChild() {
+  return {
+    tag: "menu" as const,
     label: getString("inciteful-menu-root"),
-    icon,
+    icon: `chrome://${config.addonRef}/content/icons/favicon.png`,
     children: incitefulMenuChildren(),
-  });
+  };
+}
 
-  ztoolkit.Menu.register("collection", {
-    tag: "menuitem",
-    id: `${config.addonRef}-inciteful-collection-search`,
+function incitefulCollectionMenuChild() {
+  return {
+    tag: "menuitem" as const,
     label: getString("inciteful-menu-collection-search"),
-    icon,
+    icon: `chrome://${config.addonRef}/content/icons/favicon.png`,
     commandListener: () => onSearchCollection(),
-  });
+  };
+}
+
+function initIncitefulMenus() {
+  // Item / Tools / collection entries live under LibRart root via menu.ts.
 }

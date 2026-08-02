@@ -79,7 +79,9 @@ markdb-strategy-citekey =
     .label = Citekey（YAML / @文件名）
 markdb-strategy-itemkey =
     .label = Zotero itemKey
-markdb-hint = 笔记应为 @citekey.md；正文 [[@citekey]] 或 itemKey 会生成连接地图笔记边。
+markdb-tag =
+    .value = Sync tag
+markdb-hint = 笔记应为 @citekey.md；正文 [[@citekey]] 或 itemKey 会生成连接地图笔记边。扫描会同步上方标签。
 
 semantic = Semantic（Kutuphane / ZotSeek）
 semantic-kutuphane-enabled =
@@ -95,7 +97,18 @@ note-workspace-enabled =
     .label = 启用插入笔记链接
 note-workspace-hint = 向所选笔记插入 zotero://note/… 维基链接；连接地图笔记层可读。完整 BN 工作区稍后。
 
-# --- synced from en-US (10 ids) ---
+# --- synced from en-US (writing + citation) ---
+writing-features = Writing features
+inciteful-enabled =
+    .label = Enable Inciteful tools
+reading-enabled =
+    .label = Enable reading dashboard / status
+import-enabled =
+    .label = Enable safe BibTeX/RIS import
+docx-cited-enabled =
+    .label = Enable DOCX cited tagging
+writing-features-hint = Disabled features are hidden from the LibRart Pro menu. Restart Zotero after changing menus if items look stale.
+
 openalex = Citation layers (OpenAlex / Crossref / OpenCitations)
 openalex-enabled =
     .label = OpenAlex citation edges
@@ -113,4 +126,13 @@ citegeist = Citegeist (OpenAlex summary — experimental)
 citegeist-enabled =
     .label = Enable citation summary menu
 citegeist-hint = OpenAlex citation/reference counts for selected items. Full Citegeist columns/pane not ported (no full GPL UI).
+
+refchecker = RefChecker + Katman 1 AI
+refchecker-enabled =
+    .label = Enable RefChecker menu (external service)
+refchecker-url =
+    .value = RefChecker URL
+k1-ai-url =
+    .value = Katman 1 AI URL (arsiv_app)
+refchecker-hint = Run RefChecker web UI on loopback :8000. Bibliography tips use arsiv_app :8077 — no LLM inside LibRart.
 

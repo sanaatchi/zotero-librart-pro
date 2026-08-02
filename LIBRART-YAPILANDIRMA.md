@@ -1,4 +1,4 @@
-<!-- @ajan: cursor · @etiket: yapilandirma, faz-plan, plugin, f5.2, f9.2 -->
+<!-- @ajan: cursor · @etiket: yapilandirma, g1-g3-sync, v1.0.58 -->
 
 # LibRart Pro — yapılandırma planı
 
@@ -18,7 +18,7 @@ Giriş: [`LIBRART-GIRIS.md`](LIBRART-GIRIS.md) · Koordinasyon: [`AGENTS.md`](AG
 | addonID      | `librartpro@euclpts.com`                     |
 | Kaynak repo  | `sanaatchi/zotero-librart-pro` (= bu klasör) |
 | Release repo | `sanaatchi/zotero-librart-pro-releases`      |
-| Sürüm        | 1.0.46                                       |
+| Sürüm        | 1.0.58                                       |
 | Lisans       | AGPL-3.0-or-later                            |
 
 | Klasör / dosya            | Rol                                         |
@@ -35,7 +35,7 @@ Giriş: [`LIBRART-GIRIS.md`](LIBRART-GIRIS.md) · Koordinasyon: [`AGENTS.md`](AG
 | ------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | Bağlantı Haritası katmanları    | `tag` ✅ · `manual` ✅ · `semantic` ✅ (JSON indeks) · `note` ✅ · `citation` ✅ (Crossref + OpenAlex + OC) |
 | Inciteful, PDF kaynakça çıkarma | ✅                                                                                                          |
-| Test (`npm test`)               | ✅ Vitest — **90 test** (F0 + ölçek smoke)                                                                  |
+| Test (`npm test`)               | ✅ Vitest — **129 test** (F0 + ölçek + yazım köprüleri)                                                     |
 | Tamamlanan modüller             | reading flow, markdb, Anki, OpenAlex/OC, ZotSeek JSON vektör, Citegeist                                     |
 | Güvenli import (F2)             | ✅                                                                                                          |
 | DOCX cited (F3)                 | ✅                                                                                                          |
@@ -202,10 +202,10 @@ yıkıcı dosya işlemi varsayılan kapalı.
 
 **Her oturum başı:** [`CURSOR-KATMAN-3-EKSIKLER-RAPORU.md`](CURSOR-KATMAN-3-EKSIKLER-RAPORU.md)
 oku → açık P1’leri düzelt → **ancak sonra** özellik/faz işi
-(rule: `katman3-eksik-raporu.mdc`).
+(rule: `katman-eksik-raporu.mdc`).
 
-**Sonra (rapor P1 kapalıyken):** P2/P3 veya `LIBRART-YAPILANDIRMA` özellikleri.
-F6 → Katman 2.
+**v1.0.58:** G1 ölü `:8767` citation-bridge kaldırıldı. Asıl offline graf =
+Kutuphane **8756**. Sonraki: kabul Bölüm B smoke · P3 BN chrome / Citegeist.
 
 Port gerektiren fazlarda önce [`LIBRART-REFERANS-PORT.md`](LIBRART-REFERANS-PORT.md) lisans
 kontrolü, sonra `LIBRART-VENDOR.md` satırı.
@@ -242,6 +242,7 @@ hattında kalır (`_scan_disk_pdfs.py`, pipeline, KP).
 
 | Tarih      | Ajan   | Özet                                                           |
 | ---------- | ------ | -------------------------------------------------------------- |
+| 2026-08-02 | cursor | G1–G4: 8767 kaldırıldı; 129 test; companion XPI; v1.0.58     |
 | 2026-07-29 | cursor | Stabilizasyon: multi-window registry, lint, atomic vector, 10k |
 | 2026-07-29 | cursor | F9.2.3 JSON vector index + map semantic path                   |
 | 2026-07-29 | cursor | F9.2.2 ZotSeek chrome remap + asset probe + fetch/build:worker |

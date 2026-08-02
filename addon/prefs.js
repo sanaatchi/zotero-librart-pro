@@ -1,3 +1,4 @@
+// @ajan: cursor · @etiket: prefs, g1-citation-bridge-removed
 /* eslint-disable no-undef */
 pref("__prefsPrefix__.rulesInit", false);
 pref("__prefsPrefix__.ruleWarningDisabled", false);
@@ -6,6 +7,11 @@ pref("__prefsPrefix__.menuSortBy", "menu");
 pref("__prefsPrefix__.showPopup", true);
 pref("__prefsPrefix__.rulesSortColumnIndex", 0);
 pref("__prefsPrefix__.rulesSortColumnAscending", false);
+/* Core writing features (default on) */
+pref("__prefsPrefix__.inciteful.enabled", true);
+pref("__prefsPrefix__.reading.enabled", true);
+pref("__prefsPrefix__.import.enabled", true);
+pref("__prefsPrefix__.docxCited.enabled", true);
 /* Connection Map — D(iii) highlight→semantic (default on, rate-limited). */
 pref("__prefsPrefix__.connectionMapEnableHighlightLayer", true);
 /* Timeline JSON (capped). */
@@ -31,6 +37,7 @@ pref("__prefsPrefix__.anki.modelName", "Basic");
 pref("__prefsPrefix__.note.markdb.enabled", false);
 pref("__prefsPrefix__.note.markdb.vaultPath", "");
 pref("__prefsPrefix__.note.markdb.matchStrategy", "citekeyyaml");
+pref("__prefsPrefix__.note.markdb.tag", "mdbc");
 /* F9 — Semantic (Kutuphane 8756 primary; ZotSeek opt-in) */
 pref("__prefsPrefix__.semantic.kutuphane.enabled", false);
 pref("__prefsPrefix__.semantic.kutuphaneUrl", "http://127.0.0.1:8756");
@@ -40,6 +47,11 @@ pref("__prefsPrefix__.semantic.zotseek.enabled", false);
 pref("__prefsPrefix__.note.workspace.enabled", false);
 /* Deneysel — Citegeist-style OpenAlex atıf özeti (opt-in) */
 pref("__prefsPrefix__.citegeist.enabled", false);
+/* RefChecker HTTP (opt-in; external MIT service on :8000) */
+pref("__prefsPrefix__.refchecker.enabled", false);
+pref("__prefsPrefix__.refchecker.url", "http://127.0.0.1:8000");
+/* Katman 1 AI (arsiv_app) for writing tips */
+pref("__prefsPrefix__.kutuphane.aiUrl", "http://127.0.0.1:8077");
 /* F9.2 — vendored ZotSeek assets (ONNX/WASM via fetch script; default on) */
 pref("__prefsPrefix__.vendoredZotSeek", true);
 pref("__prefsPrefix__.embeddingModel", "nomic-embed-text-v1.5");

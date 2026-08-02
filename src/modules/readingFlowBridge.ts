@@ -246,6 +246,7 @@ function delayMs(ms: number): Promise<void> {
 }
 
 async function openReadingDashboard() {
+  if (!isReadingFlowEnabled()) return;
   if (isWindowAlive(addon.data.readingDashboard?.window)) {
     addon.data.readingDashboard!.window!.focus();
     return;

@@ -1,5 +1,7 @@
-// @ajan: cursor · @etiket: f9, semantic, kutuphane, parse, connection-graph
+// @ajan: cursor · @etiket: f9, semantic, kutuphane, parse, kp-align, loopback
 // Pure helpers for Kutuphane semantic bridge (8756) — no Zotero globals.
+/** Align with kitap_arsiv.context.MAX_LIBRARY_PDFS / K1 kpRegistry */
+export const MAX_LIBRARY_PDFS = 99_999;
 
 export type SemanticStatusPayload = {
   ready: boolean;
@@ -78,6 +80,7 @@ export {
   buildKpIndexFromEntries,
   mapHitsToItemIds,
   normalizeHitDocId,
+  normalizeKpToken,
 };
 
 const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "::1", "[::1]"]);
@@ -247,11 +250,25 @@ function parseConnectionGraphPayload(
   };
 }
 
+/** Canonical KP###### (1…MAX_LIBRARY_PDFS) — same policy as K1 kpRegistry. */
+function normalizeKpToken(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const m = String(raw)
+    .trim()
+    .toUpperCase()
+    .match(/^KP0*(\d{1,6})$/);
+  if (!m) return null;
+  const num = Number(m[1]);
+  if (!Number.isFinite(num) || num < 1 || num > MAX_LIBRARY_PDFS) return null;
+  return `KP${String(num).padStart(6, "0")}`;
+}
+
 /** Normalize chunk doc id for index lookup: KP… / z:KEY (upper). */
 function normalizeHitDocId(raw: string): string | null {
   const s = raw.trim();
   if (!s) return null;
-  if (/^KP\d+$/i.test(s)) return s.toUpperCase();
+  const kp = normalizeKpToken(s);
+  if (kp) return kp;
   const zm = /^z:([A-Z0-9]+)$/i.exec(s);
   if (zm) return `Z:${zm[1].toUpperCase()}`;
   // zpath:… — no stable item map without path index
@@ -265,8 +282,9 @@ function buildKpIndexFromEntries(
   for (const e of entries) {
     if (typeof e.itemId !== "number" || !Number.isFinite(e.itemId)) continue;
     const cite = (e.citationKey || "").trim();
-    if (cite && /^KP\d+$/i.test(cite)) {
-      map.set(cite.toUpperCase(), e.itemId);
+    const kp = normalizeKpToken(cite);
+    if (kp) {
+      map.set(kp, e.itemId);
     }
     const zk = (e.zoteroKey || "").trim();
     if (zk) {

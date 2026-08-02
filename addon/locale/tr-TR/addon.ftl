@@ -268,11 +268,16 @@ anki-error-unreachable = AnkiConnect'e ulaşılamadı: { $message }
 anki-progress = Anki'ye gönderiliyor ({ $count } öğe)…
 anki-done = Anki: { $created } yeni, { $updated } güncellendi, { $failed } hata
 
-menu-markdb-scan = Vault tara (MarkDB)
+menu-markdb = MarkDB / Obsidian
+menu-markdb-scan = Vault tara + etiket eşitle
+menu-markdb-open = Notu Obsidian'da aç
 markdb-disabled = MarkDB kapalı. LibRart Pro tercihlerinden etkinleştirin ve vault yolunu ayarlayın.
 markdb-error-no-path = Obsidian / MarkDB vault yolu boş. Tercihlerden ayarlayın.
 markdb-error-scan = Vault taraması başarısız: { $message }
-markdb-scan-done = MarkDB: { $total } not, { $matched } eşleşen birincil anahtar
+markdb-error-open = Obsidian URI açılamadı.
+markdb-error-no-selection = Önce bir kütüphane öğesi seçin.
+markdb-error-no-note = Bu öğeyle eşleşen vault notu yok. Citekey ayarlayıp “Vault tara” çalıştırın.
+markdb-scan-done = MarkDB: { $total } not, { $matched } anahtar · etiket +{ $tagged } / −{ $removed }
 
 menu-semantic-status = Semantic durum
 menu-semantic = Semantic
@@ -320,3 +325,33 @@ citegeist-reason-no-doi = DOI yok
 citegeist-reason-not-found = OpenAlex'te yok
 citegeist-reason-error = hata
 citegeist-line-ok = { $title } ({ $year }): { $cited } atıf · { $refs } kaynak
+
+menu-manuscript-diff = El yazması: kullanılan / kullanılmayan
+manuscript-diff-title = El yazması farkı
+manuscript-diff-pick-tag = DOCX kayıtlı cited: etiketini seçin:
+manuscript-diff-no-tags = Henüz cited: etiketi yok. Önce “DOCX'te Kullanılanlar” çalıştırın.
+manuscript-diff-no-scope = Yazım kapsamı için bir koleksiyon (veya 2+ öğe) seçin.
+manuscript-diff-docx-disabled = DOCX etiketleme tercihlerde kapalı.
+manuscript-diff-scope-collection = Koleksiyon
+manuscript-diff-scope-selection = Seçim
+manuscript-diff-scope-label = Kapsam: { $scope } ({ $count } öğe)
+manuscript-diff-line-cited = DOCX'te kullanılan: { $cited } (kapsamda: { $inScope })
+manuscript-diff-line-unused = Kapsamda ama kullanılmayan: { $unused } (kütüphanede seçildi)
+manuscript-diff-line-outside = Kullanılmış ama kapsam dışı: { $outside }
+
+menu-refchecker = RefChecker
+menu-refchecker-status = RefChecker durumu
+menu-refchecker-open = RefChecker arayüzünü aç
+menu-k1-bib-tip = Kaynakça ipucu (Katman 1 AI)
+refchecker-disabled = RefChecker kapalı. LibRart tercihlerinden açın.
+refchecker-error-url = RefChecker URL loopback olmalı (http://127.0.0.1:8000).
+refchecker-error-unreachable = RefChecker erişilemedi: { $message }
+refchecker-error-open = RefChecker URL açılamadı.
+refchecker-status-ok = RefChecker sağlıklı: { $url }
+k1-ai-error-url = Katman 1 AI URL loopback olmalı (http://127.0.0.1:8077).
+k1-ai-error-unreachable = Katman 1 AI erişilemedi: { $message }
+k1-ai-error-chat = Katman 1 sohbet başarısız: { $message }
+k1-ai-tip-title = Kaynakça ipucu (Katman 1)
+
+menu-note-related-tabs = İlgili notları sekmelerde aç
+note-related-tabs-opened = { $count } ilgili not açıldı

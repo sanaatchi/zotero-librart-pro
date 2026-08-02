@@ -268,11 +268,16 @@ anki-error-unreachable = Could not reach AnkiConnect: { $message }
 anki-progress = Sending to Anki ({ $count } items)…
 anki-done = Anki: { $created } created, { $updated } updated, { $failed } failed
 
-menu-markdb-scan = Scan vault (MarkDB)
+menu-markdb = MarkDB / Obsidian
+menu-markdb-scan = Scan vault + sync tags
+menu-markdb-open = Open note in Obsidian
 markdb-disabled = MarkDB is off. Enable it in LibRart Pro preferences and set the vault path.
 markdb-error-no-path = Obsidian / MarkDB vault path is empty. Set it in preferences.
 markdb-error-scan = Vault scan failed: { $message }
-markdb-scan-done = MarkDB: { $total } notes, { $matched } with primary key
+markdb-error-open = Could not launch Obsidian URI.
+markdb-error-no-selection = Select a library item first.
+markdb-error-no-note = No vault note matched this item. Run “Scan vault” after setting citekeys.
+markdb-scan-done = MarkDB: { $total } notes, { $matched } with key · tags +{ $tagged } / −{ $removed }
 
 menu-semantic-status = Semantic status
 menu-semantic = Semantic
@@ -320,3 +325,33 @@ citegeist-reason-no-doi = no DOI
 citegeist-reason-not-found = not on OpenAlex
 citegeist-reason-error = error
 citegeist-line-ok = { $title } ({ $year }): { $cited } citations · { $refs } refs
+
+menu-manuscript-diff = Manuscript cited vs unused
+manuscript-diff-title = Manuscript diff
+manuscript-diff-pick-tag = Choose a cited: tag from DOCX registry:
+manuscript-diff-no-tags = No cited: tags yet. Run “Cited in DOCX” first.
+manuscript-diff-no-scope = Select a collection (or 2+ items) as the writing scope.
+manuscript-diff-docx-disabled = DOCX cited tagging is off in preferences.
+manuscript-diff-scope-collection = Collection
+manuscript-diff-scope-selection = Selection
+manuscript-diff-scope-label = Scope: { $scope } ({ $count } items)
+manuscript-diff-line-cited = Cited in DOCX: { $cited } (in scope: { $inScope })
+manuscript-diff-line-unused = In scope but not cited: { $unused } (selected in library)
+manuscript-diff-line-outside = Cited but outside scope: { $outside }
+
+menu-refchecker = RefChecker
+menu-refchecker-status = RefChecker status
+menu-refchecker-open = Open RefChecker UI
+menu-k1-bib-tip = Bibliography tip (Katman 1 AI)
+refchecker-disabled = RefChecker is off. Enable it in LibRart preferences.
+refchecker-error-url = RefChecker URL must be loopback (http://127.0.0.1:8000).
+refchecker-error-unreachable = RefChecker unreachable: { $message }
+refchecker-error-open = Could not open RefChecker URL.
+refchecker-status-ok = RefChecker healthy at { $url }
+k1-ai-error-url = Katman 1 AI URL must be loopback (http://127.0.0.1:8077).
+k1-ai-error-unreachable = Katman 1 AI unreachable: { $message }
+k1-ai-error-chat = Katman 1 chat failed: { $message }
+k1-ai-tip-title = Bibliography tip (Katman 1)
+
+menu-note-related-tabs = Open related notes in tabs
+note-related-tabs-opened = Opened { $count } related note(s)

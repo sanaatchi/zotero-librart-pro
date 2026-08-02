@@ -1,4 +1,4 @@
-<!-- @ajan: cursor · @etiket: librart-pro, vendor, lisans, provenance, f7, f8, f9.2 -->
+<!-- @ajan: cursor · @etiket: librart-vendor, g1-g4-sync, v1.0.58 -->
 
 # Vendor kaynak kodları
 
@@ -18,8 +18,8 @@ barındırır veya `../referanslar/` üzerinden port eder. Dosya başında kayna
 | [zotero-tag-cited](https://github.com/onyxaegis/zotero-tag-cited)                   | MIT      | `referanslar/zotero-tag-cited/`                                                       | F3 DOCX → `cited:` etiket                                                                                   |
 | [zotero-reading-flow](https://github.com/moon-young-choi/zotero-reading-flow)       | MIT      | `src/vendor/reading-flow/`                                                            | F4 okuma durumu, sütunlar, pano                                                                             |
 | [yanki-connect](https://github.com/kitschpatrol/yanki-connect)                      | MIT      | `src/vendor/yanki-connect/` (ince istemci) · ref `referanslar/yanki-connect/`         | F7 AnkiConnect HTTP + Extra idempotans; **tam YankiConnect sınıfı vendor edilmedi** (Node/fetch/autoLaunch) |
-| [zotero-markdb-connect](https://github.com/daeh/zotero-markdb-connect)              | MIT      | `src/vendor/markdb/` (ince scan) · ref `referanslar/zotero-markdb-connect/`           | F8.1 vault → note kenarları; tam mdbcUX/tag sync yok                                                        |
-| [zotero-better-notes](https://github.com/windingwind/zotero-better-notes)           | AGPL-3.0 | `src/vendor/zotero-better-notes/{link,noteHtml,relatedNotes}.ts` · `noteWorkspace.ts` | F8.2.1 link + F8.2.2 ilgili notlar; tam workspace UI yok                                                    |
+| [zotero-markdb-connect](https://github.com/daeh/zotero-markdb-connect)              | MIT      | `src/vendor/markdb/` (scan) + `markdbBridge` UX · ref `referanslar/zotero-markdb-connect/` | F8.1 edges + **1.0.56** tag sync (`mdbc`) + Obsidian open (mdbcUX desen) |
+| [zotero-better-notes](https://github.com/windingwind/zotero-better-notes)           | AGPL-3.0 | `src/vendor/zotero-better-notes/{link,noteHtml,relatedNotes}.ts` · `noteWorkspace.ts` | F8.2.1–2.2 + 1.0.57 open related in tabs; tam BN chrome sonra                                                    |
 
 ## Atıf grafiği — tam yığın (kullanıcı: hepsini istiyor)
 
@@ -32,10 +32,16 @@ barındırır veya `../referanslar/` üzerinden port eder. Dosya başında kayna
 | [citation_map](https://github.com/jaks6/citation_map)                               | **lisans yok**                                          | `referanslar/citation_map/`                  | **vendor/çeviri portu yasak**                              | Gereksinim çıkarımı; bağımsız temiz oda uygulama                                                                                                                                                             |
 | [Local-Citation-Graph](https://github.com/SubhadityaMukherjee/Local-Citation-Graph) | **lisans yok**                                          | `referanslar/Local-Citation-Graph/`          | **vendor yasak**                                           | Yalnız export/görselleştirme fikri                                                                                                                                                                           |
 | [zotero-citegeist](https://github.com/phdemotions/zotero-citegeist)                 | GPL-3.0                                                 | `referanslar/zotero-citegeist/`              | `citegeistBridge` + `citegeistMetrics` (temiz oda)         | OpenAlex atıf/kaynak özeti menü; **tam sütun/pane yok**                                                                                                                                                      |
-| [citation-graph](https://github.com/OleksiyPenkov/citation-graph)                   | **MIT**                                                 | `referanslar/citation-graph-openalex-cli/`   | Kutuphane köprüsü (Python)                                 | CLI/MCP: neighborhood, missing, bridges                                                                                                                                                                      |
+| [citation-graph](https://github.com/OleksiyPenkov/citation-graph)                   | **MIT**                                                 | (eski CLI mirror)                            | **kaldırıldı** v1.0.58 — `_citation_graph_bridge.py` / LibRart `:8767` yok | Offline graf = Kutuphane **8756** + `_build_zotero_connection_graph.py`                                                                                                                                        |
 | [scite-zotero-plugin](https://github.com/scitedotai/scite-zotero-plugin)            | **lisans yok** (kendisi + 15 fork'un tamamı doğrulandı) | `referanslar/scite-zotero-plugin/`           | **vendor/port yasak**                                      | Atıf-tipi (supporting/contrasting/mentioning) — lisanslı muadil: `zotero-open-citations` (AGPL) veya `zotero-citation-tally` (AGPL); alternatif: `mcp__zotero__scite_*` MCP araçları (kod portu gerektirmez) |
 
 Detaylı faz planı: **`LIBRART-YAPILANDIRMA.md`** · lisans/port: **`LIBRART-REFERANS-PORT.md`** · giriş: **`LIBRART-GIRIS.md`**.
+
+## Kuratör notu (2026-08)
+
+Upstream mirror yolları kısmen `referanslar/katman-3/<kategori>/…` altına taşındı
+(ör. `atif-graf/inciteful`, `notlar/zotero-better-notes`). Eski düz `referanslar/<ad>/`
+satırları tarihsel SHA için geçerliliğini koruyabilir; yeni portlarda `katman-3/` tercih et.
 
 ## Lisans notları
 
@@ -47,7 +53,7 @@ Detaylı faz planı: **`LIBRART-YAPILANDIRMA.md`** · lisans/port: **`LIBRART-RE
 
 Her yeni vendor aktarımında upstream URL, commit SHA, SPDX lisansı, yerel hedef ve
 değişiklik özeti kaydedilir. Ayrıntılı güncel karar kaynağı:
-[`REFERANS-ANALIZ.md`](REFERANS-ANALIZ.md).
+[`LIBRART-REFERANS-PORT.md`](LIBRART-REFERANS-PORT.md) · kuratör `referanslar/katman-3/`.
 
 ## Derleme
 

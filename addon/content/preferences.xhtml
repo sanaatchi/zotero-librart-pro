@@ -1,4 +1,4 @@
-<!-- @ajan: cursor · @etiket: f5.2, citegeist, f7, f8, f9, preferences -->
+<!-- @ajan: cursor · @etiket: f5.2, citegeist, f7, f8, f9, preferences, makale-yazim -->
 <vbox
   id="__addonRef__-container"
   onload="Zotero.__addonInstance__.hooks.onPrefsEvent('load', {window})"
@@ -104,6 +104,41 @@
     </hbox>
     <html:label
       data-l10n-id="local-book-db-hint"
+      style="opacity: 0.7; font-size: 11px"
+    ></html:label>
+  </groupbox>
+  <groupbox style="width: -moz-available">
+    <label><html:h2 data-l10n-id="writing-features"></html:h2></label>
+    <hbox align="center">
+      <checkbox
+        preference="__prefsPrefix__.inciteful.enabled"
+        native="true"
+        data-l10n-id="inciteful-enabled"
+      ></checkbox>
+    </hbox>
+    <hbox align="center">
+      <checkbox
+        preference="__prefsPrefix__.reading.enabled"
+        native="true"
+        data-l10n-id="reading-enabled"
+      ></checkbox>
+    </hbox>
+    <hbox align="center">
+      <checkbox
+        preference="__prefsPrefix__.import.enabled"
+        native="true"
+        data-l10n-id="import-enabled"
+      ></checkbox>
+    </hbox>
+    <hbox align="center">
+      <checkbox
+        preference="__prefsPrefix__.docxCited.enabled"
+        native="true"
+        data-l10n-id="docx-cited-enabled"
+      ></checkbox>
+    </hbox>
+    <html:label
+      data-l10n-id="writing-features-hint"
       style="opacity: 0.7; font-size: 11px"
     ></html:label>
   </groupbox>
@@ -252,6 +287,14 @@
         </menupopup>
       </menulist>
     </hbox>
+    <hbox align="center">
+      <label data-l10n-id="markdb-tag"></label>
+      <html:input
+        preference="__prefsPrefix__.note.markdb.tag"
+        type="text"
+        style="flex: 1; min-width: 120px"
+      />
+    </hbox>
     <html:label
       data-l10n-id="markdb-hint"
       style="opacity: 0.7; font-size: 11px"
@@ -302,6 +345,38 @@
     ></html:label>
   </groupbox>
   <groupbox style="width: -moz-available">
+    <label><html:h2 data-l10n-id="refchecker"></html:h2></label>
+    <hbox align="center">
+      <checkbox
+        preference="__prefsPrefix__.refchecker.enabled"
+        native="true"
+        data-l10n-id="refchecker-enabled"
+      ></checkbox>
+    </hbox>
+    <hbox align="center">
+      <label data-l10n-id="refchecker-url"></label>
+      <html:input
+        preference="__prefsPrefix__.refchecker.url"
+        type="text"
+        style="flex: 1; min-width: 220px"
+        placeholder="http://127.0.0.1:8000"
+      />
+    </hbox>
+    <hbox align="center">
+      <label data-l10n-id="k1-ai-url"></label>
+      <html:input
+        preference="__prefsPrefix__.kutuphane.aiUrl"
+        type="text"
+        style="flex: 1; min-width: 220px"
+        placeholder="http://127.0.0.1:8077"
+      />
+    </hbox>
+    <html:label
+      data-l10n-id="refchecker-hint"
+      style="opacity: 0.7; font-size: 11px"
+    ></html:label>
+  </groupbox>
+<groupbox style="width: -moz-available">
     <label><html:h2 data-l10n-id="menu"></html:h2></label>
     <hbox align="center">
       <label data-l10n-id="menu-sort"></label>
