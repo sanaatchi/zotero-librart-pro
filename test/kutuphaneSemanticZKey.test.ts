@@ -14,6 +14,13 @@ describe("normalizeHitDocId", () => {
   it("rejects oversized KP digits", () => {
     expect(normalizeHitDocId("KP1234567")).toBeNull();
   });
+  it("rejects above MAX_LIBRARY_PDFS", () => {
+    expect(normalizeHitDocId("KP100000")).toBeNull();
+    expect(normalizeHitDocId("KP99999")).toBe("KP099999");
+  });
+  it("extracts KP token from surrounding text", () => {
+    expect(normalizeHitDocId("cite KP42 extra")).toBe("KP000042");
+  });
   it("maps z:KEY", () => {
     expect(normalizeHitDocId("z:TyAh9IeC")).toBe("Z:TYAH9IEC");
   });

@@ -1,7 +1,11 @@
 // @ajan: cursor · @etiket: f9, semantic, kutuphane, parse, kp-align, loopback
 // Pure helpers for Kutuphane semantic bridge (8756) — no Zotero globals.
-/** Align with kitap_arsiv.context.MAX_LIBRARY_PDFS / K1 kpRegistry */
-export const MAX_LIBRARY_PDFS = 99_999;
+import {
+  MAX_LIBRARY_PDFS,
+  normalizeKpToken,
+} from "./kpToken";
+
+export { MAX_LIBRARY_PDFS, normalizeKpToken };
 
 export type SemanticStatusPayload = {
   ready: boolean;
@@ -80,7 +84,6 @@ export {
   buildKpIndexFromEntries,
   mapHitsToItemIds,
   normalizeHitDocId,
-  normalizeKpToken,
 };
 
 const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "::1", "[::1]"]);
@@ -248,19 +251,6 @@ function parseConnectionGraphPayload(
     edges,
     error: typeof o.error === "string" ? o.error : undefined,
   };
-}
-
-/** Canonical KP###### (1…MAX_LIBRARY_PDFS) — same policy as K1 kpRegistry. */
-function normalizeKpToken(raw: string | null | undefined): string | null {
-  if (!raw) return null;
-  const m = String(raw)
-    .trim()
-    .toUpperCase()
-    .match(/^KP0*(\d{1,6})$/);
-  if (!m) return null;
-  const num = Number(m[1]);
-  if (!Number.isFinite(num) || num < 1 || num > MAX_LIBRARY_PDFS) return null;
-  return `KP${String(num).padStart(6, "0")}`;
 }
 
 /** Normalize chunk doc id for index lookup: KP… / z:KEY (upper). */

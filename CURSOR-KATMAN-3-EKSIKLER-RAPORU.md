@@ -1,9 +1,9 @@
-<!-- @ajan: cursor · @etiket: katman-3, eksik-raporu, g1-g4-closed, v1.0.58 -->
+<!-- @ajan: cursor · @etiket: katman-3, eksik-raporu, kp-token-dry, v1.0.60 -->
 
 # Cursor — Katman 3 Eksikler Raporu
 
-**Tarih:** 2026-08-02 · **Sürüm:** LibRart Pro **v1.0.59**  
-**Doğrulama:** `npm test` → **129/129** pass
+**Tarih:** 2026-08-02 · **Sürüm:** LibRart Pro **v1.0.60**  
+**Doğrulama:** `npm test` → güncel suite
 
 ## Özet hüküm
 
@@ -25,6 +25,7 @@
 | **G3** | Doc sync | ✅ YAPILANDIRMA 129 test · REFERANS-PORT kuratör 7 · VENDOR 8767 notu |
 | **G4** | Companion XPI | ✅ README + REFERANS-PORT companion tablosu |
 | **G11** | KP format K1 parity | ✅ v1.0.59 — pad + MAX 99999 |
+| **G12** | KP `kpToken.ts` DRY mirror | ✅ v1.0.60 — K1/K2 ile aynı regex+MAX |
 
 ### Önceki (1.0.56–57)
 
