@@ -1,4 +1,4 @@
-// @ajan: cursor · @etiket: features, g1-citation-bridge-removed
+// @ajan: cursor · @etiket: features, reading-off-default
 import { FeatureRegistry } from "./featureRegistry";
 import { ActionEventTypes, initActions } from "../utils/actions";
 import { getPref, setPref } from "../utils/prefs";
@@ -25,6 +25,7 @@ import { ensureMarkdbPrefDefaults } from "../modules/markdbBridge";
 import { ensureSemanticPrefDefaults } from "../modules/semanticBridge";
 import { ensureCitegeistPrefDefaults } from "../modules/citegeistBridge";
 import { ensureRefcheckerPrefDefaults } from "../modules/refcheckerBridge";
+import { ensureReadingDisabledByDefault } from "../utils/readingPrefs";
 
 export { registerLibRartFeatures };
 
@@ -36,6 +37,8 @@ function registerLibRartFeatures(registry: FeatureRegistry): void {
       if (getPref("inciteful.enabled") === undefined) {
         setPref("inciteful.enabled", true);
       }
+      // Always run: force reading off once even if feature init is skipped.
+      ensureReadingDisabledByDefault();
     },
   });
 
@@ -104,11 +107,9 @@ function registerLibRartFeatures(registry: FeatureRegistry): void {
     // observer/columns and overwrites the tracker reference of prior windows.
     phase: "startup",
     prefKey: "reading.enabled",
-    defaultEnabled: true,
+    defaultEnabled: false,
     init: () => {
-      if (getPref("reading.enabled") === undefined) {
-        setPref("reading.enabled", true);
-      }
+      ensureReadingDisabledByDefault();
       initReadingFlow();
     },
     shutdown: () => shutdownReadingFlow(),

@@ -1,4 +1,4 @@
-// @ajan: cursor · @etiket: prefs, g1-citation-bridge-removed
+// @ajan: cursor · @etiket: prefs, reading-off-default
 /* eslint-disable no-undef */
 pref("__prefsPrefix__.rulesInit", false);
 pref("__prefsPrefix__.ruleWarningDisabled", false);
@@ -9,7 +9,7 @@ pref("__prefsPrefix__.rulesSortColumnIndex", 0);
 pref("__prefsPrefix__.rulesSortColumnAscending", false);
 /* Core writing features (default on) */
 pref("__prefsPrefix__.inciteful.enabled", true);
-pref("__prefsPrefix__.reading.enabled", true);
+pref("__prefsPrefix__.reading.enabled", false);
 pref("__prefsPrefix__.import.enabled", true);
 pref("__prefsPrefix__.docxCited.enabled", true);
 /* Connection Map — D(iii) highlight→semantic (default on, rate-limited). */

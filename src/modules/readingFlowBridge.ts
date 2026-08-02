@@ -1,4 +1,4 @@
-// @ajan: cursor · @etiket: f4, reading-flow, bridge, dashboard
+// @ajan: cursor · @etiket: f4, reading-flow, bridge, opt-out
 
 import { config } from "../../package.json";
 import { getString } from "../utils/locale";
@@ -51,9 +51,9 @@ function getReadingFlowStore(): ReadingFlowStore {
   return store;
 }
 
+/** Explicit opt-in only — never treat undefined as enabled. */
 function isReadingFlowEnabled(): boolean {
-  const v = getPref("reading.enabled");
-  return v === undefined || v === true;
+  return getPref("reading.enabled") === true;
 }
 
 /**
@@ -132,6 +132,7 @@ function readingStatusMenuChild() {
 }
 
 async function setReadingStatusForSelected(status: ReadingStatus | null) {
+  if (!isReadingFlowEnabled()) return;
   const items = getZoteroAdapter()
     .getActivePane()
     ?.getSelectedItems()
@@ -145,6 +146,7 @@ async function setReadingStatusForSelected(status: ReadingStatus | null) {
 }
 
 async function resetReadingProgressForSelected() {
+  if (!isReadingFlowEnabled()) return;
   const items = getZoteroAdapter()
     .getActivePane()
     ?.getSelectedItems()

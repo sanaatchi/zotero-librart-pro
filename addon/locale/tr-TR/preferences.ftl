@@ -59,12 +59,12 @@ writing-features = Yazım özellikleri
 inciteful-enabled =
     .label = Inciteful araçlarını aç
 reading-enabled =
-    .label = Okuma panosu / durumu aç
+    .label = Okuma panosu / durumu aç (Extra alanına ReadingFlow yazar)
 import-enabled =
     .label = Güvenli BibTeX/RIS içe aktarmayı aç
 docx-cited-enabled =
     .label = DOCX'te kullanılanlar etiketlemeyi aç
-writing-features-hint = Kapalı özellikler LibRart Pro menüsünde gizlenir. Menü eski görünürse Zotero'yu yeniden başlatın.
+writing-features-hint = Kapalı özellikler LibRart Pro menüsünde gizlenir ve metadata yazmaz. Menü eski görünürse Zotero'yu yeniden başlatın.
 
 openalex = Atıf katmanları (OpenAlex / Crossref / OpenCitations)
 openalex-enabled =

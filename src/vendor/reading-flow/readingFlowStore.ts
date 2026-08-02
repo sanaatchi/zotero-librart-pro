@@ -1,4 +1,4 @@
-// @ajan: cursor · @etiket: f4, reading-flow, vendor
+// @ajan: cursor · @etiket: f4, reading-flow, vendor, no-write-when-off
 // Adapted from zotero-reading-flow dataStore.ts (MIT)
 
 import { LRUCache } from "./lruCache";
@@ -16,6 +16,7 @@ import {
   ReadingHistory,
   ReadingStatus,
 } from "./flowData";
+import { getPref } from "../../utils/prefs";
 
 export type ProgressInput = {
   attachmentId: string;
@@ -222,6 +223,9 @@ class ReadingFlowStore {
   }
 
   private async saveData(item: Zotero.Item, data: FlowData): Promise<boolean> {
+    // Hard stop: never append ReadingFlow: JSON to Extra when feature is off.
+    if (getPref("reading.enabled") !== true) return false;
+
     const originalExtra = (item.getField("extra") as string) || "";
     const lines = originalExtra
       .split("\n")

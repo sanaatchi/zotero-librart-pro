@@ -1,8 +1,8 @@
-<!-- @ajan: cursor · @etiket: katman-3, eksik-raporu, kp-token-dry, v1.0.60 -->
+<!-- @ajan: cursor · @etiket: katman-3, eksik-raporu, reading-off, v1.0.61 -->
 
 # Cursor — Katman 3 Eksikler Raporu
 
-**Tarih:** 2026-08-02 · **Sürüm:** LibRart Pro **v1.0.60**  
+**Tarih:** 2026-08-02 · **Sürüm:** LibRart Pro **v1.0.61**  
 **Doğrulama:** `npm test` → güncel suite
 
 ## Özet hüküm

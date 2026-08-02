@@ -59,12 +59,12 @@ writing-features = Writing features
 inciteful-enabled =
     .label = Enable Inciteful tools
 reading-enabled =
-    .label = Enable reading dashboard / status
+    .label = Enable reading dashboard / status (writes ReadingFlow into Extra)
 import-enabled =
     .label = Enable safe BibTeX/RIS import
 docx-cited-enabled =
     .label = Enable DOCX cited tagging
-writing-features-hint = Disabled features are hidden from the LibRart Pro menu. Restart Zotero after changing menus if items look stale.
+writing-features-hint = Disabled features are hidden from the LibRart Pro menu and write no Extra metadata. Restart Zotero after changing menus if items look stale.
 
 openalex = Citation layers (OpenAlex / Crossref / OpenCitations)
 openalex-enabled =
