@@ -1,4 +1,6 @@
+// @ajan: cursor · @etiket: katman-3, zotero-reference, ioutils, os-file-removed
 // Adapted from zotero-reference (AGPL-3.0) src/modules/localStorage.ts
+// Zotero 9: window.OS / OS.File removed — use IOUtils + PathUtils.
 
 class LocalStorage {
   public filename!: string;
@@ -10,15 +12,13 @@ class LocalStorage {
   }
 
   async init(filename: string) {
-    const window = Zotero.getMainWindow();
-    // @ts-ignore
-    const OS = window.OS;
-    if (!(await OS.File.exists(filename))) {
+    if (!(await IOUtils.exists(filename))) {
       const temp = Zotero.getTempDirectory();
-      this.filename = OS.Path.join(
-        temp.path.replace(temp.leafName, ""),
-        `${filename}.json`,
-      );
+      const parentDir =
+        typeof PathUtils !== "undefined" && PathUtils.parent
+          ? PathUtils.parent(temp.path)
+          : temp.path.replace(temp.leafName, "");
+      this.filename = PathUtils.join(parentDir || temp.path, `${filename}.json`);
     } else {
       this.filename = filename;
     }
@@ -43,7 +43,8 @@ class LocalStorage {
   async set(item: Zotero.Item | { key: string }, key: string, value: any) {
     await this.lock.promise;
     (this.cache[item.key] ??= {})[key] = value;
-    window.setTimeout(async () => {
+    const win = Zotero.getMainWindow?.() ?? window;
+    win.setTimeout(async () => {
       await Zotero.File.putContentsAsync(
         this.filename,
         JSON.stringify(this.cache),

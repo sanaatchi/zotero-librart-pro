@@ -1,4 +1,4 @@
-<!-- @ajan: cursor · @etiket: katman-3, eksik-raporu, reading-off, v1.0.61 -->
+<!-- @ajan: cursor · @etiket: katman-3, eksik-raporu, reading-off, os-file-removed -->
 
 # Cursor — Katman 3 Eksikler Raporu
 
@@ -69,3 +69,13 @@ OCR/KP gömme · üç XPI birleştirme · AI/RAG LibRart içi · scite · `:8767
 | — | `connectionMapRenderer.ts` (tam 2029 satır) | `innerHTML=`/`JSON.parse` kontrolü, 28 `addEventListener` (mountSvg her redraw'da `canvas.textContent = ""` ile eski node+listener'ları temizliyor — leak yok), context-menu `closeOnce` deseni, pointer drag/pan/zoom `pointerId`-guard + `endPointer()` temizliği. | ✅ Bug bulunamadı — temiz. |
 
 **Öncelik:** B2 ve B3 küçük, izole düzeltmeler (P2); istenirse ayrı bir görevde tamamlanabilir.
+
+---
+
+## Cursor — runtime triage (2026-08-06, restart doğrulaması)
+
+| ID | Bug | Durum |
+|----|-----|-------|
+| **R1** | `OS is undefined` / `OS.File` — `vendor/zotero-reference/localStorage.ts` (Zotero 9 `window.OS` kaldırıldı; module-level `new LocalStorage` startup’ta patlıyordu) | ✅ kod **v1.0.64** — `IOUtils`+`PathUtils`; XPI yayın bekliyor («yayınla») |
+
+Gürültü (dokunulmadı): diğer eklenti `ChromeUtils.import Console.sys.mjs`, Knowledge4Zotero version warn, ItemTreeColumnManager / gBrowser deprecations.
