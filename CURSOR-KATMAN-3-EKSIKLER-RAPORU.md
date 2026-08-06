@@ -1,4 +1,4 @@
-<!-- @ajan: cursor · @etiket: katman-3, eksik-raporu, reading-off, os-file-removed -->
+<!-- @ajan: cursor · @etiket: katman-3, eksik-raporu, reading-off, os-file-removed, ioutils-path-fix -->
 
 # Cursor — Katman 3 Eksikler Raporu
 
@@ -77,5 +77,6 @@ OCR/KP gömme · üç XPI birleştirme · AI/RAG LibRart içi · scite · `:8767
 | ID | Bug | Durum |
 |----|-----|-------|
 | **R1** | `OS is undefined` / `OS.File` — `vendor/zotero-reference/localStorage.ts` (Zotero 9 `window.OS` kaldırıldı; module-level `new LocalStorage` startup’ta patlıyordu) | ✅ kod **v1.0.64** — `IOUtils`+`PathUtils`; XPI yayın bekliyor («yayınla») |
+| **R2** | v1.0.64 sonrası mutasyon: `OperationError: Could not determine if \`librartpro-reference-cache' exists: could not parse path (NS_ERROR_FILE_UNRECOGNIZED_PATH)` (~8357). `views.ts`: `new LocalStorage(\`${config.addonRef}-reference-cache\`)` — **bare isim**, path değil. R1 fix'i `IOUtils.exists(filename)`'ı hâlâ bu çıplak isimle *önce* çağırıyordu (Zotero 9 IOUtils yalnız mutlak path kabul eder → parse hatası, eski fallback koduna hiç ulaşılmıyordu). | ✅ kod **v1.0.65** — yeni `resolveLocalStorageFilename()`: zaten mutlak olan path'leri (sürücü harfi / POSIX kök) olduğu gibi bırakır, aksi halde `PathUtils.join(Zotero.DataDirectory.dir, \`${filename}.json\`)` ile mutlak path'e çözer — `IOUtils.exists` her zaman **önce çözülmüş** mutlak path'i görür (K3'te başka yerde kullanılan `openAlexCitationLayer.ts` deseniyle aynı). XPI yayın bekliyor («yayınla»). |
 
 Gürültü (dokunulmadı): diğer eklenti `ChromeUtils.import Console.sys.mjs`, Knowledge4Zotero version warn, ItemTreeColumnManager / gBrowser deprecations.
