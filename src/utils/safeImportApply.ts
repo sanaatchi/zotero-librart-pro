@@ -50,16 +50,29 @@ function applyRawCslFields(
       }>
     | undefined;
   if (Array.isArray(creators) && creators.length) {
-    item.setCreators(
-      creators
-        .filter((c) => !c.creatorType || c.creatorType === "author")
-        .map((c) => ({
-          creatorType: "author",
-          lastName: c.lastName,
-          firstName: c.firstName,
-          name: !c.lastName && c.name ? c.name : undefined,
-        })),
-    );
+    // Preserve the parsed role (editor/translator/seriesEditor/...) instead
+    // of collapsing everything to "author" — a BibTeX/RIS record for an
+    // edited volume or a translated work (e.g. `editor`/`translator` field)
+    // previously lost its creators entirely on import: the old filter kept
+    // only rows already typed "author" and dropped the rest.
+    const mapped = creators
+      .filter((c) => c.lastName || c.firstName || c.name)
+      .map((c) => ({
+        creatorType: c.creatorType || "author",
+        lastName: c.lastName,
+        firstName: c.firstName,
+        name: !c.lastName && c.name ? c.name : undefined,
+      }));
+    try {
+      item.setCreators(mapped as any);
+    } catch {
+      // Item type doesn't accept one of the parsed roles (e.g. "editor" on
+      // a type with no editor slot) — fall back to importing everyone as
+      // "author" rather than silently dropping all creators.
+      item.setCreators(
+        mapped.map((c) => ({ ...c, creatorType: "author" })) as any,
+      );
+    }
   }
 }
 
