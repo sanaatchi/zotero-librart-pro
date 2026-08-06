@@ -103,6 +103,7 @@ safe-import-parsing = Ayrıştırılıyor…
 safe-import-parsed = { $count } kayıt bulundu
 safe-import-importing = İçe aktarılıyor…
 safe-import-done = { $imported } kayıt eklendi, { $skipped } atlandı
+safe-import-error = İçe aktarma başarısız: { $message }
 safe-import-warn-missing-title = başlık yok
 safe-import-warn-missing-id = tanımlayıcı yok
 safe-import-warn-dup-batch = listede yinelenen

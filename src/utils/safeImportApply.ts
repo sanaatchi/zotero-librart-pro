@@ -89,17 +89,25 @@ async function importSelectedCandidates(
         skipped += 1;
         continue;
       }
-      const itemType =
-        typeof row.rawCsl.itemType === "string"
-          ? row.rawCsl.itemType
-          : row.itemType;
-      const item = new Zotero.Item(itemType as any);
-      applyRawCslFields(item, row.rawCsl);
-      if (typeof opts.collectionId === "number") {
-        item.addToCollection(opts.collectionId);
+      try {
+        const itemType =
+          typeof row.rawCsl.itemType === "string"
+            ? row.rawCsl.itemType
+            : row.itemType;
+        const item = new Zotero.Item(itemType as any);
+        applyRawCslFields(item, row.rawCsl);
+        if (typeof opts.collectionId === "number") {
+          item.addToCollection(opts.collectionId);
+        }
+        const id = await item.save();
+        if (typeof id === "number") importedIds.push(id);
+      } catch (e) {
+        // One malformed row (bad itemType, field value Zotero rejects, …)
+        // must not roll back the whole batch — `executeTransaction` only
+        // reverts on a *thrown* error, so isolate it here per row.
+        ztoolkit.log(`Safe import: row ${row.rowId} failed`, e);
+        skipped += 1;
       }
-      const id = await item.save();
-      if (typeof id === "number") importedIds.push(id);
     }
   });
 

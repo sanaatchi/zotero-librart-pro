@@ -188,7 +188,19 @@ async function initSafeImportWindow(win: Window) {
         `${config.addonRef}-safe-import-status`,
       );
       if (status) status.textContent = getString("safe-import-importing");
-      const { importedIds, skipped } = await importSelectedCandidates(picked);
+      let importedIds: number[] = [];
+      let skipped = 0;
+      try {
+        ({ importedIds, skipped } = await importSelectedCandidates(picked));
+      } catch (e) {
+        ztoolkit.log("Safe import failed", e);
+        if (status) {
+          status.textContent = getString("safe-import-error", {
+            args: { message: e instanceof Error ? e.message : String(e) },
+          });
+        }
+        return;
+      }
       updateHint(
         getString("safe-import-done", {
           args: {

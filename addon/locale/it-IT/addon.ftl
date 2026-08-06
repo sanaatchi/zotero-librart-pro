@@ -193,6 +193,7 @@ safe-import-parsing = Parsing…
 safe-import-parsed = { $count } entries found
 safe-import-importing = Importing…
 safe-import-done = Added { $imported }, skipped { $skipped }
+safe-import-error = Import failed: { $message }
 safe-import-warn-missing-title = missing title
 safe-import-warn-missing-id = no identifier
 safe-import-warn-dup-batch = duplicate in list
