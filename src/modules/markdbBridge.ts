@@ -1,4 +1,4 @@
-// @ajan: cursor · @etiket: f8, markdb, bridge, menu, ux, makale-yazim
+// @ajan: claude · @etiket: f8, markdb, bridge, tag-sync, cross-library-bug-fix
 // Obsidian/MarkDB vault → Bağlantı Haritası note edges + tag sync + open.
 // Scan patterns adapted from zotero-markdb-connect (MIT). Open URI / tag sync
 // inspired by mdbcUX.ts / mdbcScan.ts (MIT) — selective clean-room.
@@ -248,6 +248,7 @@ function rememberNotePaths(
 async function syncMarkdbTagsFromVault(
   notes: MarkdbParsedNote[],
   maps: MarkdbIdMaps,
+  libraryID: number,
 ): Promise<{ tagged: number; removed: number }> {
   const tagstr = getMarkdbTag();
   const withNotes = new Set<number>();
@@ -256,7 +257,7 @@ async function syncMarkdbTagsFromVault(
     if (id) withNotes.add(id);
   }
 
-  const search = new Zotero.Search();
+  const search = new Zotero.Search({ libraryID }) as Zotero.Search;
   search.addCondition("tag", "is", tagstr);
   const taggedIds = await search.search();
   const taggedSet = new Set(taggedIds);
@@ -420,7 +421,11 @@ async function runManualVaultScan(): Promise<void> {
       Zotero.Libraries.userLibraryID;
     const maps = await buildIdMapsFromLibraryAsync(libraryID);
     rememberNotePaths(notes, maps);
-    const { tagged, removed } = await syncMarkdbTagsFromVault(notes, maps);
+    const { tagged, removed } = await syncMarkdbTagsFromVault(
+      notes,
+      maps,
+      libraryID,
+    );
     const withPrimary = notes.filter(
       (n) => n.primaryCitekey || n.primaryItemKey,
     ).length;
