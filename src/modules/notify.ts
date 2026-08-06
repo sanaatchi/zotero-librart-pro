@@ -1,4 +1,4 @@
-// @ajan: cursor · @etiket: f1, notify, vector-delete
+// @ajan: claude · @etiket: f1, notify, vector-delete, notifier-await-fix
 import { ActionEventTypes } from "../utils/actions";
 import { recordTabStatus } from "./tabs";
 import { removeItemEmbedding } from "../vendor/zotseek/vectorStoreRuntime";
@@ -17,7 +17,15 @@ function initNotifierObserver() {
         Zotero.Notifier.unregisterObserver(notifierID);
         return;
       }
-      onNotify(event, type, ids, extraData);
+      // Must be returned/awaited: Zotero's own Notifier.trigger() wraps
+      // `await Promise.resolve(ref.notify(...))` in try/catch (see
+      // notifier.js upstream) — but that only protects errors that happen
+      // before this callback's OWN returned promise resolves. Without
+      // `return` here, this async function's promise resolves as soon as
+      // onNotify() is merely *called*, not when its actual async work
+      // finishes — so a later rejection inside onNotify becomes an
+      // unhandled rejection Zotero's catch-all never sees.
+      return onNotify(event, type, ids, extraData);
     },
   };
 
