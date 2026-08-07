@@ -1,9 +1,9 @@
-<!-- @ajan: cursor · @etiket: katman-3, eksik-raporu, reading-off, os-file-removed, ioutils-path-fix -->
+<!-- @ajan: cursor · @etiket: katman-3, eksik-raporu, reading-off, os-file-removed, ioutils-path-fix, hizalama-20260807, citekey-preserve -->
 
 # Cursor — Katman 3 Eksikler Raporu
 
-**Tarih:** 2026-08-02 · **Sürüm:** LibRart Pro **v1.0.61**  
-**Doğrulama:** `npm test` → güncel suite
+**Tarih:** 2026-08-02 · **Kod sürüm:** LibRart Pro **v1.0.66** (Citation Key KP-preserve hotfix; package.json 2026-08-07)  
+**Doğrulama:** `npm test` → güncel suite · citekey vitest + XPI v1.0.66
 
 ## Özet hüküm
 
@@ -13,6 +13,28 @@
 | Çekirdek F0–F9.2.3? | Sağlam |
 | Offline graf? | **8756** + `_build_zotero_connection_graph.py` |
 | Kabul UI smoke? | Bölüm B ⬜ (kullanıcı) |
+
+---
+
+## Hizalama 2026-08-07 (K2 v1.0.154–160 sonrası)
+
+**Kapsam:** K2 bidir/quarantine/tag değişikliklerinin K3’e etkisi — kod grep.
+
+| Seam | Durum | Not |
+|------|-------|-----|
+| package ↔ rapor üst | ✅ | Kod **1.0.66**; Citation Key KP-preserve XPI |
+| 8756 semantic loopback | ✅ | `kutuphaneSemanticParse` + `loopbackHttp` |
+| KP `kpToken` | ✅ | K1/K2 parity (MAX 99999) |
+| K2 etiket taksonomisi | **P2** | `tagAnalysis.SYSTEM_TAGS` yalnız `#pdf-review`; eksik: `#pdf-mismatch`, `#auto-attached`, `#auto-oa`, `#auto-created`, `#pdf-quarantine`, `#pdf-candidate` → etiket panosunda «concept» sayılabilir |
+| Yasak (OCR/pipeline K3) | ✅ | Korunuyor |
+| Update kanalı | ✅ | `zotero-librart-pro-releases` bağımsız |
+| Açık **P1** çapraz | **Yok** | P2 taxonomy; XPI **1.0.66** Citation Key |
+| Citation Key vs K1 KP | ✅ soft | `ensureCitationKey`/`assignCitationKey`: geçerli KP’yi CKxxxxxx ile ezmez; Extra RMW residual |
+| K3-içi P3 B2 | ⬜ | Anki `decideNoteId` linked ID güveni; `ankiBridge` missing-note’ta kısmi recover |
+| K3-içi P3 B3 | ⬜ | DOCX `citedByLibrary` — boşalan grup kütüphanesinde eski `cited:` temizliği |
+| `.env` | ✅ güvenli | `kaynak/.env` (129 B): **yerel Zotero bin yolu**, API token değil; `.gitignore` + kök `zotero-eklentiler/` — git tracked değil |
+
+Canvas finalize: `canvases/uc-katman-hizalama-20260807.canvas.tsx`
 
 ---
 
